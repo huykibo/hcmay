@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+my_env/
+mlruns/
+.DS_Store
+*.log
+*.pkl

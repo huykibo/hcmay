@@ -1,0 +1,12 @@
+mlflow
+streamlit
+openml
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+pillow
+tensorflow
+keras
+streamlit-drawable-canvas
