@@ -10,3 +10,4 @@ pillow
 tensorflow
 keras
 streamlit-drawable-canvas
+plotly
