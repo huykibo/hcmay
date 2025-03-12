@@ -17,7 +17,7 @@ app_choice = st.sidebar.selectbox(
     ["Linear Regression", "Classification", "Clustering", "Dimension Reduction", "Neural Network Classification"]  # Thêm Neural Network
 )
 
-# Nội dung chính của trang
+# Nội dung chính của trang11
 st.title("Chương Trình Ứng Dụng")
 
 # Điều hướng đến ứng dụng được chọn

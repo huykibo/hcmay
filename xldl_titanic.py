@@ -41,7 +41,7 @@ print(" Dữ liệu Titanic đã được xử lý và theo dõi trong MLflow.")
 # python xldl_titanic.py
 # mlflow ui
 
-# #dã thiết lâp git trc đó 
-git add .
+# #dã thiết lâp git trc đó fff
+git add 
 git commit -m "Update: Cập nhật code ứng dụng Streamlit MLflow"
 git push
