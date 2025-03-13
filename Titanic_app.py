@@ -738,11 +738,9 @@ def run_titanic_app():
                         st.write("Không có kết quả được ghi nhận.")
 
                     st.subheader("Truy cập MLflow UI")
-                    mlflow_tracking_uri = st.secrets["mlflow"]["MLFLOW_TRACKING_URI"]
-                    if st.button("Mở MLflow UI"):
-                        st.write(f"Đang chuyển hướng tới: {mlflow_tracking_uri}")
-                        st.markdown(f'<meta http-equiv="refresh" content="0;URL={mlflow_tracking_uri}">', unsafe_allow_html=True)
-
+                    if st.button("Mở MLflow UI trên Dagshub"):
+                        st.write(f"Đang chuyển hướng tới: https://dagshub.com/huykibo/streamlit_mlflow.mlflow")
+                        st.markdown(f'<meta http-equiv="refresh" content="0;URL=https://dagshub.com/huykibo/streamlit_mlflow.mlflow">', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
