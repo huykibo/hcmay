@@ -348,7 +348,7 @@ def run_mnist_dimension_reduction_app():
               - Chấp nhận thời gian xử lý lâu để có kết quả chi tiết.  
             """, unsafe_allow_html=True)
 
-    # Tab Tải dữ liệu
+  # Tab Tải dữ liệu (giữ nguyên)
     with tab_load:
         st.header("Tải Dữ liệu MNIST")
         st.markdown("""
@@ -428,7 +428,7 @@ def run_mnist_dimension_reduction_app():
                 except Exception as e:
                     st.error(f"Lỗi khi xử lý dữ liệu: {e}")
 
-    # Tab Trực quan hóa
+    # Tab Trực quan hóa (Cập nhật)
     with tab_visualize:
         st.header("Trực quan hóa Dữ liệu MNIST")
         st.markdown("""
@@ -527,6 +527,47 @@ def run_mnist_dimension_reduction_app():
             else:
                 st.table(suggestion_data_tsne)
 
+            # Hiển thị kết quả cũ nếu có trong session_state
+            if 'visualization_result' in st.session_state and st.session_state['visualization_result']['reduce_method'] == reduce_method:
+                result = st.session_state['visualization_result']
+                st.subheader(f"Kết quả Trực quan hóa ({result['n_components']}D)")
+                st.plotly_chart(result['fig'], use_container_width=True)
+
+                st.subheader("Hiểu biểu đồ này như thế nào?")
+                if result['reduce_method'] == "PCA":
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng PCA.  
+                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
+                    - **Ý nghĩa**: PCA giữ cấu trúc toàn cục, các điểm cùng nhãn nên nằm gần nhau nếu dữ liệu có tính tuyến tính.  
+                    - **Tỷ lệ phương sai giải thích**: ${result['explained_variance_ratio']:.4f}$ (phần dữ liệu được giữ lại).  
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng t-SNE.  
+                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
+                    - **Ý nghĩa**: t-SNE giữ cấu trúc cục bộ, các điểm cùng nhãn thường tạo thành các nhóm rõ ràng hơn PCA.  
+                    """, unsafe_allow_html=True)
+
+                st.subheader("Thông tin chi tiết")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    st.markdown("**Thông tin lần chạy:**")
+                    st.write(f"- Tên lần chạy: {result['run_name']}")
+                    st.write(f"- ID lần chạy: {result['run_id']}")
+
+                    st.markdown("**Cài đặt:**")
+                    st.write(f"- Phương pháp: {result['reduce_method']}")
+                    st.write(f"- Số chiều: {result['n_components']}")
+                    if result['reduce_method'] == "t-SNE":
+                        st.write(f"- Perplexity: {result['perplexity']}")
+                        st.write(f"- Learning Rate: {result['learning_rate']}")
+                    st.write(f"- Thời gian chạy: {result['training_time']:.2f} giây")
+
+                    st.markdown("**Kết quả chi tiết:**")
+                    if result['reduce_method'] == "PCA":
+                        st.write(f"- Tỷ lệ phương sai giải thích: {result['explained_variance_ratio']:.4f}")
+                    st.write(f"- Số mẫu đã xử lý: {num_samples}")
+
+            # Nút giảm chiều
             if st.button("Bắt đầu giảm chiều"):
                 try:
                     with st.spinner("Đang xử lý..."):
@@ -566,76 +607,54 @@ def run_mnist_dimension_reduction_app():
 
                             run_id = run.info.run_id
                             st.session_state['latest_run'] = {'run_id': run_id, 'run_name': run_name}
-                            st.session_state['X_reduced'] = X_reduced
 
-                        status_text.text("Đang chuẩn bị biểu đồ trực quan...")
-                        df_plot = pd.DataFrame(X_reduced, columns=[f"Dim{i+1}" for i in range(n_components)])
-                        df_plot['Label'] = y.values
-                        progress_bar.progress(95)
+                            status_text.text("Đang chuẩn bị biểu đồ trực quan...")
+                            df_plot = pd.DataFrame(X_reduced, columns=[f"Dim{i+1}" for i in range(n_components)])
+                            df_plot['Label'] = y.values
+                            progress_bar.progress(95)
 
-                        status_text.text("Đang hoàn tất...")
-                        if n_components == 2:
-                            fig = px.scatter(
-                                df_plot, x="Dim1", y="Dim2", color="Label",
-                                title=f"{reduce_method} - Trực quan hóa 2D",
-                                width=900, height=600,
-                                hover_data=["Label"]
-                            )
-                        else:
-                            fig = px.scatter_3d(
-                                df_plot, x="Dim1", y="Dim2", z="Dim3", color="Label",
-                                title=f"{reduce_method} - Trực quan hóa 3D",
-                                width=900, height=600,
-                                hover_data=["Label"]
-                            )
-                        progress_bar.progress(100)
-                        status_text.text("Hoàn tất!")
-                        time.sleep(0.5)
-                        status_text.empty()
-                        progress_bar.empty()
+                            status_text.text("Đang hoàn tất...")
+                            if n_components == 2:
+                                fig = px.scatter(
+                                    df_plot, x="Dim1", y="Dim2", color="Label",
+                                    title=f"{reduce_method} - Trực quan hóa 2D",
+                                    width=900, height=600,
+                                    hover_data=["Label"]
+                                )
+                            else:
+                                fig = px.scatter_3d(
+                                    df_plot, x="Dim1", y="Dim2", z="Dim3", color="Label",
+                                    title=f"{reduce_method} - Trực quan hóa 3D",
+                                    width=900, height=600,
+                                    hover_data=["Label"]
+                                )
+                            progress_bar.progress(100)
+                            status_text.text("Hoàn tất!")
+                            time.sleep(0.5)
+                            status_text.empty()
+                            progress_bar.empty()
 
-                        st.success(f"Giảm chiều xong! Thời gian: {training_time:.2f} giây.")
+                            # Lưu kết quả vào session_state
+                            st.session_state['visualization_result'] = {
+                                'reduce_method': reduce_method,
+                                'X_reduced': X_reduced,
+                                'fig': fig,
+                                'n_components': n_components,
+                                'run_id': run_id,
+                                'run_name': run_name,
+                                'training_time': training_time,
+                                'explained_variance_ratio': explained_variance_ratio if reduce_method == "PCA" else None,
+                                'perplexity': perplexity if reduce_method == "t-SNE" else None,
+                                'learning_rate': learning_rate if reduce_method == "t-SNE" else None
+                            }
 
-                        st.subheader(f"Kết quả Trực quan hóa ({n_components}D)")
-                        st.plotly_chart(fig, use_container_width=True)
+                            st.success(f"Giảm chiều xong! Thời gian: {training_time:.2f} giây.")
+                            st.rerun()  # Tải lại trang để hiển thị kết quả mới
 
-                        st.subheader("Hiểu biểu đồ này như thế nào?")
-                        if reduce_method == "PCA":
-                            st.markdown(f"""
-                            - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${n_components}D$ bằng PCA.  
-                            - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
-                            - **Ý nghĩa**: PCA giữ cấu trúc toàn cục, các điểm cùng nhãn nên nằm gần nhau nếu dữ liệu có tính tuyến tính.  
-                            - **Tỷ lệ phương sai giải thích**: ${explained_variance_ratio:.4f}$ (phần dữ liệu được giữ lại).  
-                            """, unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"""
-                            - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${n_components}D$ bằng t-SNE.  
-                            - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
-                            - **Ý nghĩa**: t-SNE giữ cấu trúc cục bộ, các điểm cùng nhãn thường tạo thành các nhóm rõ ràng hơn PCA.  
-                            """, unsafe_allow_html=True)
-
-                        st.subheader("Thông tin chi tiết")
-                        with st.expander("Xem chi tiết kết quả", expanded=True):
-                            st.markdown("**Thông tin lần chạy:**")
-                            st.write(f"- Tên lần chạy: {run_name}")
-                            st.write(f"- ID lần chạy: {run_id}")
-
-                            st.markdown("**Cài đặt:**")
-                            st.write(f"- Phương pháp: {reduce_method}")
-                            st.write(f"- Số chiều: {n_components}")
-                            if reduce_method == "t-SNE":
-                                st.write(f"- Perplexity: {perplexity}")
-                                st.write(f"- Learning Rate: {learning_rate}")
-                            st.write(f"- Thời gian chạy: {training_time:.2f} giây")
-
-                            st.markdown("**Kết quả chi tiết:**")
-                            if reduce_method == "PCA":
-                                st.write(f"- Tỷ lệ phương sai giải thích: {explained_variance_ratio:.4f}")
-                            st.write(f"- Số mẫu đã xử lý: {num_samples}")
                 except Exception as e:
                     st.error(f"Lỗi khi thực hiện giảm chiều: {e}")
 
-    # Tab Theo dõi kết quả
+    # Tab Theo dõi kết quả (giữ nguyên)
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
@@ -727,9 +746,8 @@ def run_mnist_dimension_reduction_app():
                     else:
                         st.write("Không có kết quả được ghi nhận.")
 
-                    # Thêm nút liên kết tới MLflow UI
                     st.subheader("Truy cập MLflow UI")
-                    mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"  # Thay bằng URL MLflow của bạn nếu khác
+                    mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
                     if st.button("Mở MLflow UI trên Dagshub"):
                         st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
         except Exception as e:
