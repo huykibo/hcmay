@@ -124,7 +124,7 @@ def run_mnist_classification_app():
         elif info_option == "Decision Tree – Mô hình cây quyết định":
             st.subheader("3. Decision Tree – Mô hình cây quyết định")
             st.markdown("""
-            **Decision Tree (Cây quyết định)** xây dựng một cấu trúc phân cấp giống như cây, trong đó dữ liệu được chia nhỏ dần dựa trên các đặc trưng (pixel trong MNIST) để đưa ra dự đoán cuối cùng.
+            **Decision Tree (Cây quyết định)** xây dựng một cấu trúc phân cấp giống như cây, trong đó dữ liệu được chia nhỏ dần dựa trên các đặc trưng (pixel trong MNIST) để đưa ra dự đoán cuối cùng. Trong bài toán này, tham số quan trọng như **Max Depth** được sử dụng để kiểm soát độ phức tạp của cây, tránh hiện tượng quá khớp (overfitting).
             """)
 
             st.subheader("Cách hoạt động chi tiết:")
@@ -170,10 +170,10 @@ def run_mnist_classification_app():
 
             st.markdown("""
             4. **Nút lá và tiêu chí dừng**:  
-               - Quá trình dừng khi nhóm dữ liệu thuần nhất hoặc đạt độ sâu tối đa.  
+               - Quá trình dừng khi nhóm dữ liệu thuần nhất (tất cả mẫu trong nhánh thuộc cùng một nhãn) hoặc đạt **Max Depth** (độ sâu tối đa của cây).  
                - Ví dụ: Nhánh "Yes" của "Pixel 10 > 50" → Nhãn "1" (thuần nhất).  
                - Nhánh "No" của "Pixel 10 ≤ 50" → Nhãn "9" (thuần nhất).  
-               - Nhánh "No" của "Pixel 5 > 100" → Nhãn "0" (độ sâu tối đa).  
+               - Nhánh "No" của "Pixel 5 > 100" → Nhãn "0" (đạt Max Depth).  
             """)
             try:
                 tree_step_4 = Image.open("illustrations/tree_step_4.png")
@@ -197,22 +197,31 @@ def run_mnist_classification_app():
                 st.error(f"Lỗi khi tải ảnh: {e}")
 
             st.markdown("""
-            ### Tiêu chí lựa chọn đặc trưng và ngưỡng:  
+            ### Tiêu chí lựa chọn đặc trưng, ngưỡng và tham số Max Depth:  
             - **Entropy**: Đo mức độ "hỗn loạn" của dữ liệu dựa trên phân bố nhãn:  
               $$ Entropy(S) = -\\sum_{i=0}^{9} p_i \\log_2(p_i) $$  
               - $p_i$: Tỷ lệ mẫu thuộc nhãn $i$.  
             - **Gini Index**: Đo độ "tinh khiết" của nhóm:  
               $$ Gini(S) = 1 - \\sum_{i=0}^{9} p_i^2 $$  
+            - **Max Depth**:  
+              - Là tham số giới hạn số mức chia tối đa của cây (độ sâu).  
+              - Trong bài toán MNIST, nếu không giới hạn Max Depth, cây có thể phát triển quá sâu (ví dụ: 784 mức tương ứng 784 pixel), dẫn đến overfitting (học quá chi tiết dữ liệu huấn luyện, không khái quát tốt trên dữ liệu mới).  
+              - Giá trị thường dùng:  
+                - Dữ liệu nhỏ (<1000 mẫu): 5-10.  
+                - Dữ liệu trung bình (1000-5000 mẫu): 10-20.  
+                - Dữ liệu lớn (>5000 mẫu): 20-50.  
+              - Ví dụ: Với Max Depth = 10, cây dừng sau 10 lần chia, ngay cả khi dữ liệu chưa hoàn toàn thuần nhất.
 
             ### Áp dụng với MNIST:
             - Decision Tree chia dữ liệu dựa trên giá trị pixel (ví dụ: Pixel 5, Pixel 10) để phân biệt nhãn (0-9).  
+            - Tham số Max Depth giúp cân bằng giữa độ chính xác và khả năng khái quát hóa, đặc biệt với dữ liệu phức tạp như MNIST (784 đặc trưng).
 
             ### Ưu điểm:
             - Dễ hiểu, trực quan như một biểu đồ cây hỏi đáp.  
             - Nhanh với dữ liệu nhỏ, không yêu cầu chuẩn hóa dữ liệu.  
 
             ### Nhược điểm:
-            - Dễ bị **overfitting** nếu cây quá sâu, đặc biệt khi dữ liệu phức tạp như MNIST.  
+            - Dễ bị **overfitting** nếu Max Depth quá lớn, đặc biệt khi dữ liệu phức tạp như MNIST.  
             - Khó xử lý các mẫu có đặc trưng tương tự (ví dụ: "3" và "8").  
             """)
 
@@ -415,7 +424,7 @@ def run_mnist_classification_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu (Đã sửa)
+    # Tab 3: Xử lí dữ liệu (Đã xóa Standardization)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -445,7 +454,7 @@ def run_mnist_classification_app():
                     X_norm = X / 255.0
                     st.session_state["data_processed"] = (X_norm, y)
                     st.success("Đã chuẩn hoá dữ liệu!")
-                    st.rerun()  # Thay thế st.experimental_rerun() bằng st.rerun()
+                    st.rerun()
             with col2:
                 st.markdown("""
                     <div class="tooltip">
@@ -453,24 +462,6 @@ def run_mnist_classification_app():
                         <span class="tooltiptext">
                             Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
                             Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
-                        </span>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button("Standardization", key="standardize_btn"):
-                    X_std = (X - X.mean()) / X.std()
-                    st.session_state["data_processed"] = (X_std, y)
-                    st.success("Đã thực hiện Standardization!")
-                    st.rerun()  # Thay thế st.experimental_rerun() bằng st.rerun()
-            with col2:
-                st.markdown("""
-                    <div class="tooltip">
-                        ?
-                        <span class="tooltiptext">
-                            Chuẩn hóa về trung bình 0, độ lệch chuẩn 1.<br>
-                            Công dụng: Tốt cho SVM, giảm lệch thang đo.
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
@@ -490,12 +481,12 @@ def run_mnist_classification_app():
                         st.pyplot(fig)
                     except (ValueError, TypeError, AttributeError) as e:
                         st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}. Vui lòng thử chuẩn hóa lại dữ liệu.")
-                        st.session_state.pop("data_processed", None)  # Xóa dữ liệu sai
+                        st.session_state.pop("data_processed", None)
                 else:
                     st.error("Dữ liệu đã xử lý không đúng định dạng. Vui lòng thử chuẩn hóa lại dữ liệu.")
-                    st.session_state.pop("data_processed", None)  # Xóa dữ liệu sai
+                    st.session_state.pop("data_processed", None)
             else:
-                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' hoặc 'Standardization' để xử lý.")
+                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
@@ -503,10 +494,9 @@ def run_mnist_classification_app():
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
-            # Safely retrieve data_processed or fallback to data
             data_source = st.session_state.get("data_processed", st.session_state['data'])
             try:
-                X, y = data_source  # Unpack only if it's a valid tuple
+                X, y = data_source
             except (ValueError, TypeError) as e:
                 st.error(f"Lỗi: Dữ liệu không hợp lệ. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu. Chi tiết lỗi: {e}")
             else:
@@ -542,7 +532,7 @@ def run_mnist_classification_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá
+    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật để ẩn kết quả cũ khi đổi mô hình)
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá")
         if 'split_data' not in st.session_state:
@@ -706,7 +696,8 @@ def run_mnist_classification_app():
                         status_text.empty()
                         progress_bar.empty()
 
-            if 'training_results' in st.session_state:
+            # Chỉ hiển thị kết quả nếu mô hình hiện tại khớp với kết quả đã lưu
+            if 'training_results' in st.session_state and st.session_state['training_results']['model_choice'] == model_choice:
                 st.success(f"Huấn luyện hoàn tất. Thời gian thực hiện: {st.session_state['training_results']['training_time']:.2f} giây.")
                 st.write(f"Accuracy Validation: {st.session_state['training_results']['accuracy_val']:.4f}")
                 st.write(f"Accuracy Test: {st.session_state['training_results']['accuracy_test']:.4f}")
@@ -725,7 +716,7 @@ def run_mnist_classification_app():
                 with st.expander("Xem chi tiết kết quả", expanded=True):
                     run_name = st.session_state['training_results']['run_name']
                     run_id = st.session_state['training_results']['run_id']
-                    model_choice = st.session_state['training_results']['model_choice']
+                    model_choice_result = st.session_state['training_results']['model_choice']
                     params = st.session_state['training_results']['params']
                     training_time = st.session_state['training_results']['training_time']
                     accuracy_val = st.session_state['training_results']['accuracy_val']
@@ -737,7 +728,7 @@ def run_mnist_classification_app():
                     st.write(f"- **ID lần chạy (Run ID)**: {run_id}")
 
                     st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
-                    st.write(f"- **Mô hình**: {model_choice}")
+                    st.write(f"- **Mô hình**: {model_choice_result}")
                     st.write(f"- **Tham số**:")
                     for key, value in params.items():
                         st.write(f"  - {key}: {value}")
@@ -749,6 +740,8 @@ def run_mnist_classification_app():
                     - **Độ chính xác Validation**: {accuracy_val*100:.2f}%  
                     - **Độ chính xác Test**: {accuracy_test*100:.2f}%  
                     """, unsafe_allow_html=True)
+            else:
+                st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện' để xem kết quả.")
 
     # Tab 6: Demo dự đoán
     with tab_demo:
