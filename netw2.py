@@ -22,14 +22,14 @@ from keras.utils import to_categorical
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
-    try:
-        os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
-        os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
-        mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
-        mlflow.set_experiment("MNIST_Neural_Network")
-    except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
-        st.stop()
+    # try:
+    #     os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
+    #     os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
+    #     mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
+    #     mlflow.set_experiment("MNIST_Neural_Network")
+    # except KeyError as e:
+    #     st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
+    #     st.stop()
 
     st.title("Ứng dụng Phân loại Chữ số MNIST với Neural Network")
 
@@ -117,11 +117,9 @@ def run_mnist_neural_network_app():
                 st.subheader("Minh họa dữ liệu MNIST")
                 with st.spinner("Đang tải ảnh minh họa..."):
                     try:
-                        # Thử tải ảnh mnist.png từ thư mục hiện tại
                         mnist_image = Image.open("mnist.png")
                         st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", use_container_width=True)
                     except FileNotFoundError:
-                        # Nếu không tìm thấy mnist.png, tạo ảnh minh họa từ dữ liệu MNIST (nếu đã tải)
                         if 'full_data' in st.session_state:
                             X, y = st.session_state['full_data']
                             fig, axes = plt.subplots(1, 10, figsize=(20, 2))
@@ -148,10 +146,10 @@ def run_mnist_neural_network_app():
                    - Ví dụ: Một ảnh số "3" được biểu diễn bằng các giá trị pixel từ 0 (đen) đến 255 (trắng).  
                 """)
                 try:
-                    nn_step_1 = Image.open("illustrations/nn_step_1.png")
+                    nn_step_1 = Image.open("netw/illustrations/nn_step_1.png")
                     st.image(nn_step_1, caption="Bước 1: Lớp đầu vào nhận dữ liệu từ ảnh MNIST", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_1.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `netw/illustrations/nn_step_1.png`. Vui lòng chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
                 2. **Lớp ẩn (Hidden Layers)**:  
@@ -166,10 +164,10 @@ def run_mnist_neural_network_app():
                    - Ví dụ: Một lớp ẩn có thể học cách nhận diện các nét ngang hoặc vòng tròn trong chữ số.  
                 """)
                 try:
-                    nn_step_2 = Image.open("illustrations/nn_step_2.png")
+                    nn_step_2 = Image.open("netw/illustrations/nn_step_2.png")
                     st.image(nn_step_2, caption="Bước 2: Lớp ẩn trích xuất đặc trưng từ dữ liệu", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_2.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `netw/illustrations/nn_step_2.png`. Vui lòng chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
                 3. **Lớp đầu ra (Output Layer)**:  
@@ -179,10 +177,10 @@ def run_mnist_neural_network_app():
                    - Ví dụ: Đầu ra [0.05, 0.1, ..., 0.7, ...] → Dự đoán là "7" với xác suất 70%.  
                 """)
                 try:
-                    nn_step_3 = Image.open("illustrations/nn_step_3.png")
+                    nn_step_3 = Image.open("netw/illustrations/nn_step_3.png")
                     st.image(nn_step_3, caption="Bước 3: Lớp đầu ra dự đoán nhãn với Softmax", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_3.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `netw/illustrations/nn_step_3.png`. Vui lòng chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
                 4. **Huấn luyện**:  
@@ -193,10 +191,10 @@ def run_mnist_neural_network_app():
                    - Tối ưu hóa bằng thuật toán **Gradient Descent** hoặc **Adam** để điều chỉnh trọng số.  
                 """)
                 try:
-                    nn_step_4 = Image.open("illustrations/nn_step_4.png")
+                    nn_step_4 = Image.open("netw/illustrations/nn_step_4.png")
                     st.image(nn_step_4, caption="Bước 4: Huấn luyện tối ưu hóa trọng số", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_4.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `netw/illustrations/nn_step_4.png`. Vui lòng chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
                 ### Áp dụng với MNIST:
@@ -255,8 +253,7 @@ def run_mnist_neural_network_app():
                     time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
-                    st.success("Tải dữ liệu thành công!")
-                    st.write("Kích thước dữ liệu gốc:", X.shape)
+                    st.success(f"Tải dữ liệu thành công! Kích thước dữ liệu gốc: {X.shape}")
                 except Exception as e:
                     st.error(f"Không thể tải dữ liệu: {e}")
 
@@ -502,7 +499,6 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang khởi tạo mô hình {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        # Xây dựng mô hình Neural Network
                         model = Sequential()
                         model.add(Flatten(input_shape=(28, 28)))
                         for _ in range(params["hidden_layers"]):
@@ -511,7 +507,6 @@ def run_mnist_neural_network_app():
                         model.add(Dense(10, activation='softmax'))
                         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-                        # Huấn luyện mô hình
                         for i in range(10, 51, 5):
                             progress_bar.progress(i)
                             status_text.text(f"Đang huấn luyện {i}%{i % 4 * '.'}")
@@ -520,7 +515,6 @@ def run_mnist_neural_network_app():
 
                         mlflow.log_params(params)
 
-                        # Đánh giá trên tập validation
                         y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
                         y_valid_true = np.argmax(y_valid, axis=1)
                         accuracy_val = accuracy_score(y_valid_true, y_valid_pred)
@@ -532,7 +526,6 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang đánh giá validation {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        # Đánh giá trên tập test
                         y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                         y_test_true = np.argmax(y_test, axis=1)
                         accuracy_test = accuracy_score(y_test_true, y_test_pred)
@@ -564,7 +557,8 @@ def run_mnist_neural_network_app():
                             'params': params,
                             'num_samples': len(X_train),
                             'run_name': run_name,
-                            'run_id': run_id
+                            'run_id': run_id,
+                            'history': history.history  # Lưu lịch sử huấn luyện để hiển thị
                         }
 
                         status_text.empty()
@@ -582,6 +576,28 @@ def run_mnist_neural_network_app():
                 sns.heatmap(st.session_state['training_results']['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax2)
                 ax2.set_title("Confusion Matrix - Test")
                 st.pyplot(fig)
+
+                # Thêm biểu đồ Loss và Accuracy
+                if 'history' in st.session_state['training_results']:
+                    st.markdown("### Biểu đồ Loss và Accuracy trong quá trình huấn luyện")
+                    history = st.session_state['training_results']['history']
+                    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+                    ax1.plot(history['loss'], label='Train Loss')
+                    ax1.plot(history['val_loss'], label='Validation Loss')
+                    ax1.set_title("Loss qua các Epoch")
+                    ax1.set_xlabel("Epoch")
+                    ax1.set_ylabel("Loss")
+                    ax1.legend()
+                    ax1.grid(True, alpha=0.3)
+
+                    ax2.plot(history['accuracy'], label='Train Accuracy')
+                    ax2.plot(history['val_accuracy'], label='Validation Accuracy')
+                    ax2.set_title("Accuracy qua các Epoch")
+                    ax2.set_xlabel("Epoch")
+                    ax2.set_ylabel("Accuracy")
+                    ax2.legend()
+                    ax2.grid(True, alpha=0.3)
+                    st.pyplot(fig)
 
                 st.subheader("Thông tin Kết quả")
                 with st.expander("Xem chi tiết kết quả", expanded=True):
@@ -748,7 +764,7 @@ def run_mnist_neural_network_app():
                     else:
                         st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
-    # Tab 7: Thông tin huấn luyện (Cập nhật với MLflow)
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
