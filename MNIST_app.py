@@ -115,7 +115,6 @@ def run_mnist_classification_app():
             with st.spinner("Đang tải ảnh minh họa..."):
                 try:
                     mnist_image = Image.open("mnist.png")
-                    # Đặt chiều rộng ảnh là 300 pixel
                     st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", width=800)
                 except FileNotFoundError:
                     st.error("Không tìm thấy file `mnist.png`. Vui lòng đảm bảo file nằm trong cùng thư mục với code hoặc cung cấp đường dẫn chính xác.")
@@ -136,7 +135,6 @@ def run_mnist_classification_app():
             """)
             try:
                 tree_step_1 = Image.open("illustrations/tree_step_1.png")
-                # Đặt chiều rộng ảnh là 300 pixel
                 st.image(tree_step_1, caption="Bước 1: Nút gốc với toàn bộ dữ liệu MNIST", width=500)
             except FileNotFoundError:
                 st.error("Không tìm thấy file `illustrations/tree_step_1.png`. Vui lòng đảm bảo file đã được tạo.")
@@ -428,7 +426,7 @@ def run_mnist_classification_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu
+    # Tab 3: Xử lí dữ liệu (Updated)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -437,68 +435,77 @@ def run_mnist_classification_app():
             if "data_original" not in st.session_state:
                 X, y = st.session_state['data']
                 st.session_state["data_original"] = (X.copy(), y.copy())
-           
+            
+            # Retrieve current_data with fallback
             current_data = st.session_state.get("data_processed", st.session_state["data_original"])
-            X_current, y_current = current_data
-
-            st.subheader("Dữ liệu Gốc")
-            fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-            for i, ax in enumerate(axes.flat):
-                ax.imshow(st.session_state["data_original"][0].iloc[i].values.reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {st.session_state['data_original'][1].iloc[i]}")
-                ax.axis("off")
-            st.pyplot(fig)
-
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button("Normalization", key="normalize_btn"):
-                    with st.spinner("Đang chuẩn hóa dữ liệu..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-
-                        for i in range(0, 21, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chuẩn bị dữ liệu {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        X_norm = X_current / 255.0
-
-                        for i in range(20, 61, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chuẩn hóa {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        st.session_state["data_processed"] = (X_norm, y_current)
-
-                        for i in range(60, 101, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-
-                        status_text.empty()
-                        progress_bar.empty()
-                        st.success("Đã chuẩn hóa dữ liệu!")
-                        st.rerun()
-            with col2:
-                st.markdown("""
-                    <div class="tooltip">
-                        ?
-                        <span class="tooltiptext">
-                            Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
-                            Công dụng: Đảm bảo thang đo đồng nhất, đặc biệt quan trọng cho SVM.
-                        </span>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            if "data_processed" in st.session_state:
-                X_processed, y_processed = st.session_state["data_processed"]
-                st.subheader("Dữ liệu đã xử lý")
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y_processed.iloc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
+            
+            # Validate current_data
+            if not isinstance(current_data, (tuple, list)) or len(current_data) != 2:
+                st.error("Lỗi: Dữ liệu không hợp lệ trong st.session_state. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu.")
             else:
-                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
+                try:
+                    X_current, y_current = current_data
+                except (ValueError, TypeError) as e:
+                    st.error(f"Lỗi khi truy xuất dữ liệu: {e}. Dữ liệu có thể không ở định dạng đúng (X, y).")
+                else:
+                    st.subheader("Dữ liệu Gốc")
+                    fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                    for i, ax in enumerate(axes.flat):
+                        ax.imshow(st.session_state["data_original"][0].iloc[i].values.reshape(28, 28), cmap='gray')
+                        ax.set_title(f"Label: {st.session_state['data_original'][1].iloc[i]}")
+                        ax.axis("off")
+                    st.pyplot(fig)
+
+                    col1, col2 = st.columns([3, 1])
+                    with col1:
+                        if st.button("Normalization", key="normalize_btn"):
+                            with st.spinner("Đang chuẩn hóa dữ liệu..."):
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+
+                                for i in range(0, 21, 5):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Đang chuẩn bị dữ liệu {i}%{i % 4 * '.'}")
+                                    time.sleep(0.1)
+                                X_norm = X_current / 255.0
+
+                                for i in range(20, 61, 5):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Đang chuẩn hóa {i}%{i % 4 * '.'}")
+                                    time.sleep(0.1)
+                                st.session_state["data_processed"] = (X_norm, y_current)
+
+                                for i in range(60, 101, 5):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
+                                    time.sleep(0.1)
+
+                                status_text.empty()
+                                progress_bar.empty()
+                                st.success("Đã chuẩn hóa dữ liệu!")
+                                st.rerun()
+                    with col2:
+                        st.markdown("""
+                            <div class="tooltip">
+                                ?
+                                <span class="tooltiptext">
+                                    Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
+                                    Công dụng: Đảm bảo thang đo đồng nhất, đặc biệt quan trọng cho SVM.
+                                </span>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                    if "data_processed" in st.session_state:
+                        X_processed, y_processed = st.session_state["data_processed"]
+                        st.subheader("Dữ liệu đã xử lý")
+                        fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                        for i, ax in enumerate(axes.flat):
+                            ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                            ax.set_title(f"Label: {y_processed.iloc[i]}")
+                            ax.axis("off")
+                        st.pyplot(fig)
+                    else:
+                        st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
@@ -794,10 +801,9 @@ def run_mnist_classification_app():
                         if not is_normalized:
                             sample = preprocess_input(sample)
                         
-                        # Dự đoán và tính confidence
                         prediction = st.session_state['model'].predict(sample)[0]
                         proba = st.session_state['model'].predict_proba(sample)[0]
-                        confidence = max(proba) * 100  # Confidence là xác suất cao nhất nhân 100 để ra phần trăm
+                        confidence = max(proba) * 100
                         y_true = y_test.iloc[idx]
                         
                         for i in range(50, 101, 5):
@@ -830,10 +836,9 @@ def run_mnist_classification_app():
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
                             
-                            # Dự đoán và tính confidence
                             prediction = st.session_state['model'].predict(img_array)[0]
                             proba = st.session_state['model'].predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence là xác suất cao nhất nhân 100 để ra phần trăm
+                            confidence = max(proba) * 100
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -867,7 +872,6 @@ def run_mnist_classification_app():
                                 status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
                             
-                            # Kiểm tra và xử lý dữ liệu từ canvas
                             image_data = canvas_result.image_data
                             if image_data is None or image_data.size == 0:
                                 st.warning("Không có dữ liệu từ canvas. Vui lòng vẽ một số!")
@@ -875,16 +879,14 @@ def run_mnist_classification_app():
                                 status_text.empty()
                                 return
                             
-                            # Chuyển đổi dữ liệu từ RGBA sang grayscale
                             img = Image.fromarray((image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
                             
-                            # Dự đoán và tính confidence
                             prediction = st.session_state['model'].predict(img_array)[0]
                             proba = st.session_state['model'].predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence là xác suất cao nhất nhân 100 để ra phần trăm
+                            confidence = max(proba) * 100
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
@@ -899,7 +901,7 @@ def run_mnist_classification_app():
                     else:
                         st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
-    # Tab 7: Thông tin huấn luyện (Cập nhật với MLflow)
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
@@ -988,10 +990,10 @@ def run_mnist_classification_app():
                     else:
                         st.write("Không có kết quả được ghi nhận.")
 
-                    st.subheader("Truy cập MLflow UI")
-                    if st.button("Mở MLflow UI trên Dagshub"):
-                        st.write(f"Đang chuyển hướng tới: https://dagshub.com/huykibo/streamlit_mlflow.mlflow")
-                        st.markdown(f'<meta http-equiv="refresh" content="0;URL=https://dagshub.com/huykibo/streamlit_mlflow.mlflow">', unsafe_allow_html=True)
+            st.subheader("Truy cập MLflow UI")
+            mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
+            if st.button("Mở MLflow UI trên Dagshub"):
+                st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
