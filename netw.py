@@ -26,7 +26,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
-        mlflow.set_experiment("MNIST_Neural_Network")
+        mlflow.set_experiment("MNIST_Neural_Network")  # Đảm bảo experiment được đặt đúng tên
     except KeyError as e:
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
         st.stop()
@@ -75,7 +75,7 @@ def run_mnist_neural_network_app():
     tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh Giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # Tab 1: Thông tin
+    # Tab 1: Thông tin (Đã cập nhật)
     with tab_info:
         st.header("Giới thiệu về Ứng dụng và Neural Network với MNIST")
         info_option = st.selectbox(
@@ -96,32 +96,34 @@ def run_mnist_neural_network_app():
             if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
                 st.subheader("1. Ứng dụng này là gì và mục tiêu của nó?")
                 st.markdown("""
-                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu MNIST, sử dụng **Neural Network (Mạng nơ-ron nhân tạo)** – một thuật toán học sâu mạnh mẽ. MNIST bao gồm 70,000 ảnh chữ số từ 0 đến 9, mỗi ảnh có kích thước 28x28 pixel, tương đương với 784 đặc trưng (pixel). Mục tiêu của ứng dụng là xây dựng và huấn luyện một mô hình mạng nơ-ron để nhận diện chính xác các chữ số này, đồng thời cung cấp một công cụ trực quan để học tập, thử nghiệm và đánh giá hiệu quả của thuật toán học sâu.
+                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, sử dụng **Neural Network (Mạng nơ-ron nhân tạo)** – một mô hình học sâu phổ biến. Ứng dụng này cho phép bạn trải nghiệm toàn bộ quy trình: từ tải dữ liệu, xử lý, huấn luyện mô hình, đến dự đoán và đánh giá kết quả.  
 
-                Để dễ hình dung:  
-                - **784 đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng một vector 784 chiều, với mỗi chiều là giá trị độ sáng của một pixel (từ 0 đến 255).  
-                - **70,000 mẫu**: Tổng số ảnh trong tập dữ liệu, bao gồm cả tập huấn luyện và kiểm tra.  
-                - **Nhiệm vụ**: Dự đoán nhãn (từ 0 đến 9) của mỗi ảnh dựa trên các đặc trưng pixel.
+                **Mục tiêu chính**:  
+                - Xây dựng một mạng nơ-ron nhận diện chính xác các chữ số từ 0 đến 9 dựa trên ảnh 28x28 pixel.  
+                - Cung cấp giao diện trực quan để học tập và thử nghiệm với học sâu.  
+                - Theo dõi hiệu suất qua MLflow và minh họa cách mạng nơ-ron hoạt động qua từng bước.
                 """)
 
             elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
                 st.subheader("2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
                 st.markdown("""
-                MNIST được tạo ra bởi Yann LeCun và các cộng sự, là một tập dữ liệu chuẩn trong nghiên cứu học máy và thị giác máy tính. Các ảnh trong MNIST được thu thập từ chữ số viết tay của học sinh trung học và nhân viên điều tra dân số Mỹ, sau đó được chuẩn hóa thành kích thước 28x28 pixel và chuyển thành thang độ xám (grayscale).  
+                **MNIST** (Modified National Institute of Standards and Technology) là tập dữ liệu chuẩn trong học máy, bao gồm 70,000 ảnh chữ số viết tay (0-9), mỗi ảnh có kích thước 28x28 pixel, tương đương 784 đặc trưng (giá trị pixel từ 0 đến 255).  
 
-                **Ý nghĩa của MNIST**:  
-                - Là bài toán cơ bản để kiểm tra hiệu quả của các thuật toán phân loại, đặc biệt là mạng nơ-ron.  
-                - Dữ liệu đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt giữa các lớp tương tự (ví dụ: "4" và "9").  
-                - Phù hợp cho cả người mới bắt đầu và các nhà nghiên cứu muốn thử nghiệm các mô hình học sâu phức tạp hơn.
+                **Đặc điểm**:  
+                - **Kích thước**: 60,000 mẫu huấn luyện + 10,000 mẫu kiểm tra.  
+                - **Định dạng**: Ảnh thang độ xám (grayscale), mỗi pixel biểu diễn độ sáng.  
+                - **Nguồn gốc**: Chữ số viết tay từ học sinh và nhân viên điều tra dân số Mỹ.  
+
+                **Ý nghĩa**:  
+                - Là bài toán "Hello World" của học sâu, giúp kiểm tra hiệu quả mô hình như Neural Network.  
+                - Dữ liệu đơn giản nhưng đủ thách thức để phân biệt các chữ số tương tự (ví dụ: "3" và "8").  
                 """)
                 st.subheader("Minh họa dữ liệu MNIST")
                 with st.spinner("Đang tải ảnh minh họa..."):
                     try:
-                        # Thử tải ảnh mnist.png từ thư mục hiện tại
                         mnist_image = Image.open("mnist.png")
-                        st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", use_container_width=True)
+                        st.image(mnist_image, caption="Ảnh minh họa các chữ số từ 0 đến 9 trong MNIST", use_container_width=True)
                     except FileNotFoundError:
-                        # Nếu không tìm thấy mnist.png, tạo ảnh minh họa từ dữ liệu MNIST (nếu đã tải)
                         if 'full_data' in st.session_state:
                             X, y = st.session_state['full_data']
                             fig, axes = plt.subplots(1, 10, figsize=(20, 2))
@@ -133,93 +135,88 @@ def run_mnist_neural_network_app():
                             st.pyplot(fig)
                             st.caption("Ảnh minh họa được tạo từ dữ liệu MNIST do không tìm thấy file `mnist.png`.")
                         else:
-                            st.error("Không tìm thấy file `mnist.png`. Vui lòng đặt file vào thư mục hiện tại hoặc tải dữ liệu MNIST trước.")
-                    except Exception as e:
-                        st.error(f"Lỗi khi tải ảnh: {e}")
+                            st.error("Không tìm thấy file `mnist.png`. Vui lòng tải dữ liệu trước hoặc đặt file vào thư mục hiện tại.")
 
             elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
                 st.subheader("3. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
-                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học sâu mô phỏng cách hoạt động của não bộ con người, bao gồm các lớp nơ-ron (neurons) kết nối với nhau để xử lý dữ liệu và đưa ra dự đoán. Với MNIST, mạng nơ-ron nhận đầu vào là 784 đặc trưng (pixel) và trả về xác suất cho 10 nhãn (0-9).
+                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học sâu mô phỏng não bộ, gồm các lớp nơ-ron kết nối để xử lý dữ liệu và đưa ra dự đoán. Với MNIST, mạng nơ-ron nhận đầu vào là vector 784 chiều (ảnh 28x28 pixel) và trả về xác suất cho 10 nhãn (0-9). Dưới đây là cách nó hoạt động qua từng bước:
+                """)
 
-                ### Cách hoạt động chi tiết:
-                1. **Lớp đầu vào (Input Layer)**:  
-                   - Nhận dữ liệu thô: vector 784 chiều từ ảnh 28x28 pixel.  
-                   - Ví dụ: Một ảnh số "3" được biểu diễn bằng các giá trị pixel từ 0 (đen) đến 255 (trắng).  
+                st.markdown("""
+                ### 1. Lớp đầu vào (Input Layer)
+                - **Nhiệm vụ**: Nhận dữ liệu thô từ ảnh MNIST.  
+                - **Chi tiết**: Một ảnh 28x28 pixel được "duỗi" thành vector 784 chiều, với mỗi giá trị từ 0 (đen) đến 255 (trắng).  
+                - **Ví dụ**: Ảnh số "5" dưới đây được chuyển thành vector để mạng nơ-ron xử lý.  
                 """)
                 try:
-                    nn_step_1 = Image.open("illustrations/nn_step_1.png")
+                    nn_step_1 = Image.open("netw/illustrations/nn_step_1.png")
                     st.image(nn_step_1, caption="Bước 1: Lớp đầu vào nhận dữ liệu từ ảnh MNIST", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_1.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `nn_step_1.png`. Chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
-                2. **Lớp ẩn (Hidden Layers)**:  
-                   - Các lớp này học cách trích xuất đặc trưng từ dữ liệu đầu vào thông qua trọng số và hàm kích hoạt (activation function).  
-                   - Công thức tính tại mỗi nơ-ron:  
-                     $$ z = w \\cdot x + b $$  
-                     $$ a = \\sigma(z) $$  
-                     - $w$: Trọng số (weights).  
-                     - $x$: Đầu vào (input).  
-                     - $b$: Độ lệch (bias).  
-                     - $\\sigma$: Hàm kích hoạt (ví dụ: ReLU hoặc Sigmoid).  
-                   - Ví dụ: Một lớp ẩn có thể học cách nhận diện các nét ngang hoặc vòng tròn trong chữ số.  
+                ### 2. Lớp ẩn (Hidden Layers)
+                - **Nhiệm vụ**: Trích xuất đặc trưng từ dữ liệu đầu vào.  
+                - **Chi tiết**: Mỗi nơ-ron trong lớp ẩn tính toán:  
+                  $$ z = w \\cdot x + b $$  
+                  $$ a = \\sigma(z) $$  
+                  - $w$: Trọng số (weights).  
+                  - $x$: Đầu vào (input).  
+                  - $b$: Độ lệch (bias).  
+                  - $\\sigma$: Hàm kích hoạt (ReLU hoặc Sigmoid).  
+                - **Ví dụ**: Các lớp ẩn học cách nhận diện nét ngang, nét cong trong chữ số.  
                 """)
                 try:
-                    nn_step_2 = Image.open("illustrations/nn_step_2.png")
+                    nn_step_2 = Image.open("netw/illustrations/nn_step_2.png")
                     st.image(nn_step_2, caption="Bước 2: Lớp ẩn trích xuất đặc trưng từ dữ liệu", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_2.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `nn_step_2.png`. Chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
-                3. **Lớp đầu ra (Output Layer)**:  
-                   - Bao gồm 10 nơ-ron, mỗi nơ-ron đại diện cho một chữ số (0-9).  
-                   - Sử dụng hàm **Softmax** để chuyển đổi đầu ra thành xác suất:  
-                     $$ P(y=i) = \\frac{e^{z_i}}{\\sum_{j=0}^{9} e^{z_j}} $$  
-                   - Ví dụ: Đầu ra [0.05, 0.1, ..., 0.7, ...] → Dự đoán là "7" với xác suất 70%.  
+                ### 3. Lớp đầu ra (Output Layer)
+                - **Nhiệm vụ**: Dự đoán nhãn (0-9) bằng cách tính xác suất.  
+                - **Chi tiết**: Sử dụng hàm **Softmax**:  
+                  $$ P(y=i) = \\frac{e^{z_i}}{\\sum_{j=0}^{9} e^{z_j}} $$  
+                  - Mỗi nơ-ron đại diện cho một chữ số, giá trị cao nhất là dự đoán.  
+                - **Ví dụ**: Đầu ra có xác suất cao nhất cho số "5" (60%) như hình dưới.  
                 """)
                 try:
-                    nn_step_3 = Image.open("illustrations/nn_step_3.png")
+                    nn_step_3 = Image.open("netw/illustrations/nn_step_3.png")
                     st.image(nn_step_3, caption="Bước 3: Lớp đầu ra dự đoán nhãn với Softmax", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_3.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `nn_step_3.png`. Chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
-                4. **Huấn luyện**:  
-                   - Sử dụng hàm mất mát (loss function) như **Cross-Entropy**:  
-                     $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} y_i \\log(\\hat{y}_i) $$  
-                     - $y_i$: Nhãn thực tế (one-hot encoded).  
-                     - $\\hat{y}_i$: Xác suất dự đoán.  
-                   - Tối ưu hóa bằng thuật toán **Gradient Descent** hoặc **Adam** để điều chỉnh trọng số.  
+                ### 4. Huấn luyện (Training)
+                - **Nhiệm vụ**: Tối ưu hóa trọng số để giảm sai số.  
+                - **Chi tiết**: Sử dụng hàm mất mát **Cross-Entropy**:  
+                  $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} y_i \\log(\\hat{y}_i) $$  
+                  - Tối ưu bằng **Gradient Descent** hoặc **Adam**.  
+                - **Ví dụ**: Loss giảm và Accuracy tăng qua các epoch như biểu đồ dưới.  
                 """)
                 try:
-                    nn_step_4 = Image.open("illustrations/nn_step_4.png")
+                    nn_step_4 = Image.open("netw/illustrations/nn_step_4.png")
                     st.image(nn_step_4, caption="Bước 4: Huấn luyện tối ưu hóa trọng số", use_container_width=True)
                 except FileNotFoundError:
-                    st.info("Không tìm thấy file `illustrations/nn_step_4.png`. Vui lòng tạo ảnh minh họa nếu cần.")
+                    st.warning("Không tìm thấy file `nn_step_4.png`. Chạy file `netw/netw.py` để tạo ảnh minh họa.")
 
                 st.markdown("""
-                ### Áp dụng với MNIST:
-                - Mạng nơ-ron học cách ánh xạ từ 784 pixel sang nhãn 0-9 thông qua các lớp ẩn.  
-
-                ### Ưu điểm:
-                - Khả năng học các đặc trưng phức tạp, hiệu quả cao với dữ liệu phi tuyến như MNIST.  
-                - Linh hoạt với kiến trúc mạng (số lớp, số nơ-ron).  
-
-                ### Nhược điểm:
-                - Yêu cầu dữ liệu lớn và thời gian huấn luyện lâu hơn so với các mô hình đơn giản.  
-                - Cần chuẩn hóa dữ liệu và điều chỉnh siêu tham số cẩn thận.
+                ### Tổng kết:
+                - **Ưu điểm**: Neural Network học được đặc trưng phức tạp, phù hợp với dữ liệu như MNIST.  
+                - **Nhược điểm**: Cần nhiều dữ liệu và thời gian huấn luyện, dễ bị overfitting nếu không điều chỉnh tốt.
                 """)
 
             elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
                 st.subheader("4. Công thức đánh giá độ chính xác (Accuracy)")
                 st.markdown("""
-                Độ chính xác (Accuracy) đo tỷ lệ dự đoán đúng:  
+                **Accuracy** đo tỷ lệ dự đoán đúng của mô hình:  
                 $$ Accuracy = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Ví dụ**: Dự đoán đúng 92/100 ảnh → Accuracy = 92%.  
+                - **Ví dụ**: Nếu mô hình dự đoán đúng 9,500/10,000 ảnh trong tập Test, Accuracy = 95%.  
 
-                **Ý nghĩa**:  
-                - Với Neural Network, Accuracy đo khả năng mạng phân loại chính xác các chữ số dựa trên đặc trưng pixel đã học.
+                **Ý nghĩa với MNIST**:  
+                - Accuracy cao (ví dụ: >90%) cho thấy mạng nơ-ron đã học tốt cách phân biệt các chữ số.  
+                - Kết quả này được minh họa trong bước huấn luyện (xem biểu đồ Accuracy ở trên).
                 """)
 
     # Tab 2: Tải dữ liệu
@@ -255,8 +252,7 @@ def run_mnist_neural_network_app():
                     time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
-                    st.success("Tải dữ liệu thành công!")
-                    st.write("Kích thước dữ liệu gốc:", X.shape)
+                    st.success(f"Tải dữ liệu thành công! Kích thước dữ liệu gốc: {X.shape}")
                 except Exception as e:
                     st.error(f"Không thể tải dữ liệu: {e}")
 
@@ -502,7 +498,6 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang khởi tạo mô hình {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        # Xây dựng mô hình Neural Network
                         model = Sequential()
                         model.add(Flatten(input_shape=(28, 28)))
                         for _ in range(params["hidden_layers"]):
@@ -511,7 +506,6 @@ def run_mnist_neural_network_app():
                         model.add(Dense(10, activation='softmax'))
                         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-                        # Huấn luyện mô hình
                         for i in range(10, 51, 5):
                             progress_bar.progress(i)
                             status_text.text(f"Đang huấn luyện {i}%{i % 4 * '.'}")
@@ -520,7 +514,6 @@ def run_mnist_neural_network_app():
 
                         mlflow.log_params(params)
 
-                        # Đánh giá trên tập validation
                         y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
                         y_valid_true = np.argmax(y_valid, axis=1)
                         accuracy_val = accuracy_score(y_valid_true, y_valid_pred)
@@ -532,7 +525,6 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang đánh giá validation {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        # Đánh giá trên tập test
                         y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                         y_test_true = np.argmax(y_test, axis=1)
                         accuracy_test = accuracy_score(y_test_true, y_test_pred)
@@ -564,7 +556,8 @@ def run_mnist_neural_network_app():
                             'params': params,
                             'num_samples': len(X_train),
                             'run_name': run_name,
-                            'run_id': run_id
+                            'run_id': run_id,
+                            'history': history.history  # Lưu lịch sử huấn luyện để hiển thị
                         }
 
                         status_text.empty()
@@ -582,6 +575,28 @@ def run_mnist_neural_network_app():
                 sns.heatmap(st.session_state['training_results']['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax2)
                 ax2.set_title("Confusion Matrix - Test")
                 st.pyplot(fig)
+
+                # Thêm biểu đồ Loss và Accuracy
+                if 'history' in st.session_state['training_results']:
+                    st.markdown("### Biểu đồ Loss và Accuracy trong quá trình huấn luyện")
+                    history = st.session_state['training_results']['history']
+                    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+                    ax1.plot(history['loss'], label='Train Loss')
+                    ax1.plot(history['val_loss'], label='Validation Loss')
+                    ax1.set_title("Loss qua các Epoch")
+                    ax1.set_xlabel("Epoch")
+                    ax1.set_ylabel("Loss")
+                    ax1.legend()
+                    ax1.grid(True, alpha=0.3)
+
+                    ax2.plot(history['accuracy'], label='Train Accuracy')
+                    ax2.plot(history['val_accuracy'], label='Validation Accuracy')
+                    ax2.set_title("Accuracy qua các Epoch")
+                    ax2.set_xlabel("Epoch")
+                    ax2.set_ylabel("Accuracy")
+                    ax2.legend()
+                    ax2.grid(True, alpha=0.3)
+                    st.pyplot(fig)
 
                 st.subheader("Thông tin Kết quả")
                 with st.expander("Xem chi tiết kết quả", expanded=True):
@@ -748,7 +763,7 @@ def run_mnist_neural_network_app():
                     else:
                         st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
-    # Tab 7: Thông tin huấn luyện (Cập nhật với MLflow)
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
@@ -761,7 +776,12 @@ def run_mnist_neural_network_app():
             if not experiment:
                 st.error("Không tìm thấy experiment 'MNIST_Neural_Network'. Vui lòng kiểm tra lại MLflow tracking URI.")
             else:
-                experiment_id = experiment.experiment_id
+                experiment_id = experiment.experiment_id  # Lấy experiment_id tự động
+                # Xác nhận experiment_id = 6 dựa trên thông tin bạn cung cấp
+                if experiment_id != "6":
+                    st.warning(f"Experiment ID hiện tại là {experiment_id}. Đã phát hiện Experiment ID 6 từ thông tin bạn cung cấp. Sử dụng ID 6 thay thế.")
+                    experiment_id = "6"
+                
                 runs = client.search_runs(experiment_ids=[experiment_id], order_by=["attributes.start_time DESC"])
                 
                 if not runs:
