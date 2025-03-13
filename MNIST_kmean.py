@@ -59,35 +59,15 @@ def run_mnist_clustering_app():
 
         st.subheader("Minh họa dữ liệu MNIST")
         st.markdown("""
-        Dưới đây là $10$ ảnh mẫu từ tập dữ liệu MNIST (từ $0$ đến $9$) để bạn hình dung. Mỗi ảnh là một chữ số viết tay được biểu diễn dưới dạng ma trận $28 \\times 28$ pixel.
+        Dưới đây là ảnh minh họa $10$ chữ số từ $0$ đến $9$ từ tập dữ liệu MNIST để bạn hình dung. Mỗi chữ số được biểu diễn dưới dạng ma trận $28 \\times 28$ pixel.
         """, unsafe_allow_html=True)
 
-        with st.spinner("Đang tải ảnh mẫu..."):
-            mnist = openml.datasets.get_dataset(554)
-            X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
-            
-            sample_images = []
-            sample_labels = []
-            for digit in range(10):
-                digit_indices = np.where(y == str(digit))[0]
-                if len(digit_indices) > 0:
-                    selected_idx = digit_indices[0]
-                    sample_images.append(X.iloc[selected_idx].values)
-                    sample_labels.append(y.iloc[selected_idx])
-            
-            fig, axes = plt.subplots(2, 5, figsize=(15, 6))
-            for i, (img, label) in enumerate(zip(sample_images, sample_labels)):
-                row = i // 5
-                col = i % 5
-                axes[row, col].imshow(img.reshape(28, 28), cmap='gray')
-                axes[row, col].set_title(f'Nhãn: {label}')
-                axes[row, col].axis('off')
-            plt.tight_layout()
-            st.pyplot(fig)
-            
-            st.markdown("""
-            - **Ghi chú**: Mỗi ảnh là một ma trận $28 \\times 28$ pixel, với giá trị từ $0$ (trắng) đến $255$ (đen). Nhãn thực tế ($0$-$9$) chỉ được dùng để minh họa, không sử dụng trong phân cụm.
-            """, unsafe_allow_html=True)
+        # Sử dụng ảnh tĩnh "mnist.png" thay vì tải dữ liệu
+        st.image("mnist.png", caption="10 chữ số mẫu từ tập dữ liệu MNIST (0-9)", use_container_width=True)
+        
+        st.markdown("""
+        - **Ghi chú**: Mỗi ảnh là một ma trận $28 \\times 28$ pixel, với giá trị từ $0$ (trắng) đến $255$ (đen). Nhãn thực tế ($0$-$9$) chỉ được dùng để minh họa, không sử dụng trong phân cụm.
+        """, unsafe_allow_html=True)
 
         st.subheader("2. Tìm hiểu về K-means và DBSCAN")
         st.markdown("Chọn một phần để xem chi tiết nhé:")

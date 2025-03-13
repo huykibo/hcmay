@@ -57,7 +57,7 @@ def run_mnist_dimension_reduction_app():
     # Tabs for navigation
     tab_info, tab_load, tab_visualize, tab_log_info = st.tabs(["Thông tin", "Tải dữ liệu", "Trực quan hóa", "Theo dõi kết quả"])
 
-    # Tab Thông tin (Cập nhật với thông tin MNIST trong selectbox)
+    # Tab Thông tin
     with tab_info:
         st.header("Giới thiệu về PCA và t-SNE")
         st.markdown("""
@@ -93,9 +93,8 @@ def run_mnist_dimension_reduction_app():
             - **Thách thức**: Sự biến thiên lớn trong cách viết tay (kích thước, độ dày nét, góc nghiêng) tạo ra thử thách cho các mô hình nhận diện.  
             """, unsafe_allow_html=True)
 
-            # Thêm ảnh minh họa MNIST (mnist.png)
             st.markdown("### Minh họa tập dữ liệu MNIST")
-            mnist_image_path = os.path.join("mnist.png")  # Đường dẫn tới ảnh
+            mnist_image_path = os.path.join("mnist.png")
             try:
                 img_resized = resize_image(mnist_image_path, size=(900, 500))
                 st.image(img_resized, caption="Ví dụ một số hình ảnh từ tập dữ liệu MNIST", use_container_width=False)
@@ -348,7 +347,7 @@ def run_mnist_dimension_reduction_app():
               - Chấp nhận thời gian xử lý lâu để có kết quả chi tiết.  
             """, unsafe_allow_html=True)
 
-  # Tab Tải dữ liệu (giữ nguyên)
+    # Tab Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu MNIST")
         st.markdown("""
@@ -428,7 +427,7 @@ def run_mnist_dimension_reduction_app():
                 except Exception as e:
                     st.error(f"Lỗi khi xử lý dữ liệu: {e}")
 
-    # Tab Trực quan hóa (Cập nhật)
+    # Tab Trực quan hóa (Đã cập nhật)
     with tab_visualize:
         st.header("Trực quan hóa Dữ liệu MNIST")
         st.markdown("""
@@ -449,7 +448,8 @@ def run_mnist_dimension_reduction_app():
                 reduce_method = st.selectbox(
                     "Chọn phương pháp giảm chiều:",
                     ["PCA", "t-SNE"],
-                    help="PCA nhanh và tuyến tính; t-SNE chậm hơn nhưng giữ cấu trúc cục bộ."
+                    help="PCA nhanh và tuyến tính; t-SNE chậm hơn nhưng giữ cấu trúc cục bộ.",
+                    key="reduce_method_select"
                 )
 
             suggestion_data_pca = {
@@ -487,7 +487,8 @@ def run_mnist_dimension_reduction_app():
                         [2, 3],
                         index=0,
                         label_visibility="collapsed",
-                        help=f"Gợi ý: {suggestion_data_pca['n_components'][range_idx]}. Giá trị tối ưu tự động: {suggested_n_components}"
+                        help=f"Gợi ý: {suggestion_data_pca['n_components'][range_idx]}. Giá trị tối ưu tự động: {suggested_n_components}",
+                        key="pca_n_components"
                     )
                     params["n_components"] = n_components
                 else:
@@ -497,21 +498,24 @@ def run_mnist_dimension_reduction_app():
                         [2, 3],
                         index=0,
                         label_visibility="collapsed",
-                        help=f"Gợi ý: {suggestion_data_tsne['n_components'][range_idx]}. Giá trị tối ưu tự động: {suggested_n_components}"
+                        help=f"Gợi ý: {suggestion_data_tsne['n_components'][range_idx]}. Giá trị tối ưu tự động: {suggested_n_components}",
+                        key="tsne_n_components"
                     )
                     st.markdown("**Perplexity**", unsafe_allow_html=True)
                     perplexity = st.number_input(
                         "",
                         min_value=5.0, max_value=50.0, value=float(suggested_perplexity), step=1.0,
                         label_visibility="collapsed",
-                        help=f"Gợi ý: {suggestion_data_tsne['perplexity'][range_idx]}. Giá trị tối ưu tự động: {suggested_perplexity}"
+                        help=f"Gợi ý: {suggestion_data_tsne['perplexity'][range_idx]}. Giá trị tối ưu tự động: {suggested_perplexity}",
+                        key="tsne_perplexity"
                     )
                     st.markdown("**Learning Rate**", unsafe_allow_html=True)
                     learning_rate = st.number_input(
                         "",
                         min_value=10.0, max_value=1000.0, value=float(suggested_learning_rate), step=10.0,
                         label_visibility="collapsed",
-                        help=f"Gợi ý: {suggestion_data_tsne['learning_rate'][range_idx]}. Giá trị tối ưu tự động: {suggested_learning_rate}"
+                        help=f"Gợi ý: {suggestion_data_tsne['learning_rate'][range_idx]}. Giá trị tối ưu tự động: {suggested_learning_rate}",
+                        key="tsne_learning_rate"
                     )
                     params["n_components"] = n_components
                     params["perplexity"] = perplexity
@@ -527,47 +531,19 @@ def run_mnist_dimension_reduction_app():
             else:
                 st.table(suggestion_data_tsne)
 
-            # Hiển thị kết quả cũ nếu có trong session_state
-            if 'visualization_result' in st.session_state and st.session_state['visualization_result']['reduce_method'] == reduce_method:
-                result = st.session_state['visualization_result']
-                st.subheader(f"Kết quả Trực quan hóa ({result['n_components']}D)")
-                st.plotly_chart(result['fig'], use_container_width=True)
+            # Kiểm tra nếu có thay đổi trong phương pháp hoặc tham số thì xóa kết quả cũ
+            current_config = {
+                'reduce_method': reduce_method,
+                'params': params
+            }
+            if 'last_config' not in st.session_state:
+                st.session_state['last_config'] = current_config
+            elif st.session_state['last_config'] != current_config:
+                if 'visualization_result' in st.session_state:
+                    del st.session_state['visualization_result']
+                st.session_state['last_config'] = current_config
 
-                st.subheader("Hiểu biểu đồ này như thế nào?")
-                if result['reduce_method'] == "PCA":
-                    st.markdown(f"""
-                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng PCA.  
-                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
-                    - **Ý nghĩa**: PCA giữ cấu trúc toàn cục, các điểm cùng nhãn nên nằm gần nhau nếu dữ liệu có tính tuyến tính.  
-                    - **Tỷ lệ phương sai giải thích**: ${result['explained_variance_ratio']:.4f}$ (phần dữ liệu được giữ lại).  
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"""
-                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng t-SNE.  
-                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
-                    - **Ý nghĩa**: t-SNE giữ cấu trúc cục bộ, các điểm cùng nhãn thường tạo thành các nhóm rõ ràng hơn PCA.  
-                    """, unsafe_allow_html=True)
-
-                st.subheader("Thông tin chi tiết")
-                with st.expander("Xem chi tiết kết quả", expanded=True):
-                    st.markdown("**Thông tin lần chạy:**")
-                    st.write(f"- Tên lần chạy: {result['run_name']}")
-                    st.write(f"- ID lần chạy: {result['run_id']}")
-
-                    st.markdown("**Cài đặt:**")
-                    st.write(f"- Phương pháp: {result['reduce_method']}")
-                    st.write(f"- Số chiều: {result['n_components']}")
-                    if result['reduce_method'] == "t-SNE":
-                        st.write(f"- Perplexity: {result['perplexity']}")
-                        st.write(f"- Learning Rate: {result['learning_rate']}")
-                    st.write(f"- Thời gian chạy: {result['training_time']:.2f} giây")
-
-                    st.markdown("**Kết quả chi tiết:**")
-                    if result['reduce_method'] == "PCA":
-                        st.write(f"- Tỷ lệ phương sai giải thích: {result['explained_variance_ratio']:.4f}")
-                    st.write(f"- Số mẫu đã xử lý: {num_samples}")
-
-            # Nút giảm chiều
+            # Nút giảm chiều đặt sau gợi ý tham số
             if st.button("Bắt đầu giảm chiều"):
                 try:
                     with st.spinner("Đang xử lý..."):
@@ -654,7 +630,47 @@ def run_mnist_dimension_reduction_app():
                 except Exception as e:
                     st.error(f"Lỗi khi thực hiện giảm chiều: {e}")
 
-    # Tab Theo dõi kết quả (giữ nguyên)
+            # Hiển thị kết quả cũ nếu có và không có thay đổi
+            if 'visualization_result' in st.session_state:
+                result = st.session_state['visualization_result']
+                st.subheader(f"Kết quả Trực quan hóa ({result['n_components']}D)")
+                st.plotly_chart(result['fig'], use_container_width=True)
+
+                st.subheader("Hiểu biểu đồ này như thế nào?")
+                if result['reduce_method'] == "PCA":
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng PCA.  
+                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
+                    - **Ý nghĩa**: PCA giữ cấu trúc toàn cục, các điểm cùng nhãn nên nằm gần nhau nếu dữ liệu có tính tuyến tính.  
+                    - **Tỷ lệ phương sai giải thích**: ${result['explained_variance_ratio']:.4f}$ (phần dữ liệu được giữ lại).  
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, giảm từ $784$ chiều xuống ${result['n_components']}D$ bằng t-SNE.  
+                    - **Màu sắc**: Mỗi nhãn ($0$-$9$) có một màu riêng.  
+                    - **Ý nghĩa**: t-SNE giữ cấu trúc cục bộ, các điểm cùng nhãn thường tạo thành các nhóm rõ ràng hơn PCA.  
+                    """, unsafe_allow_html=True)
+
+                st.subheader("Thông tin chi tiết")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    st.markdown("**Thông tin lần chạy:**")
+                    st.write(f"- Tên lần chạy: {result['run_name']}")
+                    st.write(f"- ID lần chạy: {result['run_id']}")
+
+                    st.markdown("**Cài đặt:**")
+                    st.write(f"- Phương pháp: {result['reduce_method']}")
+                    st.write(f"- Số chiều: {result['n_components']}")
+                    if result['reduce_method'] == "t-SNE":
+                        st.write(f"- Perplexity: {result['perplexity']}")
+                        st.write(f"- Learning Rate: {result['learning_rate']}")
+                    st.write(f"- Thời gian chạy: {result['training_time']:.2f} giây")
+
+                    st.markdown("**Kết quả chi tiết:**")
+                    if result['reduce_method'] == "PCA":
+                        st.write(f"- Tỷ lệ phương sai giải thích: {result['explained_variance_ratio']:.4f}")
+                    st.write(f"- Số mẫu đã xử lý: {num_samples}")
+
+    # Tab Theo dõi kết quả
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
