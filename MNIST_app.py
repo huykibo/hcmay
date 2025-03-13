@@ -818,7 +818,7 @@ def run_mnist_classification_app():
                                 status_text.text(f"Đang dự đoán ảnh {i+1} - {j}%{j % 4 * '.'}")
                                 time.sleep(0.1)
                             
-                            st.success(f"Dự đoán: **{prediction}** | Confidence: **{confidence:.2f}%**")
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
                             st.image(img, caption=f"Ảnh {i+1} được upload", use_container_width=True)
                             
                             time.sleep(1)
@@ -866,7 +866,7 @@ def run_mnist_classification_app():
                                 status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
                             
-                            st.success(f"Dự đoán: **{prediction}** | Confidence: **{confidence:.2f}%**")
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
                             
                             time.sleep(1)
                             progress_bar.empty()

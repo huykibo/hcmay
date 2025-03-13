@@ -513,27 +513,35 @@ def run_mnist_clustering_app():
                 with mlflow.start_run(run_name=run_name) as run:
                     if cluster_method == "K-means":
                         progress_bar.progress(10)
-                        status_text.text("Đang chạy K-means (10%)...")
+                        status_text.text("Đang khởi tạo K-means (10%)...")
                         model = KMeans(n_clusters=n_clusters, random_state=42)
                         cluster_labels = model.fit_predict(X_processed)
-                        progress_bar.progress(100)
-                        status_text.text("Hoàn tất K-means (100%)!")
+                        progress_bar.progress(90)
+                        status_text.text("Đang hoàn thiện K-means (90%)...")
                         inertia = model.inertia_
                         centroids = model.cluster_centers_
+                        n_clusters_found = n_clusters  # Số cụm tìm được bằng n_clusters trong K-means
                         mlflow.log_metric("inertia", inertia)
+                        mlflow.log_metric("n_clusters_found", n_clusters_found)  # Log thêm số cụm
                         mlflow.sklearn.log_model(model, "kmeans_model")
                     else:
                         progress_bar.progress(10)
-                        status_text.text("Đang chạy DBSCAN (10%)...")
+                        status_text.text("Đang khởi tạo DBSCAN (10%)...")
                         model = DBSCAN(eps=eps, min_samples=min_samples)
                         cluster_labels = model.fit_predict(X_processed)
-                        progress_bar.progress(100)
-                        status_text.text("Hoàn tất DBSCAN (100%)!")
+                        progress_bar.progress(90)
+                        status_text.text("Đang hoàn thiện DBSCAN (90%)...")
                         n_clusters_est = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
                         n_noise = list(cluster_labels).count(-1)
-                        mlflow.log_metric("n_clusters", n_clusters_est)
+                        mlflow.log_metric("n_clusters_found", n_clusters_est)  # Log thêm số cụm
                         mlflow.log_metric("n_noise", n_noise)
                         mlflow.sklearn.log_model(model, "dbscan_model")
+
+                    # Thêm hiệu ứng chạy khi đến 100%
+                    for i in range(90, 101):
+                        progress_bar.progress(i)
+                        status_text.text(f"Đang xử lý kết quả cuối ({i}%)...")
+                        time.sleep(0.05)  # Tạo hiệu ứng mượt mà
 
                     training_time = time.time() - start_time
                     mlflow.log_params(params)
@@ -546,6 +554,10 @@ def run_mnist_clustering_app():
                         'run_name': run_name
                     }
                     st.session_state['cluster_labels'] = cluster_labels
+                    status_text.text("Hoàn tất! Đang hiển thị kết quả...")
+                    time.sleep(0.5)  # Dừng nhẹ để người dùng thấy thông báo
+                    progress_bar.empty()
+                    status_text.empty()
                     st.success(f"Phân cụm xong! Thời gian: {training_time:.2f} giây.")
 
                     st.subheader("Kết quả Phân cụm (Biểu đồ 2D)")
@@ -670,7 +682,7 @@ def run_mnist_clustering_app():
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
-        Tab này cho phép bạn xem danh sách các lần phân cụm đã thực hiện. Chọn một lần chạy từ danh sách để xem chi tiết, đổi tên hoặc xóa.
+        Tab này cho phép bạn xem danh sách các lần phân cụm đã thực hiện. Chọn một lần chạy từ danh sách để xem chi tiết, đổi tên hoặc xóa. Run mới nhất sẽ được hiển thị mặc định.
         """, unsafe_allow_html=True)
         
         try:
@@ -688,6 +700,7 @@ def run_mnist_clustering_app():
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
 
+                    # Chọn run mới nhất nếu có trong session_state, nếu không thì chọn run đầu tiên
                     default_run_name = st.session_state.get('latest_run', {}).get('run_name', run_names[0]) if 'latest_run' in st.session_state else run_names[0]
 
                     st.subheader("Danh sách run")
@@ -715,7 +728,7 @@ def run_mnist_clustering_app():
                                     st.session_state['latest_run']['run_name'] = new_run_name.strip()
                                 st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
                                 time.sleep(0.5)
-                                st.rerun()
+                                st.rerun()  # Tự động cập nhật
                         elif not new_run_name.strip():
                             st.warning("Vui lòng nhập tên hợp lệ.")
                         else:
@@ -729,7 +742,7 @@ def run_mnist_clustering_app():
                                 del st.session_state['latest_run']
                             st.success(f"Đã xóa: {selected_run_name}")
                             time.sleep(0.5)
-                            st.rerun()
+                            st.rerun()  # Tự động cập nhật
 
                     st.subheader("Thông tin chi tiết của Run")
                     st.write(f"**Tên lần chạy:** {selected_run_name}")
@@ -750,13 +763,14 @@ def run_mnist_clustering_app():
                         training_time = selected_run.data.metrics.get("training_time_seconds", "N/A")
                         metrics_display["Thời gian thực hiện (giây)"] = f"{float(training_time):.2f}" if training_time != "N/A" else "N/A"
 
+                        n_clusters_found = selected_run.data.metrics.get("n_clusters_found", "N/A")
+                        metrics_display["Số cụm tìm được"] = n_clusters_found  # Thêm số cụm tìm được
+
                         if reduce_method == "K-means":
                             inertia = selected_run.data.metrics.get("inertia", "N/A")
                             metrics_display["Tổng bình phương khoảng cách (K-means)"] = f"{float(inertia):.2f}" if inertia != "N/A" else "N/A"
                         elif reduce_method == "DBSCAN":
-                            n_clusters = selected_run.data.metrics.get("n_clusters", "N/A")
                             n_noise = selected_run.data.metrics.get("n_noise", "N/A")
-                            metrics_display["Số cụm tìm được (DBSCAN)"] = n_clusters
                             metrics_display["Số điểm nhiễu (DBSCAN)"] = n_noise
 
                         st.json(metrics_display, expanded=True)
