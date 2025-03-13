@@ -42,6 +42,7 @@ print(" Dữ liệu Titanic đã được xử lý và theo dõi trong MLflow.")
 # mlflow ui
 
 # #dã thiết lâp git trc đó fff
-git add 
-git commit -m "Update: Cập nhật code ứng dụng Streamlit MLflow"
-git push
+git add .
+git commit -m "Initial commit: Clean setup for Streamlit MLflow app"
+git branch -M main
+git push -u origin main

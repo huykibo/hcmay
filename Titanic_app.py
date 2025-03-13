@@ -404,24 +404,21 @@ def run_titanic_app():
                 with st.spinner("Đang huấn luyện mô hình với Cross Validation..."):
                     run_name = f"{model_choice_to_train}_Run_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
-                        max_iter = 1000
-                        tol = 1e-3
-
+                        # Chỉ log các tham số của mô hình hiện tại
                         params = {
                             "model_choice": model_choice_to_train,
                             "learning_rate_method": lr_method,
-                            "max_iter": max_iter,
-                            "tol": tol,
-                            "num_folds": num_folds,
-                            "train_samples": X_train.shape[0],
-                            "validation_samples": X_val.shape[0],
-                            "test_samples": X_test.shape[0],
                             "eta0": eta0 if lr_method == "constant" else "N/A",
-                            "poly_degree": poly_degree if model_choice_to_train == "Hồi quy Đa thức" else "N/A"
+                            "poly_degree": poly_degree if model_choice_to_train == "Hồi quy Đa thức" else "N/A",
+                            "num_folds": num_folds
                         }
 
                         for key, value in params.items():
                             mlflow.log_param(key, value)
+
+                        # Huấn luyện mô hình
+                        max_iter = 1000
+                        tol = 1e-3
 
                         if model_choice_to_train == "Hồi quy Đa biến":
                             model = SGDRegressor(
@@ -443,21 +440,16 @@ def run_titanic_app():
                                 ))
                             ])
 
-                        # Bước 1: Cross Validation (0% -> 40%)
+                        # Quy trình huấn luyện
                         status_text.text("Đang thực hiện Cross Validation...")
                         progress_bar.progress(0)
                         cv_scores = cross_val_score(model, X_train, y_train, cv=num_folds, scoring='r2')
                         progress_bar.progress(40)
-                        mlflow.log_metric("mean_cv_score", np.mean(cv_scores))
-                        mlflow.log_metric("cv_scores_std", np.std(cv_scores))
-                        mlflow.log_metric("max_cv_score", np.max(cv_scores))
 
-                        # Bước 2: Huấn luyện mô hình (40% -> 70%)
                         status_text.text("Đang huấn luyện mô hình...")
                         model.fit(X_train, y_train)
                         progress_bar.progress(70)
 
-                        # Bước 3: Dự đoán và tính toán chỉ số (70% -> 90%)
                         status_text.text("Đang tính toán chỉ số...")
                         y_pred_val = model.predict(X_val)
                         mse_val = mean_squared_error(y_val, y_pred_val)
@@ -472,21 +464,10 @@ def run_titanic_app():
                         accuracy_test = accuracy_score(y_test, y_pred_test_class)
                         progress_bar.progress(90)
 
-                        # Bước 4: Lưu kết quả và hoàn tất (90% -> 100%)
                         status_text.text("Đang lưu kết quả...")
                         training_time = time.time() - start_time
 
-                        mlflow.log_metric("validation_mse", mse_val)
-                        mlflow.log_metric("validation_r2", r2_val)
-                        mlflow.log_metric("validation_accuracy", accuracy_val)
-                        mlflow.log_metric("test_mse", mse_test)
-                        mlflow.log_metric("test_r2", r2_test)
-                        mlflow.log_metric("test_accuracy", accuracy_test)
-                        mlflow.log_metric("training_time_seconds", training_time)
-
-                        mlflow.sklearn.log_model(model, "model")
-
-                        # Lưu tất cả kết quả vào session_state
+                        # Lưu kết quả vào session_state
                         st.session_state["run_id"] = run.info.run_id
                         st.session_state["run_name"] = run_name
                         st.session_state["cv_scores"] = cv_scores
@@ -523,9 +504,6 @@ def run_titanic_app():
                         st.write(f"- **Eta0**: {st.session_state['params']['eta0']}")
                     st.write(f"- **Số folds Cross Validation**: {st.session_state['params']['num_folds']}")
                     st.write(f"- **Thời gian huấn luyện**: {st.session_state['training_time']:.2f} giây")
-                    st.write(f"- **Số mẫu huấn luyện**: {st.session_state['params']['train_samples']}")
-                    st.write(f"- **Số mẫu validation**: {st.session_state['params']['validation_samples']}")
-                    st.write(f"- **Số mẫu test**: {st.session_state['params']['test_samples']}")
 
                     st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
                     st.write(f"- **Mean CV Score (R²)**: {np.mean(st.session_state['cv_scores']):.2f}")
@@ -540,18 +518,6 @@ def run_titanic_app():
                       *=> Mô hình đạt độ chính xác {st.session_state['accuracy_test']:.2f} trên tập test, cho thấy khả năng tổng quát hóa { 'tốt' if st.session_state['accuracy_test'] > 0.8 else 'trung bình' if st.session_state['accuracy_test'] > 0.6 else 'kém'}.*  
                       Mean CV Score (R²) gần 1 và MSE nhỏ cho thấy mô hình khớp tốt với dữ liệu.
                     """, unsafe_allow_html=True)
-
-                st.markdown("### Giải thích biểu đồ Actual vs Predicted")
-                st.markdown("""
-                Biểu đồ **Actual vs Predicted** là biểu đồ phân tán (scatter plot) so sánh giá trị thực tế (Actual) và giá trị dự đoán (Predicted) của mô hình:
-                - **Trục X (Thực tế)**: Giá trị thực của cột `Survived` (0: Không sống, 1: Sống).
-                - **Trục Y (Dự đoán)**: Giá trị dự đoán từ mô hình (liên tục từ 0 đến 1, trước khi áp ngưỡng 0.5).
-                - **Đường chéo đỏ (y = x)**: Đường tham chiếu lý tưởng, nếu tất cả điểm nằm trên đường này thì dự đoán hoàn toàn chính xác.
-                - **Ý nghĩa**:
-                  - Điểm càng gần đường chéo đỏ, dự đoán càng chính xác.
-                  - Nếu điểm lệch xa đường chéo (ví dụ: Actual = 1 nhưng Predicted gần 0), mô hình dự đoán sai.
-                  - Trong bài toán Titanic, các điểm phân bố gần đường chéo cho thấy mô hình có khả năng phân biệt tốt giữa "Sống" và "Không sống", đặc biệt khi kết hợp với độ chính xác (Accuracy) cao.
-                """, unsafe_allow_html=True)
 
                 st.markdown("### Biểu đồ Actual vs Predicted (Validation)")
                 fig, ax = plt.subplots()
@@ -668,7 +634,7 @@ def run_titanic_app():
     with tab_mlflow:
         st.header("Theo dõi kết quả")
         st.markdown("""
-        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
+        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện. Chọn một lần chạy để xem chi tiết tham số của mô hình.
         """, unsafe_allow_html=True)
         
         try:
@@ -686,6 +652,7 @@ def run_titanic_app():
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
 
+                    # Mặc định chọn lần chạy mới nhất hoặc lần chạy vừa huấn luyện
                     default_run_name = st.session_state.get('run_name', run_names[0]) if 'run_name' in st.session_state else run_names[0]
 
                     st.subheader("Danh sách run")
@@ -694,82 +661,21 @@ def run_titanic_app():
                         options=run_names,
                         index=run_names.index(default_run_name) if default_run_name in run_names else 0,
                         key="main_select",
-                        help="Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa."
+                        help="Chọn một lần chạy để xem chi tiết."
                     )
                     selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
                     selected_run = client.get_run(selected_run_id)
-
-                    st.subheader("Đổi tên Run")
-                    new_run_name = st.text_input(
-                        "Nhập tên mới:",
-                        value=selected_run_name,
-                        key="rename_input"
-                    )
-                    if st.button("Cập nhật tên", key="rename_button"):
-                        if new_run_name.strip() and new_run_name.strip() != selected_run_name:
-                            with st.spinner("Đang cập nhật tên..."):
-                                client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
-                                if 'run_id' in st.session_state and st.session_state['run_id'] == selected_run_id:
-                                    st.session_state['run_name'] = new_run_name.strip()
-                                st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
-                                time.sleep(0.5)
-                                st.rerun()
-                        elif not new_run_name.strip():
-                            st.warning("Vui lòng nhập tên hợp lệ.")
-                        else:
-                            st.info("Tên mới trùng với tên hiện tại.")
-
-                    st.subheader("Xóa Run")
-                    if st.button("Xóa lần chạy", key="delete_button"):
-                        with st.spinner("Đang xóa lần chạy..."):
-                            client.delete_run(selected_run_id)
-                            if 'run_id' in st.session_state and st.session_state['run_id'] == selected_run_id:
-                                del st.session_state['run_id']
-                                del st.session_state['run_name']
-                                del st.session_state['model']
-                                st.session_state['models_trained'] = False
-                            st.success(f"Đã xóa: {selected_run_name}")
-                            time.sleep(0.5)
-                            st.rerun()
 
                     st.subheader("Thông tin chi tiết của Run")
                     st.write(f"**Tên lần chạy:** {selected_run_name}")
                     st.write(f"**ID lần chạy:** {selected_run_id}")
                     st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
 
-                    st.markdown("**Tham số:**", unsafe_allow_html=True)
+                    st.markdown("**Tham số của mô hình:**", unsafe_allow_html=True)
                     if selected_run.data.params:
                         st.json(selected_run.data.params, expanded=True)
                     else:
-                        st.write("Không có tham số được ghi nhận.")
-
-                    st.markdown("**Kết quả:**", unsafe_allow_html=True)
-                    if selected_run.data.metrics:
-                        metrics_display = {}
-                        training_time = selected_run.data.metrics.get("training_time_seconds", "N/A")
-                        metrics_display["Thời gian thực hiện (giây)"] = f"{float(training_time):.2f}" if training_time != "N/A" else "N/A"
-                        mean_cv_score = selected_run.data.metrics.get("mean_cv_score", "N/A")
-                        metrics_display["Mean CV Score (R²)"] = f"{float(mean_cv_score):.2f}" if mean_cv_score != "N/A" else "N/A"
-                        validation_mse = selected_run.data.metrics.get("validation_mse", "N/A")
-                        metrics_display["Validation MSE"] = f"{float(validation_mse):.2f}" if validation_mse != "N/A" else "N/A"
-                        validation_r2 = selected_run.data.metrics.get("validation_r2", "N/A")
-                        metrics_display["Validation R²"] = f"{float(validation_r2):.2f}" if validation_r2 != "N/A" else "N/A"
-                        validation_accuracy = selected_run.data.metrics.get("validation_accuracy", "N/A")
-                        metrics_display["Độ chính xác Validation"] = f"{float(validation_accuracy)*100:.2f}%" if validation_accuracy != "N/A" else "N/A"
-                        test_mse = selected_run.data.metrics.get("test_mse", "N/A")
-                        metrics_display["Test MSE"] = f"{float(test_mse):.2f}" if test_mse != "N/A" else "N/A"
-                        test_r2 = selected_run.data.metrics.get("test_r2", "N/A")
-                        metrics_display["Test R²"] = f"{float(test_r2):.2f}" if test_r2 != "N/A" else "N/A"
-                        test_accuracy = selected_run.data.metrics.get("test_accuracy", "N/A")
-                        metrics_display["Độ chính xác Test"] = f"{float(test_accuracy)*100:.2f}%" if test_accuracy != "N/A" else "N/A"
-                        st.json(metrics_display, expanded=True)
-                    else:
-                        st.write("Không có kết quả được ghi nhận.")
-
-                    st.subheader("Truy cập MLflow UI")
-                    mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
-                    if st.button("Mở MLflow UI trên Dagshub"):
-                        st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
+                        st.write("Không có tham số nào được ghi nhận cho lần chạy này.")
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
