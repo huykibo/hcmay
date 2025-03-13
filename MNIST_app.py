@@ -349,35 +349,30 @@ def run_mnist_classification_app():
             - **SVM**: Đo hiệu quả của siêu phẳng trong việc phân tách các lớp.
             """)
 
-     # Tab 2: Tải dữ liệu
+    # Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
         if st.button("Tải dữ liệu MNIST từ OpenML"):
-            with st.spinner("Đang tải dữ liệu..."):
+            with st.spinner("Đang tải dữ liệu từ OpenML..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 try:
                     mnist = openml.datasets.get_dataset(554)
-                    for i in range(20, 51, 5):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang tải dữ liệu {i}%{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(20)
+                    status_text.text("Đã tải 20% - Đang lấy dữ liệu...")
 
                     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
-                    for i in range(50, 91, 5):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý dữ liệu {i}%{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(50)
+                    status_text.text("Đã tải 50% - Đang xử lý dữ liệu...")
 
                     st.session_state['full_data'] = (X, y)
-                    for i in range(90, 101, 2):
-                        progress_bar.progress(i)
-                        status_text.text(f"Hoàn tất {i}% - Đã tải {X.shape[0]} mẫu{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(90)
+                    status_text.text(f"Đã tải 90% - Hoàn tất {X.shape[0]} mẫu...")
 
                     with mlflow.start_run(run_name="Data_Load"):
                         mlflow.log_param("total_samples", X.shape[0])
 
+                    progress_bar.progress(100)
                     status_text.text("Đã tải 100% - Hoàn tất!")
                     time.sleep(1)
                     status_text.empty()
@@ -389,114 +384,118 @@ def run_mnist_classification_app():
 
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
-            num_samples = st.slider("Chọn số lượng mẫu:",
+            num_samples = st.slider("Chọn số lượng mẫu:", 
                                     min_value=10, max_value=len(X_full), value=min(1000, len(X_full)), step=1)
-           
             if st.button("Chốt số lượng mẫu"):
-                with st.spinner("Đang xử lý mẫu..."):
+                with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
 
                     df = pd.concat([X_full, y_full.rename("label")], axis=1)
-                    for i in range(0, 31, 5):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang nối dữ liệu {i}%{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(30)
+                    status_text.text("Đã xử lý 30% - Đang nối dữ liệu...")
 
                     sampled_df = df.sample(n=num_samples, random_state=42)
-                    for i in range(30, 71, 5):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang lấy mẫu {i}%{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(70)
+                    status_text.text("Đã xử lý 70% - Đang lấy mẫu...")
 
                     X_sampled = sampled_df.drop(columns=["label"])
                     y_sampled = sampled_df["label"]
                     st.session_state['data'] = (X_sampled, y_sampled)
-                    for i in range(70, 101, 5):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang lưu dữ liệu {i}%{i % 4 * '.'}")
-                        time.sleep(0.1)
+                    progress_bar.progress(90)
+                    status_text.text("Đã xử lý 90% - Đang lưu dữ liệu...")
 
                     with mlflow.start_run(run_name="Data_Sample"):
                         mlflow.log_param("num_samples", num_samples)
 
+                    progress_bar.progress(100)
                     status_text.text("Đã xử lý 100% - Hoàn tất!")
                     time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu
+    # Tab 3: Xử lí dữ liệu (Đã sửa)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
+            X, y = st.session_state['data']
             if "data_original" not in st.session_state:
-                X, y = st.session_state['data']
                 st.session_state["data_original"] = (X.copy(), y.copy())
-           
-            current_data = st.session_state.get("data_processed", st.session_state["data_original"])
-            X_current, y_current = current_data
+
+            # Xóa data_processed nếu nó tồn tại nhưng không hợp lệ
+            if "data_processed" in st.session_state:
+                data_processed = st.session_state["data_processed"]
+                if not (isinstance(data_processed, tuple) and len(data_processed) == 2):
+                    st.session_state.pop("data_processed", None)
 
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
-                ax.imshow(st.session_state["data_original"][0].iloc[i].values.reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {st.session_state['data_original'][1].iloc[i]}")
+                ax.imshow(X.iloc[i].values.reshape(28, 28), cmap='gray')
+                ax.set_title(f"Label: {y.iloc[i]}")
                 ax.axis("off")
             st.pyplot(fig)
 
             col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button("Normalization", key="normalize_btn"):
-                    with st.spinner("Đang chuẩn hóa dữ liệu..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-
-                        for i in range(0, 21, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chuẩn bị dữ liệu {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        X_norm = X_current / 255.0
-
-                        for i in range(20, 61, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chuẩn hóa {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        st.session_state["data_processed"] = (X_norm, y_current)
-
-                        for i in range(60, 101, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-
-                        status_text.empty()
-                        progress_bar.empty()
-                        st.success("Đã chuẩn hóa dữ liệu!")
-                        st.rerun()
+                    X_norm = X / 255.0
+                    st.session_state["data_processed"] = (X_norm, y)
+                    st.success("Đã chuẩn hoá dữ liệu!")
+                    st.rerun()  # Thay thế st.experimental_rerun() bằng st.rerun()
             with col2:
                 st.markdown("""
                     <div class="tooltip">
                         ?
                         <span class="tooltiptext">
                             Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
-                            Công dụng: Đảm bảo thang đo đồng nhất, đặc biệt quan trọng cho SVM.
+                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
 
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button("Standardization", key="standardize_btn"):
+                    X_std = (X - X.mean()) / X.std()
+                    st.session_state["data_processed"] = (X_std, y)
+                    st.success("Đã thực hiện Standardization!")
+                    st.rerun()  # Thay thế st.experimental_rerun() bằng st.rerun()
+            with col2:
+                st.markdown("""
+                    <div class="tooltip">
+                        ?
+                        <span class="tooltiptext">
+                            Chuẩn hóa về trung bình 0, độ lệch chuẩn 1.<br>
+                            Công dụng: Tốt cho SVM, giảm lệch thang đo.
+                        </span>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            # Chỉ hiển thị dữ liệu đã xử lý nếu data_processed tồn tại và hợp lệ
             if "data_processed" in st.session_state:
-                X_processed, y_processed = st.session_state["data_processed"]
-                st.subheader("Dữ liệu đã xử lý")
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y_processed.iloc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
+                data_processed = st.session_state["data_processed"]
+                if isinstance(data_processed, tuple) and len(data_processed) == 2:
+                    try:
+                        X_processed, y_processed = data_processed
+                        st.subheader("Dữ liệu đã xử lý")
+                        fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                        for i, ax in enumerate(axes.flat):
+                            ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                            ax.set_title(f"Label: {y_processed.iloc[i]}")
+                            ax.axis("off")
+                        st.pyplot(fig)
+                    except (ValueError, TypeError, AttributeError) as e:
+                        st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                        st.session_state.pop("data_processed", None)  # Xóa dữ liệu sai
+                else:
+                    st.error("Dữ liệu đã xử lý không đúng định dạng. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                    st.session_state.pop("data_processed", None)  # Xóa dữ liệu sai
             else:
-                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
+                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' hoặc 'Standardization' để xử lý.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
@@ -504,9 +503,10 @@ def run_mnist_classification_app():
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
+            # Safely retrieve data_processed or fallback to data
             data_source = st.session_state.get("data_processed", st.session_state['data'])
             try:
-                X, y = data_source
+                X, y = data_source  # Unpack only if it's a valid tuple
             except (ValueError, TypeError) as e:
                 st.error(f"Lỗi: Dữ liệu không hợp lệ. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu. Chi tiết lỗi: {e}")
             else:
@@ -515,43 +515,32 @@ def run_mnist_classification_app():
 
                 test_pct = st.slider("Tỷ lệ tập Test (%)", 0, 100, 20)
                 valid_pct = st.slider("Tỷ lệ tập Validation (%) từ phần còn lại", 0, 100, 20)
-               
+                
                 if test_pct + valid_pct > 100:
                     st.warning("Tổng tỷ lệ Test và Validation vượt quá 100%!")
-               
-                test_size = test_pct / 100
+                
+                test_size = int(total_samples * test_pct / 100)
                 if test_size > 0:
-                    X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=42, stratify=y)
+                    X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size / total_samples, random_state=42)
                 else:
                     X_temp, y_temp = X, y
                     X_test, y_test = pd.DataFrame(), pd.Series()
 
-                valid_size = valid_pct / 100
-                if valid_size > 0 and len(X_temp) > int(len(X_temp) * valid_size):
-                    X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42, stratify=y_temp)
+                valid_size = int(len(X_temp) * valid_pct / 100)
+                if valid_size > 0 and len(X_temp) > valid_size:
+                    X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size / len(X_temp), random_state=42)
                 else:
                     X_train, y_train = X_temp, y_temp
                     X_valid, y_valid = pd.DataFrame(), pd.Series()
 
                 st.write(f"Train: {len(X_train)} mẫu, Validation: {len(X_valid)} mẫu, Test: {len(X_test)} mẫu")
-
                 if st.button("Xác nhận chia dữ liệu"):
-                    with st.spinner("Đang chia dữ liệu..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in range(0, 101, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chia dữ liệu {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-
-                        st.session_state['split_data'] = {
-                            "X_train": X_train, "y_train": y_train,
-                            "X_valid": X_valid, "y_valid": y_valid,
-                            "X_test": X_test, "y_test": y_test
-                        }
-                        status_text.empty()
-                        progress_bar.empty()
-                        st.success("Dữ liệu đã được chia!")
+                    st.session_state['split_data'] = {
+                        "X_train": X_train, "y_train": y_train,
+                        "X_valid": X_valid, "y_valid": y_valid,
+                        "X_test": X_test, "y_test": y_test
+                    }
+                    st.success("Dữ liệu đã được chia!")
 
     # Tab 5: Huấn luyện/Đánh Giá
     with tab_train_eval:
