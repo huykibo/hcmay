@@ -349,7 +349,7 @@ def run_mnist_classification_app():
             - **SVM**: Đo hiệu quả của siêu phẳng trong việc phân tách các lớp.
             """)
 
-    # Tab 2: Tải dữ liệu
+     # Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
         if st.button("Tải dữ liệu MNIST từ OpenML"):
@@ -426,7 +426,7 @@ def run_mnist_classification_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu (Updated)
+    # Tab 3: Xử lí dữ liệu
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -435,77 +435,68 @@ def run_mnist_classification_app():
             if "data_original" not in st.session_state:
                 X, y = st.session_state['data']
                 st.session_state["data_original"] = (X.copy(), y.copy())
-            
-            # Retrieve current_data with fallback
+           
             current_data = st.session_state.get("data_processed", st.session_state["data_original"])
-            
-            # Validate current_data
-            if not isinstance(current_data, (tuple, list)) or len(current_data) != 2:
-                st.error("Lỗi: Dữ liệu không hợp lệ trong st.session_state. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu.")
+            X_current, y_current = current_data
+
+            st.subheader("Dữ liệu Gốc")
+            fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+            for i, ax in enumerate(axes.flat):
+                ax.imshow(st.session_state["data_original"][0].iloc[i].values.reshape(28, 28), cmap='gray')
+                ax.set_title(f"Label: {st.session_state['data_original'][1].iloc[i]}")
+                ax.axis("off")
+            st.pyplot(fig)
+
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                if st.button("Normalization", key="normalize_btn"):
+                    with st.spinner("Đang chuẩn hóa dữ liệu..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+
+                        for i in range(0, 21, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang chuẩn bị dữ liệu {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+                        X_norm = X_current / 255.0
+
+                        for i in range(20, 61, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang chuẩn hóa {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+                        st.session_state["data_processed"] = (X_norm, y_current)
+
+                        for i in range(60, 101, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+
+                        status_text.empty()
+                        progress_bar.empty()
+                        st.success("Đã chuẩn hóa dữ liệu!")
+                        st.rerun()
+            with col2:
+                st.markdown("""
+                    <div class="tooltip">
+                        ?
+                        <span class="tooltiptext">
+                            Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
+                            Công dụng: Đảm bảo thang đo đồng nhất, đặc biệt quan trọng cho SVM.
+                        </span>
+                    </div>
+                """, unsafe_allow_html=True)
+
+            if "data_processed" in st.session_state:
+                X_processed, y_processed = st.session_state["data_processed"]
+                st.subheader("Dữ liệu đã xử lý")
+                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                for i, ax in enumerate(axes.flat):
+                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                    ax.set_title(f"Label: {y_processed.iloc[i]}")
+                    ax.axis("off")
+                st.pyplot(fig)
             else:
-                try:
-                    X_current, y_current = current_data
-                except (ValueError, TypeError) as e:
-                    st.error(f"Lỗi khi truy xuất dữ liệu: {e}. Dữ liệu có thể không ở định dạng đúng (X, y).")
-                else:
-                    st.subheader("Dữ liệu Gốc")
-                    fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                    for i, ax in enumerate(axes.flat):
-                        ax.imshow(st.session_state["data_original"][0].iloc[i].values.reshape(28, 28), cmap='gray')
-                        ax.set_title(f"Label: {st.session_state['data_original'][1].iloc[i]}")
-                        ax.axis("off")
-                    st.pyplot(fig)
-
-                    col1, col2 = st.columns([3, 1])
-                    with col1:
-                        if st.button("Normalization", key="normalize_btn"):
-                            with st.spinner("Đang chuẩn hóa dữ liệu..."):
-                                progress_bar = st.progress(0)
-                                status_text = st.empty()
-
-                                for i in range(0, 21, 5):
-                                    progress_bar.progress(i)
-                                    status_text.text(f"Đang chuẩn bị dữ liệu {i}%{i % 4 * '.'}")
-                                    time.sleep(0.1)
-                                X_norm = X_current / 255.0
-
-                                for i in range(20, 61, 5):
-                                    progress_bar.progress(i)
-                                    status_text.text(f"Đang chuẩn hóa {i}%{i % 4 * '.'}")
-                                    time.sleep(0.1)
-                                st.session_state["data_processed"] = (X_norm, y_current)
-
-                                for i in range(60, 101, 5):
-                                    progress_bar.progress(i)
-                                    status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
-                                    time.sleep(0.1)
-
-                                status_text.empty()
-                                progress_bar.empty()
-                                st.success("Đã chuẩn hóa dữ liệu!")
-                                st.rerun()
-                    with col2:
-                        st.markdown("""
-                            <div class="tooltip">
-                                ?
-                                <span class="tooltiptext">
-                                    Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
-                                    Công dụng: Đảm bảo thang đo đồng nhất, đặc biệt quan trọng cho SVM.
-                                </span>
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                    if "data_processed" in st.session_state:
-                        X_processed, y_processed = st.session_state["data_processed"]
-                        st.subheader("Dữ liệu đã xử lý")
-                        fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                        for i, ax in enumerate(axes.flat):
-                            ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                            ax.set_title(f"Label: {y_processed.iloc[i]}")
-                            ax.axis("off")
-                        st.pyplot(fig)
-                    else:
-                        st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
+                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
