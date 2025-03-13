@@ -43,6 +43,17 @@ def run_mnist_dimension_reduction_app():
     pca_image_dir = r"pca"
     tsne_image_dir = r"tsne_steps"
 
+    # Khởi tạo và kiểm tra/tạo experiment
+    client = MlflowClient()
+    experiment_name = "MNIST_PCA"
+    experiment = client.get_experiment_by_name(experiment_name)
+    if not experiment:
+        st.warning(f"Experiment '{experiment_name}' chưa tồn tại. Đang tạo mới...")
+        experiment_id = client.create_experiment(experiment_name)
+        st.success(f"Đã tạo experiment '{experiment_name}' với ID: {experiment_id}")
+    else:
+        experiment_id = experiment.experiment_id
+
     # Tabs for navigation
     tab_info, tab_load, tab_visualize, tab_log_info = st.tabs(["Thông tin", "Tải dữ liệu", "Trực quan hóa", "Theo dõi kết quả"])
 
@@ -368,7 +379,7 @@ def run_mnist_dimension_reduction_app():
                     progress_bar.progress(90)
                     status_text.text(f"Đã tải 90% - Hoàn tất {X.shape[0]} mẫu...")
 
-                    with mlflow.start_run(run_name="Data_Load"):
+                    with mlflow.start_run(experiment_id=experiment_id, run_name="Data_Load"):
                         mlflow.log_param("total_samples", X.shape[0])
                     
                     progress_bar.progress(100)
@@ -405,7 +416,7 @@ def run_mnist_dimension_reduction_app():
                         progress_bar.progress(90)
                         status_text.text("Đang xử lý 90% - Đang lưu trữ dữ liệu...")
 
-                        with mlflow.start_run(run_name="Data_Sample"):
+                        with mlflow.start_run(experiment_id=experiment_id, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
                         
                         progress_bar.progress(100)
@@ -530,7 +541,7 @@ def run_mnist_dimension_reduction_app():
                         progress_bar.progress(20)
 
                         run_name = f"{reduce_method}_Run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                        with mlflow.start_run(run_name=run_name) as run:
+                        with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
                             if reduce_method == "PCA":
                                 status_text.text("Đang chạy PCA...")
                                 model = PCA(n_components=n_components)
@@ -631,19 +642,17 @@ def run_mnist_dimension_reduction_app():
         Tab này cho phép bạn xem danh sách các lần giảm chiều đã thực hiện. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
         """, unsafe_allow_html=True)
         
-        
-
         try:
             client = MlflowClient()
-            experiment_id = "3"
-            experiment = client.get_experiment(experiment_id)
+            experiment = client.get_experiment_by_name("MNIST_PCA")
             if not experiment:
-                st.error(f"Không tìm thấy experiment với ID: {experiment_id}. Vui lòng kiểm tra lại MLflow tracking URI.")
+                st.error(f"Không tìm thấy experiment 'MNIST_PCA'. Vui lòng kiểm tra lại MLflow tracking URI.")
             else:
+                experiment_id = experiment.experiment_id
                 runs = client.search_runs(experiment_ids=[experiment_id], order_by=["attributes.start_time DESC"])
                 
                 if not runs:
-                    st.info("Chưa có lần chạy nào được ghi nhận.")
+                    st.info("Chưa có lần chạy nào được ghi nhận trong experiment 'MNIST_PCA'.")
                 else:
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
@@ -717,12 +726,11 @@ def run_mnist_dimension_reduction_app():
                         st.json(metrics_display, expanded=True)
                     else:
                         st.write("Không có kết quả được ghi nhận.")
-        except Exception as e:
-            st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
-             # Thêm nút liên kết tới MLflow UI
-            st.subheader("Truy cập MLflow UI")
-            mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"  # Thay bằng URL MLflow của bạn nếu khác
-            if st.button("Mở MLflow UI trên Dagshub"):
+
+                    # Thêm nút liên kết tới MLflow UI
+                    st.subheader("Truy cập MLflow UI")
+                    mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"  # Thay bằng URL MLflow của bạn nếu khác
+                    if st.button("Mở MLflow UI trên Dagshub"):
                         st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
