@@ -679,5 +679,5 @@ def run_titanic_app():
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
-if __name__ == "__main__":
+if __name__ == "__main__":##
     run_titanic_app()
