@@ -29,6 +29,17 @@ def run_mnist_clustering_app():
         </style>
     """, unsafe_allow_html=True)
 
+    # Khởi tạo và kiểm tra/tạo experiment
+    client = MlflowClient()
+    experiment_name = "MNIST_clustering"
+    experiment = client.get_experiment_by_name(experiment_name)
+    if not experiment:
+        st.warning(f"Experiment '{experiment_name}' chưa tồn tại. Đang tạo mới...")
+        experiment_id = client.create_experiment(experiment_name)
+        st.success(f"Đã tạo experiment '{experiment_name}' với ID: {experiment_id}")
+    else:
+        experiment_id = experiment.experiment_id
+
     tab_info, tab_load, tab_cluster, tab_log_info = st.tabs(["Thông tin", "Tải dữ liệu", "Phân cụm", "Theo dõi kết quả"])
 
     with tab_info:
@@ -360,7 +371,7 @@ def run_mnist_clustering_app():
                 progress_bar.progress(90)
                 status_text.text(f"Đã tải 90% - Hoàn tất {X.shape[0]} mẫu...")
 
-                with mlflow.start_run(run_name="Data_Load"):
+                with mlflow.start_run(experiment_id=experiment_id, run_name="Data_Load"):
                     mlflow.log_param("total_samples", X.shape[0])
                 
                 progress_bar.progress(100)
@@ -394,7 +405,7 @@ def run_mnist_clustering_app():
                     progress_bar.progress(90)
                     status_text.text("Đang xử lý 90% - Đang lưu trữ dữ liệu...")
 
-                    with mlflow.start_run(run_name="Data_Sample"):
+                    with mlflow.start_run(experiment_id=experiment_id, run_name="Data_Sample"):
                         mlflow.log_param("num_samples", num_samples)
                     
                     progress_bar.progress(100)
@@ -510,59 +521,55 @@ def run_mnist_clustering_app():
                 X_processed = X / 255.0
 
                 run_name = f"{cluster_method}_Run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                with mlflow.start_run(run_name=run_name) as run:
-                    if cluster_method == "K-means":
-                        progress_bar.progress(10)
-                        status_text.text("Đang khởi tạo K-means (10%)...")
-                        model = KMeans(n_clusters=n_clusters, random_state=42)
-                        cluster_labels = model.fit_predict(X_processed)
-                        progress_bar.progress(90)
-                        status_text.text("Đang hoàn thiện K-means (90%)...")
-                        inertia = model.inertia_
-                        centroids = model.cluster_centers_
-                        n_clusters_found = n_clusters  # Số cụm tìm được bằng n_clusters trong K-means
-                        mlflow.log_metric("inertia", inertia)
-                        mlflow.log_metric("n_clusters_found", n_clusters_found)  # Log thêm số cụm
-                        mlflow.sklearn.log_model(model, "kmeans_model")
-                    else:
-                        progress_bar.progress(10)
-                        status_text.text("Đang khởi tạo DBSCAN (10%)...")
-                        model = DBSCAN(eps=eps, min_samples=min_samples)
-                        cluster_labels = model.fit_predict(X_processed)
-                        progress_bar.progress(90)
-                        status_text.text("Đang hoàn thiện DBSCAN (90%)...")
-                        n_clusters_est = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
-                        n_noise = list(cluster_labels).count(-1)
-                        mlflow.log_metric("n_clusters_found", n_clusters_est)  # Log thêm số cụm
-                        mlflow.log_metric("n_noise", n_noise)
-                        mlflow.sklearn.log_model(model, "dbscan_model")
+                with st.spinner("Đang thực hiện phân cụm và trực quan hóa..."):  # Thêm vòng tròn loading
+                    # Phần phân cụm
+                    with mlflow.start_run(experiment_id=experiment_id, run_name=run_name) as run:
+                        if cluster_method == "K-means":
+                            progress_bar.progress(10)
+                            status_text.text("Đang khởi tạo K-means (10%)...")
+                            model = KMeans(n_clusters=n_clusters, random_state=42)
+                            cluster_labels = model.fit_predict(X_processed)
+                            progress_bar.progress(70)
+                            status_text.text("Đang hoàn thiện K-means (70%)...")
+                            inertia = model.inertia_
+                            centroids = model.cluster_centers_
+                            n_clusters_found = n_clusters
+                            mlflow.log_metric("inertia", inertia)
+                            mlflow.log_metric("n_clusters_found", n_clusters_found)
+                            mlflow.sklearn.log_model(model, "kmeans_model")
+                        else:
+                            progress_bar.progress(10)
+                            status_text.text("Đang khởi tạo DBSCAN (10%)...")
+                            model = DBSCAN(eps=eps, min_samples=min_samples)
+                            cluster_labels = model.fit_predict(X_processed)
+                            progress_bar.progress(70)
+                            status_text.text("Đang hoàn thiện DBSCAN (70%)...")
+                            n_clusters_est = len(set(cluster_labels)) - (1 if -1 in cluster_labels else 0)
+                            n_noise = list(cluster_labels).count(-1)
+                            mlflow.log_metric("n_clusters_found", n_clusters_est)
+                            mlflow.log_metric("n_noise", n_noise)
+                            mlflow.sklearn.log_model(model, "dbscan_model")
 
-                    # Thêm hiệu ứng chạy khi đến 100%
-                    for i in range(90, 101):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý kết quả cuối ({i}%)...")
-                        time.sleep(0.05)  # Tạo hiệu ứng mượt mà
+                        training_time = time.time() - start_time
+                        mlflow.log_params(params)
+                        mlflow.log_param("cluster_method", cluster_method)
+                        mlflow.log_metric("training_time_seconds", training_time)
 
-                    training_time = time.time() - start_time
-                    mlflow.log_params(params)
-                    mlflow.log_param("cluster_method", cluster_method)
-                    mlflow.log_metric("training_time_seconds", training_time)
+                        run_id = run.info.run_id
+                        st.session_state['latest_run'] = {
+                            'run_id': run_id,
+                            'run_name': run_name
+                        }
+                        st.session_state['cluster_labels'] = cluster_labels
 
-                    run_id = run.info.run_id
-                    st.session_state['latest_run'] = {
-                        'run_id': run_id,
-                        'run_name': run_name
-                    }
-                    st.session_state['cluster_labels'] = cluster_labels
-                    status_text.text("Hoàn tất! Đang hiển thị kết quả...")
-                    time.sleep(0.5)  # Dừng nhẹ để người dùng thấy thông báo
-                    progress_bar.empty()
-                    status_text.empty()
-                    st.success(f"Phân cụm xong! Thời gian: {training_time:.2f} giây.")
-
-                    st.subheader("Kết quả Phân cụm (Biểu đồ 2D)")
+                    # Phần giảm chiều và vẽ biểu đồ
+                    progress_bar.progress(80)
+                    status_text.text("Đang giảm chiều dữ liệu với PCA (80%)...")
                     pca = PCA(n_components=2)
                     X_2d = pca.fit_transform(X_processed)
+
+                    progress_bar.progress(90)
+                    status_text.text("Đang tạo biểu đồ 2D (90%)...")
                     df_plot = pd.DataFrame({
                         'PCA1': X_2d[:, 0],
                         'PCA2': X_2d[:, 1],
@@ -635,49 +642,64 @@ def run_mnist_clustering_app():
                         showlegend=True,
                         margin=dict(l=50, r=50, t=50, b=50)
                     )
-                    st.plotly_chart(fig, use_container_width=True)
 
-                    st.subheader("Hiểu biểu đồ này như thế nào?")
+                    # Thêm hiệu ứng mượt từ 90% đến 100%
+                    for i in range(90, 101):
+                        progress_bar.progress(i)
+                        status_text.text(f"Đang hoàn tất biểu đồ ({i}%)...")
+                        time.sleep(0.05)  # Tạo hiệu ứng mượt mà
+
+                # Sau khi spinner biến mất, hiển thị thông báo hoàn tất
+                status_text.text("Hoàn tất! Đang hiển thị kết quả...")
+                time.sleep(0.5)  # Dừng nhẹ để người dùng thấy thông báo
+                progress_bar.empty()
+                status_text.empty()
+                st.success(f"Phân cụm và trực quan hóa xong! Thời gian: {training_time:.2f} giây.")
+
+                st.subheader("Kết quả Phân cụm (Biểu đồ 2D)")
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.subheader("Hiểu biểu đồ này như thế nào?")
+                if cluster_method == "K-means":
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, được giảm từ $784$ chiều xuống $2$ chiều (dùng PCA).  
+                    - **Màu sắc**: Mỗi cụm có một màu riêng (ví dụ: Cluster 1 là xanh dương, Cluster 2 là xanh lá).  
+                    - **Tâm cụm**: Điểm vàng (hình ngôi sao) là trung tâm của mỗi cụm, đại diện cho trung bình của các điểm trong cụm.  
+                    - **Rê chuột**: Rê chuột vào điểm để xem giá trị PCA1, PCA2, và cụm.  
+                    - **Ý nghĩa**: K-means chia dữ liệu thành ${n_clusters}$ cụm. Lý tưởng là mỗi cụm chứa các điểm dữ liệu tương tự nhau dựa trên đặc trưng hình ảnh.  
+                    """, unsafe_allow_html=True)
+                else:
+                    noise_percentage = (n_noise / num_samples * 100) if num_samples > 0 else 0
+                    st.markdown(f"""
+                    - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, được giảm từ $784$ chiều xuống $2$ chiều (dùng PCA).  
+                    - **Màu sắc**: Mỗi cụm có một màu riêng. Điểm nhiễu (không thuộc cụm nào) có màu xám, hình chữ 'x'.  
+                    - **Rê chuột**: Rê chuột vào điểm để xem giá trị PCA1, PCA2, và cụm.  
+                    - **Ý nghĩa**: DBSCAN tự tìm ${n_clusters_est}$ cụm và ${n_noise}$ điểm nhiễu (${noise_percentage:.2f}\\%$ tổng số). Lý tưởng là các cụm chứa các điểm dữ liệu tương tự nhau, nhiễu là các điểm bất thường.  
+                    """, unsafe_allow_html=True)
+
+                st.subheader("Thông tin chi tiết")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    st.markdown("**Thông tin lần chạy:**")
+                    st.write(f"- Tên lần chạy: {run_name}")
+                    st.write(f"- ID lần chạy: {run_id}")
+
+                    st.markdown("**Cài đặt:**")
+                    st.write(f"- Phương pháp: {cluster_method}")
                     if cluster_method == "K-means":
-                        st.markdown(f"""
-                        - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, được giảm từ $784$ chiều xuống $2$ chiều (dùng PCA).  
-                        - **Màu sắc**: Mỗi cụm có một màu riêng (ví dụ: Cluster 1 là xanh dương, Cluster 2 là xanh lá).  
-                        - **Tâm cụm**: Điểm vàng (hình ngôi sao) là trung tâm của mỗi cụm, đại diện cho trung bình của các điểm trong cụm.  
-                        - **Rê chuột**: Rê chuột vào điểm để xem giá trị PCA1, PCA2, và cụm.  
-                        - **Ý nghĩa**: K-means chia dữ liệu thành ${n_clusters}$ cụm. Lý tưởng là mỗi cụm chứa các điểm dữ liệu tương tự nhau dựa trên đặc trưng hình ảnh.  
-                        """, unsafe_allow_html=True)
+                        st.write(f"- Số nhóm: $ {n_clusters} $", unsafe_allow_html=True)
+                    else:
+                        st.write(f"- Khoảng cách tối đa ($\\epsilon$): $ {eps} $", unsafe_allow_html=True)
+                        st.write(f"- Số điểm tối thiểu ($\\text{{minPts}}$): $ {min_samples} $", unsafe_allow_html=True)
+                    st.write(f"- Thời gian chạy: $ {training_time:.2f} $ giây", unsafe_allow_html=True)
+                    st.write(f"- Số ảnh đã phân cụm: $ {X.shape[0]} $", unsafe_allow_html=True)
+
+                    st.markdown("**Kết quả chi tiết:**")
+                    if cluster_method == "K-means":
+                        st.write(f"- Độ chặt của cụm (inertia): $ {inertia:.2f} $ (số càng nhỏ, các điểm càng gần trung tâm cụm).", unsafe_allow_html=True)
                     else:
                         noise_percentage = (n_noise / num_samples * 100) if num_samples > 0 else 0
-                        st.markdown(f"""
-                        - **Biểu đồ**: Mỗi điểm là một ảnh chữ số, được giảm từ $784$ chiều xuống $2$ chiều (dùng PCA).  
-                        - **Màu sắc**: Mỗi cụm có một màu riêng. Điểm nhiễu (không thuộc cụm nào) có màu xám, hình chữ 'x'.  
-                        - **Rê chuột**: Rê chuột vào điểm để xem giá trị PCA1, PCA2, và cụm.  
-                        - **Ý nghĩa**: DBSCAN tự tìm ${n_clusters_est}$ cụm và ${n_noise}$ điểm nhiễu (${noise_percentage:.2f}\\%$ tổng số). Lý tưởng là các cụm chứa các điểm dữ liệu tương tự nhau, nhiễu là các điểm bất thường.  
-                        """, unsafe_allow_html=True)
-
-                    st.subheader("Thông tin chi tiết")
-                    with st.expander("Xem chi tiết kết quả", expanded=True):
-                        st.markdown("**Thông tin lần chạy:**")
-                        st.write(f"- Tên lần chạy: {run_name}")
-                        st.write(f"- ID lần chạy: {run_id}")
-
-                        st.markdown("**Cài đặt:**")
-                        st.write(f"- Phương pháp: {cluster_method}")
-                        if cluster_method == "K-means":
-                            st.write(f"- Số nhóm: $ {n_clusters} $", unsafe_allow_html=True)
-                        else:
-                            st.write(f"- Khoảng cách tối đa ($\\epsilon$): $ {eps} $", unsafe_allow_html=True)
-                            st.write(f"- Số điểm tối thiểu ($\\text{{minPts}}$): $ {min_samples} $", unsafe_allow_html=True)
-                        st.write(f"- Thời gian chạy: $ {training_time:.2f} $ giây", unsafe_allow_html=True)
-                        st.write(f"- Số ảnh đã phân cụm: $ {X.shape[0]} $", unsafe_allow_html=True)
-
-                        st.markdown("**Kết quả chi tiết:**")
-                        if cluster_method == "K-means":
-                            st.write(f"- Độ chặt của cụm (inertia): $ {inertia:.2f} $ (số càng nhỏ, các điểm càng gần trung tâm cụm).", unsafe_allow_html=True)
-                        else:
-                            noise_percentage = (n_noise / num_samples * 100) if num_samples > 0 else 0
-                            st.write(f"- Số cụm tìm được: $ {n_clusters_est} $", unsafe_allow_html=True)
-                            st.write(f"- Số điểm nhiễu: $ {n_noise} $ ($ {noise_percentage:.2f}\\% $ tổng số ảnh).", unsafe_allow_html=True)
+                        st.write(f"- Số cụm tìm được: $ {n_clusters_est} $", unsafe_allow_html=True)
+                        st.write(f"- Số điểm nhiễu: $ {n_noise} $ ($ {noise_percentage:.2f}\\% $ tổng số ảnh).", unsafe_allow_html=True)
 
     with tab_log_info:
         st.header("Theo dõi kết quả")
