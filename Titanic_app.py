@@ -118,7 +118,7 @@ def run_titanic_app():
 - **Chia dữ liệu:** Phân chia dữ liệu thành Train, Validation và Test.
 - **Huấn luyện mô hình:** Huấn luyện mô hình hồi quy với Cross Validation.
 - **Dự đoán:** Dự đoán khả năng sống sót kèm độ tin cậy (Confidence).
-- **Thông tin huấn luyện & MLflow UI:** Xem chi tiết các run đã log.
+- **Thông tin huấn luyện & MLflow UI:** Xem chi tiết các run đã log, đổi tên, xóa và truy cập MLflow UI.
         """, unsafe_allow_html=True)
 
     # ---------------- Tab 2: Phân tích dữ liệu ----------------
@@ -404,7 +404,7 @@ def run_titanic_app():
                 with st.spinner("Đang huấn luyện mô hình với Cross Validation..."):
                     run_name = f"{model_choice_to_train}_Run_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
-                        # Chỉ log các tham số của mô hình hiện tại
+                        # Log tham số
                         params = {
                             "model_choice": model_choice_to_train,
                             "learning_rate_method": lr_method,
@@ -412,9 +412,7 @@ def run_titanic_app():
                             "poly_degree": poly_degree if model_choice_to_train == "Hồi quy Đa thức" else "N/A",
                             "num_folds": num_folds
                         }
-
-                        for key, value in params.items():
-                            mlflow.log_param(key, value)
+                        mlflow.log_params(params)
 
                         # Huấn luyện mô hình
                         max_iter = 1000
@@ -466,6 +464,22 @@ def run_titanic_app():
 
                         status_text.text("Đang lưu kết quả...")
                         training_time = time.time() - start_time
+
+                        # Log metrics
+                        metrics = {
+                            "mean_cv_score_r2": float(np.mean(cv_scores)),
+                            "mse_val": float(mse_val),
+                            "r2_val": float(r2_val),
+                            "accuracy_val": float(accuracy_val),
+                            "mse_test": float(mse_test),
+                            "r2_test": float(r2_test),
+                            "accuracy_test": float(accuracy_test),
+                            "training_time_seconds": float(training_time)
+                        }
+                        mlflow.log_metrics(metrics)
+
+                        # Lưu model
+                        mlflow.sklearn.log_model(model, "model")
 
                         # Lưu kết quả vào session_state
                         st.session_state["run_id"] = run.info.run_id
@@ -553,8 +567,8 @@ def run_titanic_app():
                 input_values = []
                 for feature in features:
                     if np.issubdtype(df[feature].dtype, np.number):
-                        default_value = abs(float(df[feature].median()))
-                        value = st.number_input(f"{feature}:", value=default_value, key=f"input_{feature}")
+                        default_value = int(round(abs(df[feature].median())))  # Chuyển về số nguyên
+                        value = st.number_input(f"{feature}:", value=default_value, step=1, format="%d", key=f"input_{feature}")
                     else:
                         options = list(sorted(df[feature].unique()))
                         value = st.selectbox(f"{feature}:", options, key=f"input_{feature}")
@@ -573,17 +587,17 @@ def run_titanic_app():
                         
                         if prediction >= 0.5:
                             result = "Sống"
-                            confidence = prediction * 100
+                            confidence = int(round(prediction * 100))  # Chuyển về số nguyên
                         else:
                             result = "Không sống"
-                            confidence = (1 - prediction) * 100
+                            confidence = int(round((1 - prediction) * 100))  # Chuyển về số nguyên
 
                         for i in range(50, 101, 5):
                             progress_bar.progress(i)
                             status_text.text(f"Đang hoàn tất {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence:.2f}%**")
+                        st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence}%**")
                         
                         time.sleep(1)
                         progress_bar.empty()
@@ -609,10 +623,10 @@ def run_titanic_app():
                             
                             if prediction >= 0.5:
                                 result = "Sống"
-                                confidence = prediction * 100
+                                confidence = int(round(prediction * 100))  # Chuyển về số nguyên
                             else:
                                 result = "Không sống"
-                                confidence = (1 - prediction) * 100
+                                confidence = int(round((1 - prediction) * 100))  # Chuyển về số nguyên
 
                             y_true = "Sống" if y_test.iloc[idx] == 1 else "Không sống"
 
@@ -621,7 +635,7 @@ def run_titanic_app():
                                 status_text.text(f"Đang hoàn tất {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
 
-                            st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
+                            st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence}%** | Giá trị thực: **{y_true}**")
                             
                             time.sleep(1)
                             progress_bar.empty()
@@ -634,7 +648,7 @@ def run_titanic_app():
     with tab_mlflow:
         st.header("Theo dõi kết quả")
         st.markdown("""
-        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện. Chọn một lần chạy để xem chi tiết tham số của mô hình.
+        Tab này cho phép bạn xem danh sách các lần huấn luyện, đổi tên, xóa và xem chi tiết tham số cùng kết quả của từng run.
         """, unsafe_allow_html=True)
         
         try:
@@ -652,7 +666,6 @@ def run_titanic_app():
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
 
-                    # Mặc định chọn lần chạy mới nhất hoặc lần chạy vừa huấn luyện
                     default_run_name = st.session_state.get('run_name', run_names[0]) if 'run_name' in st.session_state else run_names[0]
 
                     st.subheader("Danh sách run")
@@ -661,23 +674,77 @@ def run_titanic_app():
                         options=run_names,
                         index=run_names.index(default_run_name) if default_run_name in run_names else 0,
                         key="main_select",
-                        help="Chọn một lần chạy để xem chi tiết."
+                        help="Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa."
                     )
                     selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
                     selected_run = client.get_run(selected_run_id)
+
+                    st.subheader("Đổi tên Run")
+                    new_run_name = st.text_input(
+                        "Nhập tên mới:",
+                        value=selected_run_name,
+                        key="rename_input"
+                    )
+                    if st.button("Cập nhật tên", key="rename_button"):
+                        if new_run_name.strip() and new_run_name.strip() != selected_run_name:
+                            with st.spinner("Đang cập nhật tên..."):
+                                client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
+                                if 'run_name' in st.session_state and st.session_state['run_id'] == selected_run_id:
+                                    st.session_state['run_name'] = new_run_name.strip()
+                                st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
+                                time.sleep(0.5)
+                                st.rerun()
+                        elif not new_run_name.strip():
+                            st.warning("Vui lòng nhập tên hợp lệ.")
+                        else:
+                            st.info("Tên mới trùng với tên hiện tại.")
+
+                    st.subheader("Xóa Run")
+                    if st.button("Xóa lần chạy", key="delete_button"):
+                        with st.spinner("Đang xóa lần chạy..."):
+                            client.delete_run(selected_run_id)
+                            if 'run_id' in st.session_state and st.session_state['run_id'] == selected_run_id:
+                                del st.session_state['run_id']
+                                del st.session_state['run_name']
+                            st.success(f"Đã xóa: {selected_run_name}")
+                            time.sleep(0.5)
+                            st.rerun()
 
                     st.subheader("Thông tin chi tiết của Run")
                     st.write(f"**Tên lần chạy:** {selected_run_name}")
                     st.write(f"**ID lần chạy:** {selected_run_id}")
                     st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
 
-                    st.markdown("**Tham số của mô hình:**", unsafe_allow_html=True)
+                    st.markdown("**Tham số:**", unsafe_allow_html=True)
                     if selected_run.data.params:
                         st.json(selected_run.data.params, expanded=True)
                     else:
-                        st.write("Không có tham số nào được ghi nhận cho lần chạy này.")
+                        st.write("Không có tham số được ghi nhận.")
+
+                    st.markdown("**Kết quả:**", unsafe_allow_html=True)
+                    if selected_run.data.metrics:
+                        metrics_display = {
+                            "Thời gian huấn luyện (giây)": f"{selected_run.data.metrics.get('training_time_seconds', 'N/A'):.2f}",
+                            "Mean CV Score (R²)": f"{selected_run.data.metrics.get('mean_cv_score_r2', 'N/A'):.2f}",
+                            "Validation MSE": f"{selected_run.data.metrics.get('mse_val', 'N/A'):.2f}",
+                            "Validation R²": f"{selected_run.data.metrics.get('r2_val', 'N/A'):.2f}",
+                            "Validation Accuracy": f"{selected_run.data.metrics.get('accuracy_val', 'N/A'):.2f}",
+                            "Test MSE": f"{selected_run.data.metrics.get('mse_test', 'N/A'):.2f}",
+                            "Test R²": f"{selected_run.data.metrics.get('r2_test', 'N/A'):.2f}",
+                            "Test Accuracy": f"{selected_run.data.metrics.get('accuracy_test', 'N/A'):.2f}"
+                        }
+                        st.json(metrics_display, expanded=True)
+                    else:
+                        st.write("Không có kết quả được ghi nhận.")
+
+                    st.subheader("Truy cập MLflow UI")
+                    mlflow_tracking_uri = st.secrets["mlflow"]["MLFLOW_TRACKING_URI"]
+                    if st.button("Mở MLflow UI"):
+                        st.write(f"Đang chuyển hướng tới: {mlflow_tracking_uri}")
+                        st.markdown(f'<meta http-equiv="refresh" content="0;URL={mlflow_tracking_uri}">', unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
-if __name__ == "__main__":##
+if __name__ == "__main__":
     run_titanic_app()
