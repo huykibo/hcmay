@@ -687,15 +687,17 @@ def run_mnist_clustering_app():
         
         try:
             client = MlflowClient()
-            experiment_id = "4"  # ID của experiment MNIST Clustering
-            experiment = client.get_experiment(experiment_id)
+            # Lấy experiment bằng tên thay vì ID cố định
+            experiment = client.get_experiment_by_name("MNIST_clustering")
             if not experiment:
-                st.error(f"Không tìm thấy experiment với ID: {experiment_id}. Vui lòng kiểm tra lại MLflow tracking URI.")
+                st.error("Không tìm thấy experiment 'MNIST_clustering'. Vui lòng kiểm tra MLflow tracking URI hoặc tạo experiment mới.")
+                experiment_id = None
             else:
+                experiment_id = experiment.experiment_id
                 runs = client.search_runs(experiment_ids=[experiment_id], order_by=["attributes.start_time DESC"])
                 
                 if not runs:
-                    st.info("Chưa có lần chạy nào được ghi nhận.")
+                    st.info("Chưa có lần chạy nào được ghi nhận trong experiment 'MNIST_clustering'.")
                 else:
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
@@ -728,7 +730,7 @@ def run_mnist_clustering_app():
                                     st.session_state['latest_run']['run_name'] = new_run_name.strip()
                                 st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
                                 time.sleep(0.5)
-                                st.rerun()  # Tự động cập nhật
+                                st.rerun()  # Tự động cập nhật giao diện
                         elif not new_run_name.strip():
                             st.warning("Vui lòng nhập tên hợp lệ.")
                         else:
@@ -742,7 +744,7 @@ def run_mnist_clustering_app():
                                 del st.session_state['latest_run']
                             st.success(f"Đã xóa: {selected_run_name}")
                             time.sleep(0.5)
-                            st.rerun()  # Tự động cập nhật
+                            st.rerun()  # Tự động cập nhật giao diện
 
                     st.subheader("Thông tin chi tiết của Run")
                     st.write(f"**Tên lần chạy:** {selected_run_name}")
