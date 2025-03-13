@@ -147,7 +147,11 @@ def run_titanic_app():
                 df = st.session_state.df.copy()
                 st.write("**Xử lý dữ liệu:** Loại bỏ cột không cần thiết, điền giá trị thiếu, mã hóa biến phân loại, và chuẩn hóa dữ liệu.")
 
-                dropped_cols = st.multiselect("Chọn cột cần loại bỏ:", df.columns.tolist(), default=["PassengerId", "Name", "Ticket", "Cabin"])
+                default_cols = ["PassengerId", "Name", "Ticket", "Cabin"]
+                valid_default_cols = [col for col in default_cols if col in df.columns]
+                dropped_cols = st.multiselect("Chọn cột cần loại bỏ:", 
+                                              df.columns.tolist(), 
+                                              default=valid_default_cols)
                 df.drop(columns=dropped_cols, errors='ignore', inplace=True)
                 st.write(f"Đã loại bỏ các cột: {', '.join(dropped_cols)}")
 
@@ -155,7 +159,9 @@ def run_titanic_app():
                 missing_cols = df.columns[df.isnull().any()].tolist()
                 if missing_cols:
                     st.write(f"Các cột có giá trị thiếu: {', '.join(missing_cols)}")
-                    fill_missing_cols = st.multiselect("Chọn cột để điền giá trị thiếu:", missing_cols, default=missing_cols)
+                    fill_missing_cols = st.multiselect("Chọn cột để điền giá trị thiếu:", 
+                                                       missing_cols, 
+                                                       default=missing_cols)
                     fill_method = st.selectbox("Chọn phương pháp điền cho tất cả cột:", 
                                               ["trung vị (median)", "trung bình (mean)", "mode", "loại bỏ"],
                                               index=0)
@@ -390,6 +396,7 @@ def run_titanic_app():
                     st.error("Dữ liệu huấn luyện chứa giá trị vô cực. Vui lòng kiểm tra lại.")
                     return
 
+                # Khởi tạo thanh tiến trình và trạng thái
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 start_time = time.time()
@@ -436,23 +443,22 @@ def run_titanic_app():
                                 ))
                             ])
 
-                        for i in range(50):
-                            progress_bar.progress(i * 2)
-                            status_text.text(f"Đang huấn luyện... {i * 2}%")
-                            time.sleep(0.02)
-
+                        # Bước 1: Cross Validation (0% -> 40%)
+                        status_text.text("Đang thực hiện Cross Validation...")
+                        progress_bar.progress(0)
                         cv_scores = cross_val_score(model, X_train, y_train, cv=num_folds, scoring='r2')
+                        progress_bar.progress(40)
                         mlflow.log_metric("mean_cv_score", np.mean(cv_scores))
                         mlflow.log_metric("cv_scores_std", np.std(cv_scores))
                         mlflow.log_metric("max_cv_score", np.max(cv_scores))
 
+                        # Bước 2: Huấn luyện mô hình (40% -> 70%)
+                        status_text.text("Đang huấn luyện mô hình...")
                         model.fit(X_train, y_train)
+                        progress_bar.progress(70)
 
-                        for i in range(50, 100):
-                            progress_bar.progress(i + 1)
-                            status_text.text(f"Đang tính toán chỉ số... {i + 1}%")
-                            time.sleep(0.01)
-
+                        # Bước 3: Dự đoán và tính toán chỉ số (70% -> 90%)
+                        status_text.text("Đang tính toán chỉ số...")
                         y_pred_val = model.predict(X_val)
                         mse_val = mean_squared_error(y_val, y_pred_val)
                         r2_val = r2_score(y_val, y_pred_val)
@@ -464,7 +470,10 @@ def run_titanic_app():
                         r2_test = r2_score(y_test, y_pred_test)
                         y_pred_test_class = [1 if pred >= 0.5 else 0 for pred in y_pred_test]
                         accuracy_test = accuracy_score(y_test, y_pred_test_class)
+                        progress_bar.progress(90)
 
+                        # Bước 4: Lưu kết quả và hoàn tất (90% -> 100%)
+                        status_text.text("Đang lưu kết quả...")
                         training_time = time.time() - start_time
 
                         mlflow.log_metric("validation_mse", mse_val)
@@ -477,107 +486,88 @@ def run_titanic_app():
 
                         mlflow.sklearn.log_model(model, "model")
 
+                        # Lưu tất cả kết quả vào session_state
                         st.session_state["run_id"] = run.info.run_id
                         st.session_state["run_name"] = run_name
+                        st.session_state["cv_scores"] = cv_scores
+                        st.session_state["mse_val"] = mse_val
+                        st.session_state["r2_val"] = r2_val
                         st.session_state["accuracy_val"] = accuracy_val
+                        st.session_state["mse_test"] = mse_test
+                        st.session_state["r2_test"] = r2_test
                         st.session_state["accuracy_test"] = accuracy_test
+                        st.session_state["y_pred_val"] = y_pred_val
+                        st.session_state["y_pred_test"] = y_pred_test
+                        st.session_state["training_time"] = training_time
                         st.session_state["params"] = params
                         st.session_state["model"] = model
                         st.session_state["models_trained"] = True
 
-                    training_time = time.time() - start_time
-                    progress_bar.empty()
-                    status_text.empty()
+                        progress_bar.progress(100)
+                        status_text.text("Hoàn tất huấn luyện!")
 
-                    st.subheader("Thông tin Kết quả")
-                    with st.expander("Xem chi tiết kết quả", expanded=True):
-                        st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
-                        st.write(f"- **Tên lần chạy (Run Name)**: {run_name}")
-                        st.write(f"- **ID lần chạy (Run ID)**: {st.session_state['run_id']}")
+            # Hiển thị kết quả nếu đã huấn luyện
+            if st.session_state.get("models_trained", False):
+                st.subheader("Thông tin Kết quả")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
+                    st.write(f"- **Tên lần chạy (Run Name)**: {st.session_state['run_name']}")
+                    st.write(f"- **ID lần chạy (Run ID)**: {st.session_state['run_id']}")
 
-                        st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
-                        st.write(f"- **Phương pháp**: {model_choice_to_train}")
-                        if model_choice_to_train == "Hồi quy Đa thức":
-                            st.write(f"- **Bậc đa thức**: {poly_degree}")
-                        st.write(f"- **Phương pháp Learning Rate**: {lr_method}")
-                        if lr_method == "constant":
-                            st.write(f"- **Eta0**: {eta0}")
-                        st.write(f"- **Số folds Cross Validation**: {num_folds}")
-                        st.write(f"- **Thời gian huấn luyện**: {training_time:.2f} giây")
-                        st.write(f"- **Số mẫu huấn luyện**: {X_train.shape[0]}")
-                        st.write(f"- **Số mẫu validation**: {X_val.shape[0]}")
-                        st.write(f"- **Số mẫu test**: {X_test.shape[0]}")
+                    st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
+                    st.write(f"- **Phương pháp**: {st.session_state['params']['model_choice']}")
+                    if st.session_state['params']['model_choice'] == "Hồi quy Đa thức":
+                        st.write(f"- **Bậc đa thức**: {st.session_state['params']['poly_degree']}")
+                    st.write(f"- **Phương pháp Learning Rate**: {st.session_state['params']['learning_rate_method']}")
+                    if st.session_state['params']['learning_rate_method'] == "constant":
+                        st.write(f"- **Eta0**: {st.session_state['params']['eta0']}")
+                    st.write(f"- **Số folds Cross Validation**: {st.session_state['params']['num_folds']}")
+                    st.write(f"- **Thời gian huấn luyện**: {st.session_state['training_time']:.2f} giây")
+                    st.write(f"- **Số mẫu huấn luyện**: {st.session_state['params']['train_samples']}")
+                    st.write(f"- **Số mẫu validation**: {st.session_state['params']['validation_samples']}")
+                    st.write(f"- **Số mẫu test**: {st.session_state['params']['test_samples']}")
 
-                        st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
-                        st.write(f"- **Mean CV Score (R²)**: {np.mean(cv_scores):.2f}")
-                        st.write(f"- **Validation MSE**: {mse_val:.2f}")
-                        st.write(f"- **Validation R²**: {r2_val:.2f}")
-                        st.write(f"- **Validation Accuracy (ngưỡng 0.5)**: {accuracy_val:.2f}")
-                        st.write(f"- **Test MSE**: {mse_test:.2f}")
-                        st.write(f"- **Test R²**: {r2_test:.2f}")
-                        st.write(f"- **Test Accuracy (ngưỡng 0.5)**: {accuracy_test:.2f}")
-                        st.markdown(f"""
-                        - **Nhận xét**:  
-                          *=> Mô hình đạt độ chính xác {accuracy_test:.2f} trên tập test, cho thấy khả năng tổng quát hóa { 'tốt' if accuracy_test > 0.8 else 'trung bình' if accuracy_test > 0.6 else 'kém'}.*  
-                          Mean CV Score (R²) gần 1 và MSE nhỏ cho thấy mô hình khớp tốt với dữ liệu.
-                        """, unsafe_allow_html=True)
-
-                    st.markdown("### Giải thích biểu đồ Actual vs Predicted")
-                    st.markdown("""
-                    Biểu đồ **Actual vs Predicted** là biểu đồ phân tán (scatter plot) so sánh giá trị thực tế (Actual) và giá trị dự đoán (Predicted) của mô hình:
-                    - **Trục X (Thực tế)**: Giá trị thực của cột `Survived` (0: Không sống, 1: Sống).
-                    - **Trục Y (Dự đoán)**: Giá trị dự đoán từ mô hình (liên tục từ 0 đến 1, trước khi áp ngưỡng 0.5).
-                    - **Đường chéo đỏ (y = x)**: Đường tham chiếu lý tưởng, nếu tất cả điểm nằm trên đường này thì dự đoán hoàn toàn chính xác.
-                    - **Ý nghĩa**:
-                      - Điểm càng gần đường chéo đỏ, dự đoán càng chính xác.
-                      - Nếu điểm lệch xa đường chéo (ví dụ: Actual = 1 nhưng Predicted gần 0), mô hình dự đoán sai.
-                      - Trong bài toán Titanic, các điểm phân bố gần đường chéo cho thấy mô hình có khả năng phân biệt tốt giữa "Sống" và "Không sống", đặc biệt khi kết hợp với độ chính xác (Accuracy) cao.
+                    st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
+                    st.write(f"- **Mean CV Score (R²)**: {np.mean(st.session_state['cv_scores']):.2f}")
+                    st.write(f"- **Validation MSE**: {st.session_state['mse_val']:.2f}")
+                    st.write(f"- **Validation R²**: {st.session_state['r2_val']:.2f}")
+                    st.write(f"- **Validation Accuracy (ngưỡng 0.5)**: {st.session_state['accuracy_val']:.2f}")
+                    st.write(f"- **Test MSE**: {st.session_state['mse_test']:.2f}")
+                    st.write(f"- **Test R²**: {st.session_state['r2_test']:.2f}")
+                    st.write(f"- **Test Accuracy (ngưỡng 0.5)**: {st.session_state['accuracy_test']:.2f}")
+                    st.markdown(f"""
+                    - **Nhận xét**:  
+                      *=> Mô hình đạt độ chính xác {st.session_state['accuracy_test']:.2f} trên tập test, cho thấy khả năng tổng quát hóa { 'tốt' if st.session_state['accuracy_test'] > 0.8 else 'trung bình' if st.session_state['accuracy_test'] > 0.6 else 'kém'}.*  
+                      Mean CV Score (R²) gần 1 và MSE nhỏ cho thấy mô hình khớp tốt với dữ liệu.
                     """, unsafe_allow_html=True)
 
-                    st.markdown("### Biểu đồ Actual vs Predicted (Validation)")
-                    fig, ax = plt.subplots()
-                    sns.scatterplot(x=y_val, y=y_pred_val, ax=ax)
-                    ax.plot([0, 1], [0, 1], 'r--')
-                    ax.set_xlabel("Thực tế")
-                    ax.set_ylabel("Dự đoán")
-                    st.pyplot(fig)
+                st.markdown("### Giải thích biểu đồ Actual vs Predicted")
+                st.markdown("""
+                Biểu đồ **Actual vs Predicted** là biểu đồ phân tán (scatter plot) so sánh giá trị thực tế (Actual) và giá trị dự đoán (Predicted) của mô hình:
+                - **Trục X (Thực tế)**: Giá trị thực của cột `Survived` (0: Không sống, 1: Sống).
+                - **Trục Y (Dự đoán)**: Giá trị dự đoán từ mô hình (liên tục từ 0 đến 1, trước khi áp ngưỡng 0.5).
+                - **Đường chéo đỏ (y = x)**: Đường tham chiếu lý tưởng, nếu tất cả điểm nằm trên đường này thì dự đoán hoàn toàn chính xác.
+                - **Ý nghĩa**:
+                  - Điểm càng gần đường chéo đỏ, dự đoán càng chính xác.
+                  - Nếu điểm lệch xa đường chéo (ví dụ: Actual = 1 nhưng Predicted gần 0), mô hình dự đoán sai.
+                  - Trong bài toán Titanic, các điểm phân bố gần đường chéo cho thấy mô hình có khả năng phân biệt tốt giữa "Sống" và "Không sống", đặc biệt khi kết hợp với độ chính xác (Accuracy) cao.
+                """, unsafe_allow_html=True)
 
-                    st.markdown("### Biểu đồ Actual vs Predicted (Test)")
-                    fig2, ax2 = plt.subplots()
-                    sns.scatterplot(x=y_test, y=y_pred_test, ax=ax2)
-                    ax2.plot([0, 1], [0, 1], 'r--')
-                    ax2.set_xlabel("Thực tế")
-                    ax2.set_ylabel("Dự đoán")
-                    st.pyplot(fig2)
+                st.markdown("### Biểu đồ Actual vs Predicted (Validation)")
+                fig, ax = plt.subplots()
+                sns.scatterplot(x=st.session_state.y_val, y=st.session_state['y_pred_val'], ax=ax)
+                ax.plot([0, 1], [0, 1], 'r--')
+                ax.set_xlabel("Thực tế")
+                ax.set_ylabel("Dự đoán")
+                st.pyplot(fig)
 
-                    # Thêm phần Thông tin Kết quả mới
-                    st.subheader("Thông tin Kết quả")
-                    with st.expander("Xem chi tiết kết quả", expanded=True):
-                        run_name = st.session_state['run_name']
-                        run_id = st.session_state['run_id']
-                        model_choice = st.session_state['params']['model_choice']
-                        params = st.session_state['params']
-                        accuracy_val = st.session_state['accuracy_val']
-                        accuracy_test = st.session_state['accuracy_test']
-                        X_train = st.session_state['X_train']
-
-                        st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
-                        st.write(f"- **Tên lần chạy (Run Name)**: {run_name}")
-                        st.write(f"- **ID lần chạy (Run ID)**: {run_id}")
-
-                        st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
-                        st.write(f"- **Mô hình**: {model_choice}")
-                        st.write(f"- **Tham số**:")
-                        for key, value in params.items():
-                            st.write(f"  - {key}: {value}")
-                        st.write(f"- **Thời gian chạy**: {training_time:.2f} giây")
-                        st.write(f"- **Số mẫu huấn luyện**: {len(X_train)}")
-
-                        st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
-                        st.markdown(f"""
-                        - **Độ chính xác Validation**: {accuracy_val*100:.2f}%  
-                        - **Độ chính xác Test**: {accuracy_test*100:.2f}%  
-                        """, unsafe_allow_html=True)
+                st.markdown("### Biểu đồ Actual vs Predicted (Test)")
+                fig2, ax2 = plt.subplots()
+                sns.scatterplot(x=st.session_state.y_test, y=st.session_state['y_pred_test'], ax=ax2)
+                ax2.plot([0, 1], [0, 1], 'r--')
+                ax2.set_xlabel("Thực tế")
+                ax2.set_ylabel("Dự đoán")
+                st.pyplot(fig2)
         else:
             st.warning("Vui lòng chia tập dữ liệu trước.")
 
@@ -613,22 +603,21 @@ def run_titanic_app():
 
                         input_array = np.array(input_values).reshape(1, -1)
                         prediction = st.session_state.model.predict(input_array)[0]
-                        prediction = np.clip(prediction, 0, 1)  # Giới hạn dự đoán trong [0, 1]
+                        prediction = np.clip(prediction, 0, 1)
                         
-                        # Tính Confidence dựa trên khoảng cách tới ngưỡng 0.5
                         if prediction >= 0.5:
                             result = "Sống"
-                            confidence = prediction * 100  # Confidence là % gần với 1
+                            confidence = prediction * 100
                         else:
                             result = "Không sống"
-                            confidence = (1 - prediction) * 100  # Confidence là % gần với 0
+                            confidence = (1 - prediction) * 100
 
                         for i in range(50, 101, 5):
                             progress_bar.progress(i)
                             status_text.text(f"Đang hoàn tất {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
 
-                        st.success(f"Dự đoán: **{result}** | Confidence: **{confidence:.2f}%**")
+                        st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence:.2f}%**")
                         
                         time.sleep(1)
                         progress_bar.empty()
@@ -650,15 +639,14 @@ def run_titanic_app():
 
                             sample = X_test.iloc[idx].values.reshape(1, -1)
                             prediction = st.session_state.model.predict(sample)[0]
-                            prediction = np.clip(prediction, 0, 1)  # Giới hạn dự đoán trong [0, 1]
+                            prediction = np.clip(prediction, 0, 1)
                             
-                            # Tính Confidence dựa trên khoảng cách tới ngưỡng 0.5
                             if prediction >= 0.5:
                                 result = "Sống"
-                                confidence = prediction * 100  # Confidence là % gần với 1
+                                confidence = prediction * 100
                             else:
                                 result = "Không sống"
-                                confidence = (1 - prediction) * 100  # Confidence là % gần với 0
+                                confidence = (1 - prediction) * 100
 
                             y_true = "Sống" if y_test.iloc[idx] == 1 else "Không sống"
 
@@ -667,7 +655,7 @@ def run_titanic_app():
                                 status_text.text(f"Đang hoàn tất {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
 
-                            st.success(f"Dự đoán: **{result}** | Confidence: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
+                            st.success(f"Dự đoán: **{result}** | Độ tin cậy: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
                             
                             time.sleep(1)
                             progress_bar.empty()

@@ -90,269 +90,266 @@ def run_mnist_classification_app():
             key="info_selectbox"
         )
 
-        content_placeholder = st.empty()
+        if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
+            st.subheader("1. Ứng dụng này là gì và mục tiêu của nó?")
+            st.markdown("""
+            Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu MNIST – một trong những tập dữ liệu nổi tiếng nhất trong lĩnh vực học máy. MNIST bao gồm 70,000 ảnh chữ số từ 0 đến 9, mỗi ảnh có kích thước 28x28 pixel, tương đương với 784 đặc trưng (pixel). Mục tiêu của ứng dụng là xây dựng và huấn luyện các mô hình học máy (SVM và Decision Tree) để nhận diện chính xác các chữ số này, từ đó cung cấp một công cụ trực quan cho việc học tập, thử nghiệm và đánh giá hiệu quả của các thuật toán phân loại.
 
-        with content_placeholder.container():
-            if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
-                st.subheader("1. Ứng dụng này là gì và mục tiêu của nó?")
-                st.markdown("""
-                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu MNIST – một trong những tập dữ liệu nổi tiếng nhất trong lĩnh vực học máy. MNIST bao gồm 70,000 ảnh chữ số từ 0 đến 9, mỗi ảnh có kích thước 28x28 pixel, tương đương với 784 đặc trưng (pixel). Mục tiêu của ứng dụng là xây dựng và huấn luyện các mô hình học máy (SVM và Decision Tree) để nhận diện chính xác các chữ số này, từ đó cung cấp một công cụ trực quan cho việc học tập, thử nghiệm và đánh giá hiệu quả của các thuật toán phân loại.
+            Để dễ hình dung:  
+            - **784 đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng một vector 784 chiều, với mỗi chiều là giá trị độ sáng của một pixel (từ 0 đến 255).  
+            - **70,000 mẫu**: Tổng số ảnh trong tập dữ liệu, bao gồm cả tập huấn luyện và kiểm tra.  
+            - **Nhiệm vụ**: Dự đoán nhãn (từ 0 đến 9) của mỗi ảnh dựa trên các đặc trưng pixel.
+            """)
 
-                Để dễ hình dung:  
-                - **784 đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng một vector 784 chiều, với mỗi chiều là giá trị độ sáng của một pixel (từ 0 đến 255).  
-                - **70,000 mẫu**: Tổng số ảnh trong tập dữ liệu, bao gồm cả tập huấn luyện và kiểm tra.  
-                - **Nhiệm vụ**: Dự đoán nhãn (từ 0 đến 9) của mỗi ảnh dựa trên các đặc trưng pixel.
-                """)
+        elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
+            st.subheader("2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+            st.markdown("""
+            MNIST được tạo ra bởi Yann LeCun và các cộng sự, là một tập dữ liệu chuẩn trong nghiên cứu học máy và thị giác máy tính. Các ảnh trong MNIST được thu thập từ chữ số viết tay của học sinh trung học và nhân viên điều tra dân số Mỹ, sau đó được chuẩn hóa thành kích thước 28x28 pixel và chuyển thành thang độ xám (grayscale).  
 
-            elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
-                st.subheader("2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
-                st.markdown("""
-                MNIST được tạo ra bởi Yann LeCun và các cộng sự, là một tập dữ liệu chuẩn trong nghiên cứu học máy và thị giác máy tính. Các ảnh trong MNIST được thu thập từ chữ số viết tay của học sinh trung học và nhân viên điều tra dân số Mỹ, sau đó được chuẩn hóa thành kích thước 28x28 pixel và chuyển thành thang độ xám (grayscale).  
-
-                **Ý nghĩa của MNIST**:  
-                - Là bài toán cơ bản để kiểm tra hiệu quả của các thuật toán phân loại.  
-                - Dữ liệu đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt giữa các lớp tương tự (ví dụ: "4" và "9").  
-                - Phù hợp cho cả người mới bắt đầu và các nhà nghiên cứu muốn thử nghiệm các mô hình phức tạp hơn.
-                """)
-                st.subheader("Minh họa dữ liệu MNIST")
-                with st.spinner("Đang tải ảnh minh họa..."):
-                    try:
-                        mnist_image = Image.open("mnist.png")
-                        st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", use_container_width=True)
-                    except FileNotFoundError:
-                        st.error("Không tìm thấy file `mnist.png`. Vui lòng đảm bảo file nằm trong cùng thư mục với code hoặc cung cấp đường dẫn chính xác.")
-                    except Exception as e:
-                        st.error(f"Lỗi khi tải ảnh: {e}")
-
-            elif info_option == "Decision Tree – Mô hình cây quyết định":
-                st.subheader("3. Decision Tree – Mô hình cây quyết định")
-                st.markdown("""
-                **Decision Tree (Cây quyết định)** xây dựng một cấu trúc phân cấp giống như cây, trong đó dữ liệu được chia nhỏ dần dựa trên các đặc trưng (pixel trong MNIST) để đưa ra dự đoán cuối cùng.
-                """)
-
-                st.subheader("Cách hoạt động chi tiết:")
-                st.markdown("""
-                1. **Nút gốc (Root Node)**:  
-                   - Thuật toán bắt đầu với toàn bộ dữ liệu MNIST (70,000 mẫu, nhãn 0-9) và chọn một pixel quan trọng, ví dụ: "Pixel 5 > 100?" (giả sử Pixel 5 là giá trị tại vị trí [0, 5] trong ảnh 28x28).  
-                   - Dữ liệu được chia thành hai nhánh: nhánh "Yes" nếu Pixel 5 > 100, nhánh "No" nếu Pixel 5 ≤ 100.  
-                """)
+            **Ý nghĩa của MNIST**:  
+            - Là bài toán cơ bản để kiểm tra hiệu quả của các thuật toán phân loại.  
+            - Dữ liệu đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt giữa các lớp tương tự (ví dụ: "4" và "9").  
+            - Phù hợp cho cả người mới bắt đầu và các nhà nghiên cứu muốn thử nghiệm các mô hình phức tạp hơn.
+            """)
+            st.subheader("Minh họa dữ liệu MNIST")
+            with st.spinner("Đang tải ảnh minh họa..."):
                 try:
-                    tree_step_1 = Image.open("illustrations/tree_step_1.png")
-                    st.image(tree_step_1, caption="Bước 1: Nút gốc với toàn bộ dữ liệu MNIST", use_container_width=True)
+                    mnist_image = Image.open("mnist.png")
+                    # Đặt chiều rộng ảnh là 300 pixel
+                    st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/tree_step_1.png`. Vui lòng đảm bảo file đã được tạo.")
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng đảm bảo file nằm trong cùng thư mục với code hoặc cung cấp đường dẫn chính xác.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                2. **Chia nhánh đầu tiên (Splitting)**:  
-                   - Từ nút gốc, nhánh "Yes" (Pixel 5 > 100) chứa các mẫu có giá trị pixel sáng hơn, ví dụ: chữ số "1" hoặc "7" (thường có nét dày ở đầu).  
-                   - Nhánh "No" (Pixel 5 ≤ 100) chứa các mẫu tối hơn, ví dụ: chữ số "0" hoặc "2".  
-                """)
-                try:
-                    tree_step_2 = Image.open("illustrations/tree_step_2.png")
-                    st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu tiên dựa trên Pixel 5 > 100", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/tree_step_2.png`. Vui lòng đảm bảo file đã được tạo.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+        elif info_option == "Decision Tree – Mô hình cây quyết định":
+            st.subheader("3. Decision Tree – Mô hình cây quyết định")
+            st.markdown("""
+            **Decision Tree (Cây quyết định)** xây dựng một cấu trúc phân cấp giống như cây, trong đó dữ liệu được chia nhỏ dần dựa trên các đặc trưng (pixel trong MNIST) để đưa ra dự đoán cuối cùng.
+            """)
 
-                st.markdown("""
-                3. **Chia nhánh tiếp theo**:  
-                   - Từ nhánh "Yes" (Pixel 5 > 100), tiếp tục chia dựa trên "Pixel 10 > 50?" (giả sử Pixel 10 là vị trí [0, 10]).  
-                   - Nhánh "Yes" (Pixel 10 > 50) chứa các mẫu có nét dày hơn, ví dụ: "1" (nét đứng rõ rệt).  
-                   - Nhánh "No" (Pixel 10 ≤ 50) chứa các mẫu mỏng hơn, ví dụ: "7".  
-                """)
-                try:
-                    tree_step_3 = Image.open("illustrations/tree_step_3.png")
-                    st.image(tree_step_3, caption="Bước 3: Chia nhánh tiếp theo dựa trên Pixel 10 > 50", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/tree_step_3.png`. Vui lòng đảm bảo file đã được tạo.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("Cách hoạt động chi tiết:")
+            st.markdown("""
+            1. **Nút gốc (Root Node)**:  
+               - Thuật toán bắt đầu với toàn bộ dữ liệu MNIST (70,000 mẫu, nhãn 0-9) và chọn một pixel quan trọng, ví dụ: "Pixel 5 > 100?" (giả sử Pixel 5 là giá trị tại vị trí [0, 5] trong ảnh 28x28).  
+               - Dữ liệu được chia thành hai nhánh: nhánh "Yes" nếu Pixel 5 > 100, nhánh "No" nếu Pixel 5 ≤ 100.  
+            """)
+            try:
+                tree_step_1 = Image.open("illustrations/tree_step_1.png")
+                # Đặt chiều rộng ảnh là 300 pixel
+                st.image(tree_step_1, caption="Bước 1: Nút gốc với toàn bộ dữ liệu MNIST", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_1.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                4. **Nút lá và tiêu chí dừng**:  
-                   - Quá trình dừng khi nhóm dữ liệu thuần nhất hoặc đạt độ sâu tối đa.  
-                   - Ví dụ: Nhánh "Yes" của "Pixel 10 > 50" → Nhãn "1" (thuần nhất).  
-                   - Nhánh "No" của "Pixel 10 > 50" → Nhãn "9" (thuần nhất).  
-                   - Nhánh "No" của "Pixel 5 > 100" → Nhãn "0" (độ sâu tối đa).  
-                """)
-                try:
-                    tree_step_4 = Image.open("illustrations/tree_step_4.png")
-                    st.image(tree_step_4, caption="Bước 4: Nút lá với nhãn dự đoán (1, 9, 0)", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/tree_step_4.png`. Vui lòng đảm bảo file đã được tạo.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            st.markdown("""
+            2. **Chia nhánh đầu tiên (Splitting)**:  
+               - Từ nút gốc, nhánh "Yes" (Pixel 5 > 100) chứa các mẫu có giá trị pixel sáng hơn, ví dụ: chữ số "1" hoặc "7" (thường có nét dày ở đầu).  
+               - Nhánh "No" (Pixel 5 ≤ 100) chứa các mẫu tối hơn, ví dụ: chữ số "0" hoặc "2".  
+            """)
+            try:
+                tree_step_2 = Image.open("illustrations/tree_step_2.png")
+                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu tiên dựa trên Pixel 5 > 100", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_2.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                5. **Dự đoán**:  
-                   - Với một mẫu mới có Pixel 5 = 150 (> 100) và Pixel 10 = 60 (> 50), thuật toán đi qua nhánh "Yes" rồi "Yes", dẫn đến nhãn "1".  
-                   - Kết quả dự đoán: "1" với độ tin cậy cao dựa trên các điều kiện pixel.  
-                """)
-                try:
-                    tree_step_5 = Image.open("illustrations/tree_step_5.png")
-                    st.image(tree_step_5, caption="Bước 5: Dự đoán nhãn '1' cho mẫu mới", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/tree_step_5.png`. Vui lòng đảm bảo file đã được tạo.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            st.markdown("""
+            3. **Chia nhánh tiếp theo**:  
+               - Từ nhánh "Yes" (Pixel 5 > 100), tiếp tục chia dựa trên "Pixel 10 > 50?" (giả sử Pixel 10 là vị trí [0, 10]).  
+               - Nhánh "Yes" (Pixel 10 > 50) chứa các mẫu có nét dày hơn, ví dụ: "1" (nét đứng rõ rệt).  
+               - Nhánh "No" (Pixel 10 ≤ 50) chứa các mẫu mỏng hơn, ví dụ: "7".  
+            """)
+            try:
+                tree_step_3 = Image.open("illustrations/tree_step_3.png")
+                st.image(tree_step_3, caption="Bước 3: Chia nhánh tiếp theo dựa trên Pixel 10 > 50", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_3.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                ### Tiêu chí lựa chọn đặc trưng và ngưỡng:  
-                - **Entropy**: Đo mức độ "hỗn loạn" của dữ liệu dựa trên phân bố nhãn:  
-                  $$ Entropy(S) = -\\sum_{i=0}^{9} p_i \\log_2(p_i) $$  
-                  - $p_i$: Tỷ lệ mẫu thuộc nhãn $i$.  
-                - **Information Gain (IG)**: Đo mức độ giảm Entropy sau khi chia:  
-                  $$ IG(S, A) = Entropy(S) - \\sum_{v} \\frac{|S_v|}{|S|} \\times Entropy(S_v) $$  
-                - **Gini Index**: Đo độ "tinh khiết" của nhóm:  
-                  $$ Gini(S) = 1 - \\sum_{i=0}^{9} p_i^2 $$  
+            st.markdown("""
+            4. **Nút lá và tiêu chí dừng**:  
+               - Quá trình dừng khi nhóm dữ liệu thuần nhất hoặc đạt độ sâu tối đa.  
+               - Ví dụ: Nhánh "Yes" của "Pixel 10 > 50" → Nhãn "1" (thuần nhất).  
+               - Nhánh "No" của "Pixel 10 ≤ 50" → Nhãn "9" (thuần nhất).  
+               - Nhánh "No" của "Pixel 5 > 100" → Nhãn "0" (độ sâu tối đa).  
+            """)
+            try:
+                tree_step_4 = Image.open("illustrations/tree_step_4.png")
+                st.image(tree_step_4, caption="Bước 4: Nút lá với nhãn dự đoán (1, 9, 0)", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_4.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                ### Áp dụng với MNIST:
-                - Decision Tree chia dữ liệu dựa trên giá trị pixel (ví dụ: Pixel 5, Pixel 10) để phân biệt nhãn (0-9).  
+            st.markdown("""
+            5. **Dự đoán**:  
+               - Với một mẫu mới có Pixel 5 = 150 (> 100) và Pixel 10 = 60 (> 50), thuật toán đi qua nhánh "Yes" rồi "Yes", dẫn đến nhãn "1".  
+               - Kết quả dự đoán: "1" với độ tin cậy cao dựa trên các điều kiện pixel.  
+            """)
+            try:
+                tree_step_5 = Image.open("illustrations/tree_step_5.png")
+                st.image(tree_step_5, caption="Bước 5: Dự đoán nhãn '1' cho mẫu mới", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_5.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                ### Ưu điểm:
-                - Dễ hiểu, trực quan như một biểu đồ cây hỏi đáp.  
-                - Nhanh với dữ liệu nhỏ, không yêu cầu chuẩn hóa dữ liệu.  
+            st.markdown("""
+            ### Tiêu chí lựa chọn đặc trưng và ngưỡng:  
+            - **Entropy**: Đo mức độ "hỗn loạn" của dữ liệu dựa trên phân bố nhãn:  
+              $$ Entropy(S) = -\\sum_{i=0}^{9} p_i \\log_2(p_i) $$  
+              - $p_i$: Tỷ lệ mẫu thuộc nhãn $i$.  
+            - **Gini Index**: Đo độ "tinh khiết" của nhóm:  
+              $$ Gini(S) = 1 - \\sum_{i=0}^{9} p_i^2 $$  
 
-                ### Nhược điểm:
-                - Dễ bị **overfitting** nếu cây quá sâu, đặc biệt khi dữ liệu phức tạp như MNIST.  
-                - Khó xử lý các mẫu có đặc trưng tương tự (ví dụ: "3" và "8").  
-                """)
+            ### Áp dụng với MNIST:
+            - Decision Tree chia dữ liệu dựa trên giá trị pixel (ví dụ: Pixel 5, Pixel 10) để phân biệt nhãn (0-9).  
 
-            elif info_option == "SVM – Máy vector hỗ trợ":
-                st.subheader("4. SVM – Máy vector hỗ trợ")
-                st.markdown("""
-                **SVM (Support Vector Machine)** tìm một **siêu phẳng** trong không gian đặc trưng (784 chiều với MNIST) để phân tách các lớp nhãn sao cho khoảng cách từ siêu phẳng đến các mẫu gần nhất (support vectors) là lớn nhất. Nếu dữ liệu không phân tách tuyến tính, nó sử dụng **kernel** để chuyển dữ liệu lên không gian cao hơn.
+            ### Ưu điểm:
+            - Dễ hiểu, trực quan như một biểu đồ cây hỏi đáp.  
+            - Nhanh với dữ liệu nhỏ, không yêu cầu chuẩn hóa dữ liệu.  
 
-                ### Cách hoạt động chi tiết:
-                1. **Siêu phẳng**:  
-                   - Siêu phẳng là một ranh giới phân tách trong không gian cao chiều, được định nghĩa bởi:  
-                     $$ f(x) = w \\cdot x + b $$  
-                     - $w$: Vector trọng số, xác định hướng của siêu phẳng.  
-                     - $x$: Vector đặc trưng (784 pixel).  
-                     - $b$: Độ lệch, điều chỉnh vị trí siêu phẳng.  
-                   - Mẫu nằm ở phía nào của siêu phẳng được xác định bởi dấu của $f(x)$.  
-                """)
-                try:
-                    svm_step_1 = Image.open("illustrations/svm_step_1.png")
-                    st.image(svm_step_1, caption="Bước 1: Siêu phẳng phân tách dữ liệu", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/svm_step_1.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            ### Nhược điểm:
+            - Dễ bị **overfitting** nếu cây quá sâu, đặc biệt khi dữ liệu phức tạp như MNIST.  
+            - Khó xử lý các mẫu có đặc trưng tương tự (ví dụ: "3" và "8").  
+            """)
 
-                st.markdown("""
-                2. **Tối ưu hóa lề**:  
-                   - Khoảng cách lề (margin) từ siêu phẳng đến các điểm gần nhất được tính là:  
-                     $$ Margin = \\frac{2}{\\|w\\|} $$  
-                     - $\\|w\\|$: Độ dài vector $w$.  
-                   - Mục tiêu tối ưu hóa:  
-                     $$ \\min_{w,b} \\frac{1}{2} \\|w\\|^2 $$  
-                     Với ràng buộc:  
-                     $$ y_i (w \\cdot x_i + b) \\geq 1 $$  
-                     - $y_i$: Nhãn thực tế (+1 hoặc -1 cho phân loại nhị phân).  
-                     - $x_i$: Vector đặc trưng của mẫu.  
-                """)
-                try:
-                    svm_step_2 = Image.open("illustrations/svm_step_2.png")
-                    st.image(svm_step_2, caption="Bước 2: Siêu phẳng tối ưu với lề lớn nhất và support vectors", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/svm_step_2.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+        elif info_option == "SVM – Máy vector hỗ trợ":
+            st.subheader("4. SVM – Máy vector hỗ trợ")
+            st.markdown("""
+            **SVM (Support Vector Machine)** tìm một **siêu phẳng** trong không gian đặc trưng (784 chiều với MNIST) để phân tách các lớp nhãn sao cho khoảng cách từ siêu phẳng đến các mẫu gần nhất (support vectors) là lớn nhất. Nếu dữ liệu không phân tách tuyến tính, nó sử dụng **kernel** để chuyển dữ liệu lên không gian cao hơn.
 
-                st.markdown("""
-                3. **Soft Margin**:  
-                   - Khi dữ liệu không phân tách hoàn hảo (có lẫn lộn giữa các lớp), SVM cho phép sai số:  
-                     $$ \\min_{w,b,\\xi} \\frac{1}{2} \\|w\\|^2 + C \\sum \\xi_i $$  
-                     - $\\xi_i$: Biến "lỏng" (slack variable), đo mức độ vi phạm của mẫu.  
-                     - $C$: Tham số điều chỉnh, cân bằng giữa việc tối đa hóa lề và giảm thiểu lỗi.  
-                   - $C$ lớn ưu tiên ít lỗi hơn, $C$ nhỏ ưu tiên lề lớn hơn.  
-                """)
-                try:
-                    svm_step_4 = Image.open("illustrations/svm_step_4.png")
-                    st.image(svm_step_4, caption="Bước 3: Soft Margin với dữ liệu lẫn lộn", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/svm_step_4.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            ### Cách hoạt động chi tiết:
+            1. **Siêu phẳng**:  
+               - Siêu phẳng là một ranh giới phân tách trong không gian cao chiều, được định nghĩa bởi:  
+                 $$ f(x) = w \\cdot x + b $$  
+                 - $w$: Vector trọng số, xác định hướng của siêu phẳng.  
+                 - $x$: Vector đặc trưng (784 pixel).  
+                 - $b$: Độ lệch, điều chỉnh vị trí siêu phẳng.  
+               - Mẫu nằm ở phía nào của siêu phẳng được xác định bởi dấu của $f(x)$.  
+            """)
+            try:
+                svm_step_1 = Image.open("illustrations/svm_step_1.png")
+                st.image(svm_step_1, caption="Bước 1: Siêu phẳng phân tách dữ liệu", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_1.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                4. **Kernel Trick**:  
-                   - Khi dữ liệu không phân tách tuyến tính trong không gian ban đầu, SVM ánh xạ dữ liệu lên không gian cao hơn thông qua hàm kernel:  
-                     $$ K(x_i, x_j) = \\phi(x_i) \\cdot \\phi(x_j) $$  
-                     - $\\phi$: Hàm ánh xạ (không cần tính trực tiếp).  
-                   - Các loại kernel:  
-                     - **Linear**: $K(x_i, x_j) = x_i \\cdot x_j$.  
-                     - **Polynomial**: $K(x_i, x_j) = (x_i \\cdot x_j + c)^d$.  
-                     - **RBF**: $K(x_i, x_j) = \\exp(-\\gamma \\|x_i - x_j\\|^2)$, thường dùng cho dữ liệu phi tuyến.  
-                   - Kernel giúp tìm ranh giới phân tách trong không gian mới mà không cần tính toán tọa độ trực tiếp.  
-                """)
-                try:
-                    svm_step_3 = Image.open("illustrations/svm_step_3.png")
-                    st.image(svm_step_3, caption="Bước 4: Kernel nâng dữ liệu lên không gian cao hơn", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/svm_step_3.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            st.markdown("""
+            2. **Tối ưu hóa lề**:  
+               - Khoảng cách lề (margin) từ siêu phẳng đến các điểm gần nhất được tính là:  
+                 $$ Margin = \\frac{2}{\\|w\\|} $$  
+                 - $\\|w\\|$: Độ dài vector $w$.  
+               - Mục tiêu tối ưu hóa:  
+                 $$ \\min_{w,b} \\frac{1}{2} \\|w\\|^2 $$  
+                 Với ràng buộc:  
+                 $$ y_i (w \\cdot x_i + b) \\geq 1 $$  
+                 - $y_i$: Nhãn thực tế (+1 hoặc -1 cho phân loại nhị phân).  
+                 - $x_i$: Vector đặc trưng của mẫu.  
+            """)
+            try:
+                svm_step_2 = Image.open("illustrations/svm_step_2.png")
+                st.image(svm_step_2, caption="Bước 2: Siêu phẳng tối ưu với lề lớn nhất và support vectors", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_2.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                5. **Dự đoán**:  
-                   - Với mẫu mới $x$:  
-                     $$ f(x) = \\text{sign} \\left( \\sum_{i} \\alpha_i y_i K(x_i, x) + b \\right) $$  
-                     - $\\alpha_i$: Trọng số xác định từ quá trình huấn luyện, chỉ khác 0 với support vectors.  
-                     - $K(x_i, x)$: Đo độ tương đồng giữa mẫu mới và support vectors.  
-                   - Với phân loại đa lớp (0-9), SVM áp dụng chiến lược như "One-vs-Rest" hoặc "One-vs-One".  
-                """)
-                try:
-                    svm_step_5 = Image.open("illustrations/svm_step_5.png")
-                    st.image(svm_step_5, caption="Bước 5: Dự đoán điểm mới dựa trên siêu phẳng và support vectors", use_container_width=True)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy file `illustrations/svm_step_5.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
+            st.markdown("""
+            3. **Soft Margin**:  
+               - Khi dữ liệu không phân tách hoàn hảo (có lẫn lộn giữa các lớp), SVM cho phép sai số:  
+                 $$ \\min_{w,b,\\xi} \\frac{1}{2} \\|w\\|^2 + C \\sum \\xi_i $$  
+                 - $\\xi_i$: Biến "lỏng" (slack variable), đo mức độ vi phạm của mẫu.  
+                 - $C$: Tham số điều chỉnh, cân bằng giữa việc tối đa hóa lề và giảm thiểu lỗi.  
+               - $C$ lớn ưu tiên ít lỗi hơn, $C$ nhỏ ưu tiên lề lớn hơn.  
+            """)
+            try:
+                svm_step_4 = Image.open("illustrations/svm_step_4.png")
+                st.image(svm_step_4, caption="Bước 3: Soft Margin với dữ liệu lẫn lộn", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_4.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                ### Áp dụng với MNIST:
-                - SVM tìm ranh giới phân tách dựa trên toàn bộ đặc trưng pixel, tận dụng kernel để xử lý các mẫu phi tuyến.  
+            st.markdown("""
+            4. **Kernel Trick**:  
+               - Khi dữ liệu không phân tách tuyến tính trong không gian ban đầu, SVM ánh xạ dữ liệu lên không gian cao hơn thông qua hàm kernel:  
+                 $$ K(x_i, x_j) = \\phi(x_i) \\cdot \\phi(x_j) $$  
+                 - $\\phi$: Hàm ánh xạ (không cần tính trực tiếp).  
+               - Các loại kernel:  
+                 - **Linear**: $K(x_i, x_j) = x_i \\cdot x_j$.  
+                 - **Polynomial**: $K(x_i, x_j) = (x_i \\cdot x_j + c)^d$.  
+                 - **RBF**: $K(x_i, x_j) = \\exp(-\\gamma \\|x_i - x_j\\|^2)$, thường dùng cho dữ liệu phi tuyến.  
+               - Kernel giúp tìm ranh giới phân tách trong không gian mới mà không cần tính toán tọa độ trực tiếp.  
+            """)
+            try:
+                svm_step_3 = Image.open("illustrations/svm_step_3.png")
+                st.image(svm_step_3, caption="Bước 4: Kernel nâng dữ liệu lên không gian cao hơn", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_3.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                ### Ưu điểm:
-                - Hiệu quả với dữ liệu phức tạp, chính xác cao khi có kernel phù hợp.  
-                - Tốt cho việc phân biệt các chữ số như "4" và "9".  
+            st.markdown("""
+            5. **Dự đoán**:  
+               - Với mẫu mới $x$:  
+                 $$ f(x) = \\text{sign} \\left( \\sum_{i} \\alpha_i y_i K(x_i, x) + b \\right) $$  
+                 - $\\alpha_i$: Trọng số xác định từ quá trình huấn luyện, chỉ khác 0 với support vectors.  
+                 - $K(x_i, x)$: Đo độ tương đồng giữa mẫu mới và support vectors.  
+               - Với phân loại đa lớp (0-9), SVM áp dụng chiến lược như "One-vs-Rest" hoặc "One-vs-One".  
+            """)
+            try:
+                svm_step_5 = Image.open("illustrations/svm_step_5.png")
+                st.image(svm_step_5, caption="Bước 5: Dự đoán điểm mới dựa trên siêu phẳng và support vectors", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_5.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                ### Nhược điểm:
-                - Tốn thời gian tính toán với dữ liệu lớn.  
-                - Yêu cầu chuẩn hóa dữ liệu trước để đạt hiệu quả tối ưu.  
-                """)
+            st.markdown("""
+            ### Áp dụng với MNIST:
+            - SVM tìm ranh giới phân tách dựa trên toàn bộ đặc trưng pixel, tận dụng kernel để xử lý các mẫu phi tuyến.  
 
-            elif info_option == "So sánh Decision Tree và SVM":
-                st.subheader("5. So sánh Decision Tree và SVM")
-                st.markdown("""
-                | **Yếu tố**             | **Decision Tree**                                  | **SVM**                                      |
-                |-------------------------|---------------------------------------------------|---------------------------------------------|
-                | **Nguyên lý**          | Chia dữ liệu bằng các điều kiện logic             | Tìm siêu phẳng tối ưu phân tách lớp         |
-                | **Quyết định**         | Dựa trên Entropy hoặc Gini tại mỗi bước          | Dựa trên khoảng cách lề và support vectors  |
-                | **Không gian**         | Làm việc trực tiếp trên dữ liệu gốc               | Có thể ánh xạ lên không gian cao hơn (kernel)|
-                | **Độ phức tạp**        | Tăng theo độ sâu cây                              | Tăng theo số lượng support vectors          |
+            ### Ưu điểm:
+            - Hiệu quả với dữ liệu phức tạp, chính xác cao khi có kernel phù hợp.  
+            - Tốt cho việc phân biệt các chữ số như "4" và "9".  
 
-                **Kết luận**:  
-                - **Decision Tree**: Nhanh, dễ hiểu, phù hợp với dữ liệu nhỏ hoặc đơn giản, nhưng dễ bị overfitting.  
-                - **SVM**: Chính xác hơn với dữ liệu phức tạp, phi tuyến như MNIST, nhưng chậm hơn và cần chuẩn hóa dữ liệu.
-                """)
+            ### Nhược điểm:
+            - Tốn thời gian tính toán với dữ liệu lớn.  
+            - Yêu cầu chuẩn hóa dữ liệu trước để đạt hiệu quả tối ưu.  
+            """)
 
-            elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
-                st.subheader("6. Công thức đánh giá độ chính xác (Accuracy)")
-                st.markdown("""
-                Độ chính xác (Accuracy) đo tỷ lệ dự đoán đúng:  
-                $$ Accuracy = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Ví dụ**: Dự đoán đúng 92/100 ảnh → Accuracy = 92%.  
+        elif info_option == "So sánh Decision Tree và SVM":
+            st.subheader("5. So sánh Decision Tree và SVM")
+            st.markdown("""
+            | **Yếu tố**             | **Decision Tree**                                  | **SVM**                                      |
+            |-------------------------|---------------------------------------------------|---------------------------------------------|
+            | **Nguyên lý**          | Chia dữ liệu bằng các điều kiện logic             | Tìm siêu phẳng tối ưu phân tách lớp         |
+            | **Quyết định**         | Dựa trên Entropy hoặc Gini tại mỗi bước          | Dựa trên khoảng cách lề và support vectors  |
+            | **Không gian**         | Làm việc trực tiếp trên dữ liệu gốc               | Có thể ánh xạ lên không gian cao hơn (kernel)|
+            | **Độ phức tạp**        | Tăng theo độ sâu cây                              | Tăng theo số lượng support vectors          |
 
-                **Ý nghĩa**:  
-                - **Decision Tree**: Đo khả năng chia nhóm đúng dựa trên các đặc trưng pixel.  
-                - **SVM**: Đo hiệu quả của siêu phẳng trong việc phân tách các lớp.
-                """)
+            **Kết luận**:  
+            - **Decision Tree**: Nhanh, dễ hiểu, phù hợp với dữ liệu nhỏ hoặc đơn giản, nhưng dễ bị overfitting.  
+            - **SVM**: Chính xác hơn với dữ liệu phức tạp, phi tuyến như MNIST, nhưng chậm hơn và cần chuẩn hóa dữ liệu.
+            """)
+
+        elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
+            st.subheader("6. Công thức đánh giá độ chính xác (Accuracy)")
+            st.markdown("""
+            Độ chính xác (Accuracy) đo tỷ lệ dự đoán đúng:  
+            $$ Accuracy = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
+            - **Ví dụ**: Dự đoán đúng 92/100 ảnh → Accuracy = 92%.  
+
+            **Ý nghĩa**:  
+            - **Decision Tree**: Đo khả năng chia nhóm đúng dựa trên các đặc trưng pixel.  
+            - **SVM**: Đo hiệu quả của siêu phẳng trong việc phân tách các lớp.
+            """)
 
     # Tab 2: Tải dữ liệu
     with tab_load:
