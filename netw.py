@@ -117,7 +117,7 @@ def run_mnist_neural_network_app():
                - Khởi tạo **trọng số** $W$ và **bias** $b$ ngẫu nhiên hoặc bằng $0$.  
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa Bước 1: Khởi tạo mô hình", use_container_width=True)
+                st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa Bước 1: Khởi tạo mô hình", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 1. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -135,7 +135,7 @@ def run_mnist_neural_network_app():
                  $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa Bước 2: Lan truyền thuận", use_container_width=True)
+                st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa Bước 2: Lan truyền thuận", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 2. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -148,7 +148,7 @@ def run_mnist_neural_network_app():
                  - $\\hat{y}_{ij}$: Xác suất dự đoán cho lớp $j$.  
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa Bước 3: Tính hàm mất mát", use_container_width=True)
+                st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa Bước 3: Tính hàm mất mát", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 3. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -165,7 +165,7 @@ def run_mnist_neural_network_app():
                    $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa Bước 4: Lan truyền ngược", use_container_width=True)
+                st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa Bước 4: Lan truyền ngược", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 4. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -177,7 +177,7 @@ def run_mnist_neural_network_app():
                - Trong đó: $\\eta$ là **tốc độ học (learning rate)**.  
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa Bước 5: Cập nhật tham số", use_container_width=True)
+                st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa Bước 5: Cập nhật tham số", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 5. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -186,7 +186,7 @@ def run_mnist_neural_network_app():
                - Quay lại bước $2$ qua nhiều **epoch** cho đến khi $L$ hội tụ.  
             """, unsafe_allow_html=True)
             try:
-                st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa Bước 6: Lặp lại", use_container_width=True)
+                st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa Bước 6: Lặp lại", width=600)
             except FileNotFoundError:
                 st.error("Không tìm thấy ảnh minh họa cho Bước 6. Vui lòng chạy mã tạo ảnh trước.")
 
@@ -611,9 +611,9 @@ def run_mnist_neural_network_app():
 
         try:
             client = MlflowClient()
-            experiment = client.get_experiment_by_name("MNIST_NeuralNetwork")
+            experiment = client.get_experiment_by_name("Neural Network ")
             if not experiment:
-                st.error("Không tìm thấy experiment 'MNIST_NeuralNetwork'.")
+                st.error("Không tìm thấy experiment 'Neural Network '.")
             else:
                 runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["attributes.start_time DESC"])
                 if not runs:
