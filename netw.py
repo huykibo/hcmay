@@ -327,15 +327,21 @@ def run_mnist_neural_network_app():
                     </div>
                 """, unsafe_allow_html=True)
 
+            # Thêm kiểm tra để đảm bảo 'data_processed' tồn tại trước khi truy cập
             if 'data_processed' in st.session_state:
-                X_processed, y_processed = st.session_state['data_processed']
                 st.subheader("Dữ liệu đã xử lý")
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
+                try:
+                    X_processed, y_processed = st.session_state['data_processed']
+                    fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                    for i, ax in enumerate(axes.flat):
+                        ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                        ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
+                        ax.axis("off")
+                    st.pyplot(fig)
+                except Exception as e:
+                    st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}")
+            else:
+                st.info("Dữ liệu chưa được chuẩn hóa. Vui lòng nhấn 'Normalization' để xử lý dữ liệu.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
@@ -427,7 +433,6 @@ def run_mnist_neural_network_app():
                     for i in range(0, 51, 5):
                         progress_bar.progress(i)
                         status_text.text(f"Đang huấn luyện {i}%...")
-
                     run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
                         mlflow.log_param("hidden_size", params["hidden_size"])
