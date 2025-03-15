@@ -91,11 +91,10 @@ def run_mnist_neural_network_app():
             help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
         )
 
-        progress_bar = st.progress(0)
-        status_text = st.empty()
-
         if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
             with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -121,6 +120,8 @@ def run_mnist_neural_network_app():
 
         elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
             with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -157,6 +158,8 @@ def run_mnist_neural_network_app():
 
         elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
             with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -284,6 +287,8 @@ def run_mnist_neural_network_app():
 
         elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
             with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -304,11 +309,11 @@ def run_mnist_neural_network_app():
     # Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         if st.button("Tải dữ liệu MNIST từ OpenML"):
             with st.spinner("Đang tải dữ liệu từ OpenML..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -337,6 +342,8 @@ def run_mnist_neural_network_app():
                                     min_value=10, max_value=70000, value=min(1000, len(X_full)), step=1)
             if st.button("Chốt số lượng mẫu"):
                 with st.spinner(f"Đang lấy {num_samples} mẫu..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
                         status_text.text(f"Đang xử lý {i}%...")
@@ -357,8 +364,6 @@ def run_mnist_neural_network_app():
     # Tab 3: Xử lý dữ liệu
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
@@ -384,6 +389,8 @@ def run_mnist_neural_network_app():
             with col1:
                 if st.button("Normalization", key="normalize_btn"):
                     with st.spinner("Đang chuẩn hóa dữ liệu..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
                         for i in range(0, 91, 10):
                             progress_bar.progress(i)
                             status_text.text(f"Đang xử lý {i}%...")
@@ -432,8 +439,6 @@ def run_mnist_neural_network_app():
     # Tab 4: Chia dữ liệu
     with tab_split:
         st.header("Chia Tập Dữ liệu")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và xử lý dữ liệu trước.")
@@ -454,6 +459,8 @@ def run_mnist_neural_network_app():
             st.write(f"Train: {len(X_train)}, Validation: {len(X_valid)}, Test: {len(X_test)}")
             if st.button("Xác nhận", key="confirm_split_button"):
                 with st.spinner("Đang chia dữ liệu..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
                         status_text.text(f"Đang xử lý {i}%...")
@@ -470,11 +477,9 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá (Đã cập nhật)
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh giá")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         if 'split_data' not in st.session_state:
             st.info("Vui lòng chia dữ liệu trước.")
@@ -520,7 +525,7 @@ def run_mnist_neural_network_app():
                     f"Learning Rate = {params['learning_rate']}, "
                     f"Max Iter = {params['max_iter']}")
 
-            # Cho phép người dùng chỉnh sửa tham số (với giá trị mặc định là tham số tối ưu)
+            # Cho phép người dùng chỉnh sửa tham số
             params["hidden_size"] = st.number_input("Số nơ-ron lớp ẩn", 
                                                    min_value=10, max_value=500, 
                                                    value=params["hidden_size"],
@@ -536,6 +541,8 @@ def run_mnist_neural_network_app():
 
             if st.button("Thực hiện Huấn luyện", key="train_button"):
                 with st.spinner("Đang huấn luyện mô hình..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     start_time = time.time()
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
@@ -627,8 +634,6 @@ def run_mnist_neural_network_app():
     # Tab 6: Demo dự đoán
     with tab_demo:
         st.header("Demo Dự đoán")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước.")
@@ -646,6 +651,8 @@ def run_mnist_neural_network_app():
                 idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
                 if st.button("Dự đoán", key="predict_test_button"):
                     with st.spinner("Đang dự đoán..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
                         for i in range(0, 91, 10):
                             progress_bar.progress(i)
                             status_text.text(f"Đang xử lý {i}%...")
@@ -671,6 +678,8 @@ def run_mnist_neural_network_app():
                 if uploaded_images:
                     for i, img_file in enumerate(uploaded_images):
                         with st.spinner(f"Đang xử lý ảnh {i+1}..."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
                             for j in range(0, 91, 10):
                                 progress_bar.progress(j)
                                 status_text.text(f"Đang xử lý {j}%...")
@@ -697,6 +706,8 @@ def run_mnist_neural_network_app():
                 if st.button("Dự đoán", key="predict_draw_button"):
                     if canvas_result.image_data is not None:
                         with st.spinner("Đang xử lý..."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
                             for i in range(0, 91, 10):
                                 progress_bar.progress(i)
                                 status_text.text(f"Đang xử lý {i}%...")
@@ -718,8 +729,6 @@ def run_mnist_neural_network_app():
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.header("Theo dõi Kết quả")
-        progress_bar = st.progress(0)
-        status_text = st.empty()
 
         st.markdown("""
         Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện từ Experiment ID 5. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
@@ -727,6 +736,8 @@ def run_mnist_neural_network_app():
 
         try:
             with st.spinner("Đang tải thông tin huấn luyện..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
@@ -750,7 +761,6 @@ def run_mnist_neural_network_app():
                     run_names = list(run_options.values())
                     run_ids = list(run_options.keys())
 
-                    # Tự động chọn run mới nhất (run đầu tiên trong danh sách đã sắp xếp DESC)
                     default_index = 0
 
                     st.subheader("Danh sách Run")
@@ -772,6 +782,8 @@ def run_mnist_neural_network_app():
                     )
                     if st.button("Cập nhật tên", key="rename_button"):
                         with st.spinner("Đang cập nhật tên..."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
                             for i in range(0, 91, 10):
                                 progress_bar.progress(i)
                                 status_text.text(f"Đang xử lý {i}%...")
@@ -799,6 +811,8 @@ def run_mnist_neural_network_app():
                     st.subheader("Xóa Run")
                     if st.button("Xóa lần chạy", key="delete_button"):
                         with st.spinner("Đang xóa lần chạy..."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
                             for i in range(0, 91, 10):
                                 progress_bar.progress(i)
                                 status_text.text(f"Đang xử lý {i}%...")
@@ -855,3 +869,4 @@ def run_mnist_neural_network_app():
             status_text.empty()
 
 if __name__ == "__main__":
+    run_mnist_neural_network_app()
