@@ -224,13 +224,10 @@ def run_mnist_neural_network_app():
             - **Ý nghĩa**: Với Neural Network, Accuracy đo khả năng mô hình phân loại đúng các chữ số dựa trên đặc trưng pixel học được.  
             """, unsafe_allow_html=True)
 
+
     # Tab 2: Tải dữ liệu
     with tab_load:
-        st.header("Tải Dữ liệu MNIST")
-        st.markdown("""
-        Phần này cho phép tải dữ liệu MNIST từ OpenML và chọn số lượng mẫu để xử lý. Tổng cộng có $70,000$ mẫu, bạn có thể chọn một phần nhỏ hơn để giảm thời gian tính toán.
-        """, unsafe_allow_html=True)
-
+        st.header("Tải Dữ liệu")
         if st.button("Tải dữ liệu MNIST từ OpenML"):
             with st.spinner("Đang tải dữ liệu từ OpenML..."):
                 progress_bar = st.progress(0)
@@ -265,24 +262,24 @@ def run_mnist_neural_network_app():
             X_full, y_full = st.session_state['full_data']
             num_samples = st.slider("Chọn số lượng mẫu:", 
                                     min_value=10, max_value=len(X_full), value=min(1000, len(X_full)), step=1)
-            if st.button("Xác nhận số lượng mẫu"):
-                with st.spinner(f"Đang xử lý {num_samples} mẫu..."):
+            if st.button("Chốt số lượng mẫu"):
+                with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
 
                     df = pd.concat([X_full, y_full.rename("label")], axis=1)
                     progress_bar.progress(30)
-                    status_text.text("Đang xử lý 30% - Đang kết hợp dữ liệu...")
+                    status_text.text("Đã xử lý 30% - Đang nối dữ liệu...")
 
                     sampled_df = df.sample(n=num_samples, random_state=42)
                     progress_bar.progress(70)
-                    status_text.text("Đang xử lý 70% - Đang lấy mẫu ngẫu nhiên...")
+                    status_text.text("Đã xử lý 70% - Đang lấy mẫu...")
 
                     X_sampled = sampled_df.drop(columns=["label"])
                     y_sampled = sampled_df["label"]
                     st.session_state['data'] = (X_sampled, y_sampled)
                     progress_bar.progress(90)
-                    status_text.text("Đang xử lý 90% - Đang lưu trữ dữ liệu...")
+                    status_text.text("Đã xử lý 90% - Đang lưu dữ liệu...")
 
                     with mlflow.start_run(run_name="Data_Sample"):
                         mlflow.log_param("num_samples", num_samples)
@@ -292,90 +289,92 @@ def run_mnist_neural_network_app():
                     time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
-                    st.success(f"Đã chọn {num_samples} mẫu để xử lý!")
+                    st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lý dữ liệu
+    # Tab 3: Xử lí dữ liệu (Đã xóa Standardization)
     with tab_preprocess:
-        st.header("Xử lý Dữ liệu")
-        st.markdown("""
-        Phần này cho phép bạn chuẩn hóa dữ liệu để cải thiện hiệu suất của Neural Network.
-        """, unsafe_allow_html=True)
-
+        st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
-            st.info("Vui lòng tải dữ liệu từ tab 'Tải dữ liệu' trước khi xử lý.")
+            st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
             X, y = st.session_state['data']
             if "data_original" not in st.session_state:
                 st.session_state["data_original"] = (X.copy(), y.copy())
 
-            st.subheader("📷 Dữ liệu Gốc")
-            st.markdown("""
-            Dưới đây là $10$ mẫu đầu tiên từ dữ liệu gốc để bạn hình dung:
-            """, unsafe_allow_html=True)
+            # Xóa data_processed nếu nó tồn tại nhưng không hợp lệ
+            if "data_processed" in st.session_state:
+                data_processed = st.session_state["data_processed"]
+                if not (isinstance(data_processed, tuple) and len(data_processed) == 2):
+                    st.session_state.pop("data_processed", None)
+
+            st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
                 ax.imshow(X.iloc[i].values.reshape(28, 28), cmap='gray')
-                ax.set_title(f"Nhãn: {y.iloc[i]}")
+                ax.set_title(f"Label: {y.iloc[i]}")
                 ax.axis("off")
             st.pyplot(fig)
 
             col1, col2 = st.columns([3, 1])
             with col1:
-                if st.button("Chuẩn hóa (Normalization)", key="normalize_btn"):
+                if st.button("Normalization", key="normalize_btn"):
                     X_norm = X / 255.0
                     st.session_state["data_processed"] = (X_norm, y)
-                    st.success("Đã chuẩn hóa dữ liệu!")
+                    st.success("Đã chuẩn hoá dữ liệu!")
                     st.rerun()
             with col2:
                 st.markdown("""
-                **Chuẩn hóa**:  
-                Đưa giá trị pixel về khoảng $[0, 1]$ bằng cách chia cho $255$.  
-                - **Công dụng**: Đảm bảo thang đo đồng nhất, giúp Neural Network học tốt hơn.
+                    <div class="tooltip">
+                        ?
+                        <span class="tooltiptext">
+                            Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
+                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
+                        </span>
+                    </div>
                 """, unsafe_allow_html=True)
 
+            # Chỉ hiển thị dữ liệu đã xử lý nếu data_processed tồn tại và hợp lệ
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
-                if isinstance(data_processed, (tuple, list)) and len(data_processed) == 2:
+                if isinstance(data_processed, tuple) and len(data_processed) == 2:
                     try:
                         X_processed, y_processed = data_processed
-                        st.subheader("📷 Dữ liệu đã xử lý")
-                        st.markdown("""
-                        Dưới đây là $10$ mẫu đầu tiên sau khi chuẩn hóa:
-                        """, unsafe_allow_html=True)
+                        st.subheader("Dữ liệu đã xử lý")
                         fig, axes = plt.subplots(2, 5, figsize=(10, 4))
                         for i, ax in enumerate(axes.flat):
                             ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                            ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
+                            ax.set_title(f"Label: {y_processed.iloc[i]}")
                             ax.axis("off")
                         st.pyplot(fig)
                     except (ValueError, TypeError, AttributeError) as e:
-                        st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}")
+                        st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                        st.session_state.pop("data_processed", None)
                 else:
-                    st.error("Dữ liệu đã xử lý không đúng định dạng (phải là tuple/list chứa X và y). Vui lòng chuẩn hóa lại dữ liệu.")
+                    st.error("Dữ liệu đã xử lý không đúng định dạng. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                    st.session_state.pop("data_processed", None)
             else:
-                st.info("Dữ liệu chưa được chuẩn hóa. Vui lòng nhấn 'Chuẩn hóa (Normalization)' để tiếp tục.")
+                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
-        st.header("Chia Tập Dữ liệu")
-        st.markdown("""
-        Phần này giúp bạn chia dữ liệu thành các tập huấn luyện (Train), kiểm định (Validation), và kiểm tra (Test).
-        """, unsafe_allow_html=True)
-
+        st.header("Chia Tập Dữ Liệu")
         if 'data' not in st.session_state:
-            st.info("Vui lòng tải và chốt số lượng mẫu trong tab 'Tải dữ liệu' trước.")
+            st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
             data_source = st.session_state.get("data_processed", st.session_state['data'])
             try:
                 X, y = data_source
+            except (ValueError, TypeError) as e:
+                st.error(f"Lỗi: Dữ liệu không hợp lệ. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu. Chi tiết lỗi: {e}")
+            else:
                 total_samples = len(X)
-                st.write(f"Tổng số mẫu: ${total_samples}$")
+                st.write(f"Tổng số mẫu: {total_samples}")
 
                 test_pct = st.slider("Tỷ lệ tập Test (%)", 0, 100, 20)
                 valid_pct = st.slider("Tỷ lệ tập Validation (%) từ phần còn lại", 0, 100, 20)
                 
                 if test_pct + valid_pct > 100:
-                    st.warning("Tổng tỷ lệ Test và Validation vượt quá $100\\%$!")
+                    st.warning("Tổng tỷ lệ Test và Validation vượt quá 100%!")
                 
                 test_size = int(total_samples * test_pct / 100)
                 if test_size > 0:
@@ -391,7 +390,7 @@ def run_mnist_neural_network_app():
                     X_train, y_train = X_temp, y_temp
                     X_valid, y_valid = pd.DataFrame(), pd.Series()
 
-                st.write(f"Train: ${len(X_train)}$ mẫu, Validation: ${len(X_valid)}$ mẫu, Test: ${len(X_test)}$ mẫu")
+                st.write(f"Train: {len(X_train)} mẫu, Validation: {len(X_valid)} mẫu, Test: {len(X_test)} mẫu")
                 if st.button("Xác nhận chia dữ liệu"):
                     st.session_state['split_data'] = {
                         "X_train": X_train, "y_train": y_train,
@@ -399,9 +398,6 @@ def run_mnist_neural_network_app():
                         "X_test": X_test, "y_test": y_test
                     }
                     st.success("Dữ liệu đã được chia!")
-            except (ValueError, TypeError) as e:
-                st.error(f"Lỗi khi truy cập dữ liệu: {e}. Vui lòng kiểm tra dữ liệu trong tab 'Tải dữ liệu' hoặc 'Xử lý dữ liệu'.")
-
     # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh giá")
