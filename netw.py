@@ -293,7 +293,7 @@ def run_mnist_neural_network_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu
+    # Tab 3: Xử lí dữ liệu (Đã cập nhật để xử lý lỗi)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -312,20 +312,31 @@ def run_mnist_neural_network_app():
             st.pyplot(fig)
 
             if st.button("Normalization"):
-                X_norm = X / 255.0
-                st.session_state["data_processed"] = (X_norm, y)
-                st.success("Đã chuẩn hoá dữ liệu!")
-                st.rerun()
+                with st.spinner("Đang chuẩn hóa dữ liệu..."):
+                    X_norm = X / 255.0
+                    st.session_state["data_processed"] = (X_norm, y)
+                    st.success("Đã chuẩn hoá dữ liệu!")
+                    st.rerun()
 
+            # Kiểm tra và hiển thị dữ liệu đã xử lý
             if "data_processed" in st.session_state:
-                X_processed, y_processed = st.session_state["data_processed"]
-                st.subheader("Dữ liệu đã xử lý")
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y_processed.iloc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
+                data_processed = st.session_state["data_processed"]
+                if isinstance(data_processed, tuple) and len(data_processed) == 2:
+                    try:
+                        X_processed, y_processed = data_processed
+                        st.subheader("Dữ liệu đã xử lý")
+                        fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                        for i, ax in enumerate(axes.flat):
+                            ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                            ax.set_title(f"Label: {y_processed.iloc[i]}")
+                            ax.axis("off")
+                        st.pyplot(fig)
+                    except Exception as e:
+                        st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}")
+                        st.write("Dữ liệu hiện tại trong 'data_processed':", data_processed)
+                else:
+                    st.error("Dữ liệu đã xử lý không đúng định dạng. Vui lòng thử chuẩn hóa lại.")
+                    st.write("Nội dung hiện tại của 'data_processed':", data_processed)
             else:
                 st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
