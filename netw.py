@@ -22,7 +22,7 @@ def fetch_mnist_data():
     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
     return X, y
 
-# Hàm kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255]
+# Hàm kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255] (dùng cho các tab khác)
 def validate_and_fix_pixels(X, name="dữ liệu"):
     invalid_mask = (X < 0) | (X > 255)
     if np.any(invalid_mask):
@@ -132,7 +132,30 @@ def run_mnist_neural_network_app():
                 """, unsafe_allow_html=True)
                 status_text.empty()
                 progress_bar.empty()
-        # (Các phần khác trong tab_info giữ nguyên để ngắn gọn)
+        
+        elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
+            st.subheader("📊 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+            st.markdown("""
+            - **Nguồn gốc**: MNIST (Modified National Institute of Standards and Technology) là tập dữ liệu chuẩn trong học máy.  
+            - **Cấu trúc**: $60,000$ mẫu huấn luyện + $10,000$ mẫu kiểm tra, mỗi mẫu là ảnh thang độ xám $28 \\times 28$.  
+            - **Ý nghĩa**: Được sử dụng rộng rãi để kiểm tra hiệu suất các thuật toán phân loại hình ảnh.  
+            """, unsafe_allow_html=True)
+        
+        elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
+            st.subheader("🧠 3. Neural Network – Mạng nơ-ron nhân tạo")
+            st.markdown("""
+            - **Khái niệm**: Mô hình học máy mô phỏng não người, gồm các lớp nơ-ron (input, hidden, output).  
+            - **Ứng dụng trong MNIST**: Nhận diện chữ số qua các lớp ẩn xử lý đặc trưng pixel.  
+            - **Tham số chính**: Số lớp ẩn, số nơ-ron, tốc độ học, hàm kích hoạt (ReLU, sigmoid,...).  
+            """, unsafe_allow_html=True)
+        
+        elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
+            st.subheader("📈 4. Công thức đánh giá độ chính xác (Accuracy)")
+            st.markdown("""
+            Độ chính xác được tính bằng:  
+            $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} \\times 100\\% $$  
+            - **Ý nghĩa**: Đo lường tỷ lệ dự đoán chính xác của mô hình trên tập kiểm tra hoặc validation.  
+            """, unsafe_allow_html=True)
 
     with tab_load:
         st.header("Tải Dữ liệu")
@@ -161,7 +184,25 @@ def run_mnist_neural_network_app():
 
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
-            num_samples = st.slider("Chọn số lượng mẫu:", min_value=10, max_value=70000, value=min(1000, len(X_full)), step=1)
+            
+            st.subheader("Chọn số lượng mẫu dữ liệu")
+            st.markdown("""
+            Dựa trên bài toán phân loại MNIST với Neural Network, đây là các gợi ý:
+            - **100 mẫu**: Dành cho thử nghiệm nhanh, thời gian huấn luyện rất ngắn (~vài giây), nhưng độ chính xác thấp.
+            - **1,000 mẫu**: Phù hợp để kiểm tra mô hình cơ bản, thời gian huấn luyện ngắn (~10-20 giây), độ chính xác trung bình.
+            - **10,000 mẫu**: Cân bằng giữa tốc độ và hiệu suất, thời gian huấn luyện vừa phải (~1-2 phút), độ chính xác khá tốt.
+            - **50,000 mẫu**: Dành cho huấn luyện chuyên sâu, thời gian lâu hơn (~5-10 phút), độ chính xác cao.
+            """)
+            
+            sample_options = {
+                "100 mẫu (Thử nghiệm nhanh)": 100,
+                "1,000 mẫu (Kiểm tra cơ bản)": 1000,
+                "10,000 mẫu (Cân bằng hiệu suất)": 10000,
+                "50,000 mẫu (Huấn luyện chuyên sâu)": 50000
+            }
+            selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()))
+            num_samples = sample_options[selected_option]
+
             if st.button("Chốt số lượng mẫu"):
                 with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                     progress_bar = st.progress(0)
@@ -200,24 +241,6 @@ def run_mnist_neural_network_app():
 
             col1, col2 = st.columns([3, 1])
             with col1:
-                if st.button("Chuẩn hóa giá trị về khoảng [0, 255]", key="clip_btn"):
-                    with st.spinner("Đang chuẩn hóa dữ liệu về [0, 255]..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in [20, 40, 60, 80, 100]:
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%")
-                            time.sleep(0.05)
-                        X_clipped, fixed = validate_and_fix_pixels(X, "dữ liệu gốc")
-                        if fixed:
-                            st.session_state['data'] = (X_clipped, y)
-                            st.success("Đã chuẩn hóa dữ liệu gốc về [0, 255]!")
-                        else:
-                            st.info("Dữ liệu đã nằm trong khoảng [0, 255], không cần chuẩn hóa.")
-                        status_text.empty()
-                        progress_bar.empty()
-                        st.rerun()
-
                 if st.button("Normalization", key="normalize_btn"):
                     with st.spinner("Đang chuẩn hóa dữ liệu về [0, 1]..."):
                         progress_bar = st.progress(0)
@@ -234,12 +257,6 @@ def run_mnist_neural_network_app():
                         st.rerun()
             with col2:
                 st.markdown("""
-                    <div class="tooltip">? (Clip)
-                        <span class="tooltiptext">
-                            Chuẩn hóa dữ liệu về [0, 255] bằng cách cắt bỏ giá trị ngoài khoảng.<br>
-                            Công dụng: Đảm bảo dữ liệu pixel hợp lệ trước khi xử lý.
-                        </span>
-                    </div>
                     <div class="tooltip">? (Norm)
                         <span class="tooltiptext">
                             Đưa dữ liệu về [0, 1] bằng cách chia cho 255.<br>
@@ -443,7 +460,7 @@ def run_mnist_neural_network_app():
                     sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
                     ax.set_title("Test")
                     st.pyplot(fig)
-                                    # Chi tiết bổ sung
+                
                 st.subheader("ℹ️ Thông tin Chi tiết")
                 with st.expander("Xem chi tiết", expanded=False):
                     st.markdown("**Thông tin lần chạy:**")
@@ -462,7 +479,6 @@ def run_mnist_neural_network_app():
                         "Hàm kích hoạt": results['params']['activation'],
                         "Trình tối ưu": results['params']['solver']
                     })
-
 
     with tab_demo:
         st.header("Demo Dự đoán")
