@@ -293,7 +293,7 @@ def run_mnist_neural_network_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu
+    # Tab 3: Xử lí dữ liệu (Đã sửa)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -313,12 +313,17 @@ def run_mnist_neural_network_app():
 
             if st.button("Normalization"):
                 with st.spinner("Đang chuẩn hóa dữ liệu..."):
-                    X_norm = X / 255.0
-                    st.session_state["data_processed"] = (X_norm, y)
-                    st.success("Đã chuẩn hoá dữ liệu!")
-                    st.rerun()
+                    try:
+                        X_norm = X / 255.0
+                        st.session_state["data_processed"] = (X_norm, y)
+                        st.success("Đã chuẩn hoá dữ liệu!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Lỗi khi chuẩn hóa dữ liệu: {e}")
+                        st.session_state["data_processed"] = None  # Reset nếu có lỗi
 
-            if "data_processed" in st.session_state:
+            # Hiển thị dữ liệu đã xử lý
+            if "data_processed" in st.session_state and st.session_state["data_processed"] is not None:
                 data_processed = st.session_state["data_processed"]
                 if isinstance(data_processed, tuple) and len(data_processed) == 2:
                     try:
@@ -339,13 +344,23 @@ def run_mnist_neural_network_app():
             else:
                 st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
-    # Tab 4: Chia dữ liệu
+    # Tab 4: Chia dữ liệu (Đã sửa)
     with tab_split:
         st.header("Chia Tập Dữ Liệu")
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
-            data_source = st.session_state.get("data_processed", st.session_state['data'])
+            # Chỉ sử dụng data_processed nếu nó tồn tại và hợp lệ
+            if ("data_processed" in st.session_state and 
+                st.session_state["data_processed"] is not None and 
+                isinstance(st.session_state["data_processed"], tuple) and 
+                len(st.session_state["data_processed"]) == 2):
+                data_source = st.session_state["data_processed"]
+                st.write("Sử dụng dữ liệu đã xử lý (normalized).")
+            else:
+                data_source = st.session_state['data']
+                st.write("Sử dụng dữ liệu gốc (chưa xử lý).")
+            
             X, y = data_source
             total_samples = len(X)
             st.write(f"Tổng số mẫu: {total_samples}")
@@ -379,7 +394,7 @@ def run_mnist_neural_network_app():
                 }
                 st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá (Cập nhật để tự động chọn tham số tối ưu)
+    # Tab 5: Huấn luyện/Đánh Giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá")
         if 'split_data' not in st.session_state:
@@ -399,7 +414,6 @@ def run_mnist_neural_network_app():
             | >50000       | (256, 128)        | 0.0001        | 500      |
             """)
 
-            # Tự động chọn tham số tối ưu dựa trên số lượng mẫu
             params = {}
             if num_samples < 1000:
                 params["hidden_layer_sizes"] = (64,)
@@ -419,7 +433,6 @@ def run_mnist_neural_network_app():
                 params["max_iter"] = 500
 
             st.markdown("#### Tham số mô hình (tự động chọn tối ưu, có thể điều chỉnh)")
-            # Hiển thị tham số tự động chọn và cho phép chỉnh sửa
             hidden_layers_input = st.text_input(
                 "Số nơ-ron lớp ẩn (nhiều số cách nhau bởi dấu phẩy)",
                 value=", ".join(map(str, params["hidden_layer_sizes"])),
@@ -524,7 +537,7 @@ def run_mnist_neural_network_app():
             def preprocess_input(data):
                 return data / 255.0
 
-            is_normalized = "data_processed" in st.session_state
+            is_normalized = "data_processed" in st.session_state and st.session_state["data_processed"] is not None
 
             if mode == "Dữ liệu từ Test":
                 X_test = st.session_state['split_data']["X_test"]
