@@ -179,7 +179,7 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 1. **Khởi tạo mô hình**:  
                    - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp).  
-                   - Khởi tạo **trọng số** $W$ và **bias** $b$ ngẫu nhiên hoặc bằng $0$.  
+                   - Khởi tạo **trọng số** $W$ và **bias** $b$ ngẫu nhiên (thường từ phân phối Gaussian).  
                 """, unsafe_allow_html=True)
                 try:
                     st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa Bước 1: Khởi tạo mô hình", width=600)
@@ -257,27 +257,62 @@ def run_mnist_neural_network_app():
 
                 st.subheader("⚙️ Các tham số cơ bản và công dụng")
                 st.markdown("""
-                Dưới đây là các tham số bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này:  
+                Dưới đây là các tham số bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này, kèm công thức liên quan:  
+                
                 - **hidden_layer_sizes**:  
-                  - **Ý nghĩa**: Số nơ-ron trong lớp ẩn (ví dụ: $128$).  
-                  - **Công dụng**: Quyết định sức mạnh của mô hình; nhiều nơ-ron hơn thì học được đặc trưng phức tạp hơn nhưng tốn thời gian hơn.  
-                - **learning_rate_init**:  
+                  - **Ý nghĩa**: Số lớp ẩn và số nơ-ron trong mỗi lớp ẩn (ví dụ: $(128, 64)$ cho 2 lớp ẩn với 128 và 64 nơ-ron).  
+                  - **Công dụng**: Quyết định cấu trúc mạng, ảnh hưởng đến khả năng học đặc trưng phức tạp. Nhiều lớp và nơ-ron tăng sức mạnh nhưng cũng tăng thời gian tính toán.  
+                  - **Công thức liên quan**: Đầu ra mỗi lớp:  
+                    $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}) $$  
+
+                - **learning_rate_init ($\\eta$)**:  
                   - **Ý nghĩa**: Tốc độ học ban đầu (ví dụ: $0.001$).  
-                  - **Công dụng**: Điều chỉnh tốc độ cập nhật trọng số; nhỏ hơn thì học chậm nhưng ổn định hơn.  
+                  - **Công dụng**: Điều chỉnh mức độ cập nhật trọng số; nhỏ hơn thì học chậm nhưng ổn định, lớn hơn thì nhanh nhưng có thể không hội tụ.  
+                  - **Công thức**: Cập nhật trọng số:  
+                    $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+
                 - **max_iter**:  
-                  - **Ý nghĩa**: Số lần huấn luyện tối đa (ví dụ: $200$).  
-                  - **Công dụng**: Giới hạn số lần mô hình học qua dữ liệu để đạt độ chính xác mong muốn.  
+                  - **Ý nghĩa**: Số lần lặp tối đa (epoch, ví dụ: $200$).  
+                  - **Công dụng**: Giới hạn số lần mạng học qua dữ liệu để đạt độ chính xác mong muốn.  
+
+                - **activation ($\\sigma$)**:  
+                  - **Ý nghĩa**: Hàm kích hoạt áp dụng cho nơ-ron (ví dụ: ReLU, Sigmoid, Tanh).  
+                  - **Công dụng**: Quyết định cách nơ-ron xử lý đầu vào, ảnh hưởng đến khả năng học đặc trưng phi tuyến.  
+                  - **Công thức**:  
+                    - ReLU: $$ \\sigma(z) = \\max(0, z) $$  
+                    - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
+                    - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
+
+                - **solver**:  
+                  - **Ý nghĩa**: Phương pháp tối ưu hóa (ví dụ: 'lbfgs', 'sgd', 'adam').  
+                  - **Công dụng**: Quyết định cách cập nhật trọng số để giảm mất mát.  
+                    - **SGD**: Gradient Descent ngẫu nhiên:  
+                      $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                    - **Adam**: Kết hợp momentum và RMSProp, thích nghi tốc độ học.  
+
+                - **batch_size**:  
+                  - **Ý nghĩa**: Số mẫu trong mỗi lần cập nhật trọng số (ví dụ: $32$).  
+                  - **Công dụng**: Ảnh hưởng đến tốc độ và độ ổn định của huấn luyện; batch nhỏ nhanh hơn nhưng nhiễu hơn.  
+                  - **Công thức**: Gradient trung bình trên batch:  
+                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = \\frac{1}{B} \\sum_{i=1}^{B} (A^{(l-1)}_i)^T \\cdot \\delta^{(l)}_i $$  
+                    ($B$ là batch size).  
+
+                - **alpha**:  
+                  - **Ý nghĩa**: Hệ số điều chuẩn L2 (ví dụ: $0.0001$).  
+                  - **Công dụng**: Giảm overfitting bằng cách phạt các trọng số lớn.  
+                  - **Công thức**: Hàm mất mát có điều chuẩn:  
+                    $$ L = L_{\\text{data}} + \\frac{\\alpha}{2} \\sum_{l} ||W^{(l)}||^2 $$  
                 """, unsafe_allow_html=True)
 
                 st.subheader("🟪 Ưu điểm và nhược điểm")
                 st.markdown("""
                 ##### ✅ **Ưu điểm**:  
                 - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
-                - Dễ sử dụng với các tham số cơ bản được tối ưu sẵn.  
+                - Linh hoạt với nhiều tham số để tối ưu hóa.  
 
                 ##### ❌ **Nhược điểm**:  
-                - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc số nơ-ron nhiều.  
-                - Cần dữ liệu được chuẩn hóa để đạt hiệu quả tốt nhất.  
+                - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
+                - Cần điều chỉnh tham số cẩn thận để đạt hiệu quả tốt nhất.  
                 """, unsafe_allow_html=True)
                 progress_bar.progress(100)
                 status_text.text("Đã tải 100%!")
@@ -526,18 +561,31 @@ def run_mnist_neural_network_app():
                     f"Max Iter = {params['max_iter']}")
 
             # Cho phép người dùng chỉnh sửa tham số
-            params["hidden_size"] = st.number_input("Số nơ-ron lớp ẩn", 
-                                                   min_value=10, max_value=500, 
-                                                   value=params["hidden_size"],
-                                                   help="Số nơ-ron trong lớp ẩn, ảnh hưởng đến độ phức tạp của mô hình.")
-            params["learning_rate"] = st.selectbox("Tốc độ học", 
-                                                  [0.01, 0.001, 0.0005, 0.0001], 
+            num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
+                                               help="Số lớp ẩn trong mạng nơ-ron, ảnh hưởng đến độ sâu và khả năng học.")
+            params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp ẩn", min_value=10, max_value=500, value=params["hidden_size"],
+                                                   help="Số nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến độ phức tạp của mô hình.")
+            hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
+
+            params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001], 
                                                   index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
                                                   help="Tốc độ cập nhật trọng số trong quá trình huấn luyện.")
-            params["max_iter"] = st.number_input("Số lần lặp tối đa", 
-                                                min_value=50, max_value=500, 
-                                                value=params["max_iter"],
+            params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
                                                 help="Số epoch tối đa để huấn luyện mô hình.")
+            params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], index=0,
+                                               help="Hàm kích hoạt cho các nơ-ron trong lớp ẩn.")
+            params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"], index=0,
+                                           help="Phương pháp tối ưu hóa: 'lbfgs' cho dữ liệu nhỏ, 'sgd' hoặc 'adam' cho dữ liệu lớn.")
+            
+            # Chỉ hiển thị batch_size nếu solver là 'sgd' hoặc 'adam'
+            if params["solver"] in ["sgd", "adam"]:
+                params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=32,
+                                                      help="Số mẫu trong mỗi lần cập nhật trọng số (chỉ áp dụng với 'sgd' hoặc 'adam').")
+            else:
+                params["batch_size"] = "auto"  # Với 'lbfgs', batch_size không áp dụng trực tiếp
+
+            params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=0.0001, step=0.0001,
+                                             help="Hệ số điều chuẩn L2 để giảm overfitting.")
 
             if st.button("Thực hiện Huấn luyện", key="train_button"):
                 with st.spinner("Đang huấn luyện mô hình..."):
@@ -557,20 +605,30 @@ def run_mnist_neural_network_app():
                     y_test = st.session_state['split_data']["y_test"]
 
                     pipeline = Pipeline([
-                        ('pca', PCA(n_components=50)),
-                        ('classifier', MLPClassifier(hidden_layer_sizes=(params["hidden_size"],), 
-                                                     max_iter=params["max_iter"], 
-                                                     learning_rate_init=params["learning_rate"],
-                                                     solver='lbfgs'))
+                        ('pca', PCA(n_components=50)),  # Giữ nguyên PCA cố định
+                        ('classifier', MLPClassifier(
+                            hidden_layer_sizes=hidden_sizes,
+                            max_iter=params["max_iter"],
+                            learning_rate_init=params["learning_rate"],
+                            activation=params["activation"],
+                            solver=params["solver"],
+                            batch_size=params["batch_size"] if params["solver"] in ["sgd", "adam"] else "auto",
+                            alpha=params["alpha"]
+                        ))
                     ])
                     pipeline.fit(X_train, y_train)
 
                     run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
                         # Log "Tham số đã chọn"
-                        mlflow.log_param("hidden_size", params["hidden_size"])
-                        mlflow.log_param("learning_rate", params["learning_rate"])
+                        mlflow.log_param("hidden_layer_sizes", hidden_sizes)
+                        mlflow.log_param("learning_rate_init", params["learning_rate"])
                         mlflow.log_param("max_iter", params["max_iter"])
+                        mlflow.log_param("activation", params["activation"])
+                        mlflow.log_param("solver", params["solver"])
+                        if params["solver"] in ["sgd", "adam"]:
+                            mlflow.log_param("batch_size", params["batch_size"])
+                        mlflow.log_param("alpha", params["alpha"])
 
                         y_valid_pred = pipeline.predict(X_valid)
                         y_test_pred = pipeline.predict(X_test)
@@ -618,9 +676,15 @@ def run_mnist_neural_network_app():
                         st.write(f"- **ID lần chạy**: {run.info.run_id}")
 
                         st.markdown("#### Tham số đã chọn:", unsafe_allow_html=True)
-                        st.write(f"- **Số nơ-ron lớp ẩn**: {params['hidden_size']}")
+                        st.write(f"- **Số lớp ẩn**: {num_hidden_layers}")
+                        st.write(f"- **Số nơ-ron mỗi lớp ẩn**: {params['hidden_size']}")
                         st.write(f"- **Tốc độ học**: {params['learning_rate']}")
                         st.write(f"- **Số lần lặp tối đa**: {params['max_iter']}")
+                        st.write(f"- **Hàm kích hoạt**: {params['activation']}")
+                        st.write(f"- **Optimizer**: {params['solver']}")
+                        if params["solver"] in ["sgd", "adam"]:
+                            st.write(f"- **Kích thước batch**: {params['batch_size']}")
+                        st.write(f"- **Tham số điều chuẩn (alpha)**: {params['alpha']}")
 
                         st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
                         st.write(f"- **Độ chính xác Validation**: {acc_valid*100:.2f}%")
