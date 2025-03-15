@@ -443,6 +443,26 @@ def run_mnist_neural_network_app():
                     sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
                     ax.set_title("Test")
                     st.pyplot(fig)
+                                    # Chi tiết bổ sung
+                st.subheader("ℹ️ Thông tin Chi tiết")
+                with st.expander("Xem chi tiết", expanded=False):
+                    st.markdown("**Thông tin lần chạy:**")
+                    st.write(f"- Tên: {results['run_name']}")
+                    st.write(f"- ID: {results['run_id']}")
+                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")
+                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
+                    st.markdown("**Tham số đã chọn:**")
+                    st.json({
+                        "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
+                        "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
+                        "Tốc độ học": results['params']['learning_rate_init'],
+                        "Số lần lặp": results['params']['max_iter'],
+                        "Kích thước batch": results['params']['batch_size'],
+                        "Hàm kích hoạt": results['params']['activation'],
+                        "Trình tối ưu": results['params']['solver']
+                    })
+
 
     with tab_demo:
         st.header("Demo Dự đoán")
