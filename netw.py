@@ -369,7 +369,7 @@ def run_mnist_neural_network_app():
                 for i in range(0, 91, 10):
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.1)
+                    time.sleep(0.05)
                 try:
                     X, y = fetch_mnist_data()  # Sử dụng hàm không cache
                     st.session_state['full_data'] = (X, y)
@@ -390,7 +390,8 @@ def run_mnist_neural_network_app():
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
             num_samples = st.slider("Chọn số lượng mẫu:", 
-                                    min_value=10, max_value=70000, value=min(1000, len(X_full)), step=1)
+                                    min_value=10, max_value=70000, value=min(1000, len(X_full)), step=1,
+                                    help="Chọn số lượng mẫu để xử lý (tối đa 70,000).")
             if st.button("Chốt số lượng mẫu"):
                 with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                     progress_bar = st.progress(0)
@@ -497,8 +498,8 @@ def run_mnist_neural_network_app():
             total_samples = len(X)
             st.write(f"Tổng số mẫu: {total_samples}")
 
-            test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20)
-            valid_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20)
+            test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20, help="Phần trăm dữ liệu dùng cho tập Test.")
+            valid_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20, help="Phần trăm dữ liệu dùng cho tập Validation.")
 
             test_size = test_pct / 100
             X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
@@ -604,7 +605,7 @@ def run_mnist_neural_network_app():
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
                         status_text.text(f"Tiến độ: {i}%")
-                        time.sleep(0.1)
+                        time.sleep(0.05)
 
                     X_train = st.session_state['split_data']["X_train"]
                     y_train = st.session_state['split_data']["y_train"]
@@ -701,91 +702,108 @@ def run_mnist_neural_network_app():
         st.header("Demo Dự đoán")
 
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
-            st.info("Vui lòng huấn luyện mô hình trước.")
+            st.info("Vui lòng huấn luyện mô hình trước khi sử dụng demo.")
         else:
-            mode = st.radio("Chọn phương thức:", ["Dữ liệu Test", "Upload ảnh", "Vẽ số"])
+            st.markdown("""
+            Trong tab này, bạn có thể thử nghiệm dự đoán chữ số viết tay bằng cách:
+            - Sử dụng **dữ liệu Test** từ tập dữ liệu MNIST.
+            - **Upload ảnh** chữ số (kích thước 28x28, thang độ xám).
+            - **Vẽ số** trực tiếp trên canvas.
+            Kết quả sẽ hiển thị chữ số được dự đoán cùng xác suất cao nhất.
+            """, unsafe_allow_html=True)
+
+            mode = st.radio("Chọn phương thức:", ["Dữ liệu Test", "Upload ảnh", "Vẽ số"], help="Chọn cách bạn muốn thử nghiệm dự đoán.")
             progress_bar = st.progress(0)
             status_text = st.empty()
 
+            # Hàm chuẩn hóa dữ liệu nếu chưa được chuẩn hóa
             def preprocess_input(data):
                 return data / 255.0
-
-            # Hàm tính độ tin cậy bằng Confidence Margin
-            def calculate_confidence(proba):
-                sorted_proba = np.sort(proba)[::-1]  # Sắp xếp xác suất giảm dần
-                confidence = (sorted_proba[0] - sorted_proba[1]) * 100  # Khoảng cách giữa top 1 và top 2
-                return confidence
 
             is_normalized = 'data_processed' in st.session_state
 
             if mode == "Dữ liệu Test":
                 X_test = st.session_state['split_data']["X_test"]
                 y_test = st.session_state['split_data']["y_test"]
-                idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
+                idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0, help="Chọn một mẫu từ tập dữ liệu Test để dự đoán.")
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.write("**Ảnh mẫu Test được chọn:**")
+                    fig, ax = plt.subplots(figsize=(2, 2))
+                    ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
+                    ax.axis('off')
+                    st.pyplot(fig)
+                with col2:
+                    st.write(f"**Nhãn thực tế:** {y_test.iloc[idx]}")
+
                 if st.button("Dự đoán", key="predict_test_button"):
                     with st.spinner("Đang dự đoán..."):
                         for j in range(0, 51, 5):
                             progress_bar.progress(j)
-                            status_text.text(f"Đang xử lý {j}%{j % 4 * '.'}")
-                            time.sleep(0.1)
-                        
+                            status_text.text(f"Đang xử lý {j}%{'.' * (j % 4)}")
+                            time.sleep(0.05)  # Giảm thời gian chờ để tối ưu
+
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         if not is_normalized:
                             sample = preprocess_input(sample)
                         model = st.session_state['model']
                         prediction = model.predict(sample)[0]
                         proba = model.predict_proba(sample)[0]
-                        confidence = calculate_confidence(proba)
-                        true_label = y_test.iloc[idx]
-                        
+                        max_proba = np.max(proba) * 100  # Xác suất cao nhất
+
                         for j in range(50, 101, 5):
                             progress_bar.progress(j)
-                            status_text.text(f"Đang dự đoán {j}%{j % 4 * '.'}")
-                            time.sleep(0.1)
-                        
-                        st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Thực tế: **{true_label}**")
-                        fig, ax = plt.subplots()
-                        ax.imshow(sample.reshape(28, 28), cmap='gray')
-                        ax.axis('off')
-                        st.pyplot(fig)
-                        
-                        time.sleep(1)
+                            status_text.text(f"Đang hoàn tất {j}%{'.' * (j % 4)}")
+                            time.sleep(0.05)
+
+                        # Hiển thị kết quả
+                        st.success(f"Dự đoán: **{prediction}** | Xác suất: **{max_proba:.2f}%** | Nhãn thực tế: **{y_test.iloc[idx]}**")
+
+                        time.sleep(0.5)
                         progress_bar.empty()
                         status_text.empty()
 
             elif mode == "Upload ảnh":
-                uploaded_images = st.file_uploader("Upload ảnh (28x28, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
+                uploaded_images = st.file_uploader("Upload ảnh (28x28, thang độ xám)", type=["png", "jpg"], accept_multiple_files=True,
+                                                  help="Tải lên một hoặc nhiều ảnh chữ số viết tay (định dạng PNG/JPG, kích thước 28x28, thang độ xám).")
                 if uploaded_images:
                     for i, uploaded_image in enumerate(uploaded_images):
                         with st.spinner(f"Đang xử lý ảnh {i+1}/{len(uploaded_images)}..."):
                             for j in range(0, 51, 5):
                                 progress_bar.progress(j)
-                                status_text.text(f"Đang tải ảnh {i+1} - {j}%{j % 4 * '.'}")
-                                time.sleep(0.1)
-                            
-                            img = Image.open(uploaded_image).convert('L').resize((28, 28))
-                            img_array = np.array(img).flatten().reshape(1, -1)
-                            if not is_normalized:
-                                img_array = preprocess_input(img_array)
-                            model = st.session_state['model']
-                            prediction = model.predict(img_array)[0]
-                            proba = model.predict_proba(img_array)[0]
-                            confidence = calculate_confidence(proba)
-                            
-                            for j in range(50, 101, 5):
-                                progress_bar.progress(j)
-                                status_text.text(f"Đang dự đoán ảnh {i+1} - {j}%{j % 4 * '.'}")
-                                time.sleep(0.1)
-                            
-                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
-                            st.image(img, caption=f"Ảnh {i+1} được upload", use_container_width=True)
-                            
-                            time.sleep(1)
-                            progress_bar.empty()
-                            status_text.empty()
+                                status_text.text(f"Đang tải ảnh {i+1} - {j}%{'.' * (j % 4)}")
+                                time.sleep(0.05)
+
+                            try:
+                                img = Image.open(uploaded_image).convert('L').resize((28, 28))
+                                img_array = np.array(img).flatten().reshape(1, -1)
+                                if not is_normalized:
+                                    img_array = preprocess_input(img_array)
+                                model = st.session_state['model']
+                                prediction = model.predict(img_array)[0]
+                                proba = model.predict_proba(img_array)[0]
+                                max_proba = np.max(proba) * 100  # Xác suất cao nhất
+
+                                for j in range(50, 101, 5):
+                                    progress_bar.progress(j)
+                                    status_text.text(f"Đang dự đoán ảnh {i+1} - {j}%{'.' * (j % 4)}")
+                                    time.sleep(0.05)
+
+                                # Hiển thị kết quả
+                                st.success(f"Dự đoán cho ảnh {i+1}: **{prediction}** | Xác suất: **{max_proba:.2f}%**")
+                                st.image(img, caption=f"Ảnh {i+1} được upload", use_container_width=True)
+
+                                time.sleep(0.5)
+                                progress_bar.empty()
+                                status_text.empty()
+
+                            except Exception as e:
+                                st.error(f"Lỗi khi xử lý ảnh {i+1}: {e}. Vui lòng kiểm tra định dạng ảnh (28x28, thang độ xám).")
+                                progress_bar.empty()
+                                status_text.empty()
 
             elif mode == "Vẽ số":
-                st.write("Vẽ một chữ số từ 0-9 trên canvas bên dưới (28x28 pixel):")
+                st.write("Vẽ một chữ số từ 0-9 trên canvas bên dưới (kích thước 280x280, sẽ được resize về 28x28):")
                 canvas_result = st_canvas(
                     fill_color="black",
                     stroke_width=20,
@@ -794,44 +812,49 @@ def run_mnist_neural_network_app():
                     width=280,
                     height=280,
                     drawing_mode="freedraw",
-                    key="canvas"
+                    key="canvas",
+                    help="Vẽ một chữ số từ 0-9. Nhấn 'Dự đoán số đã vẽ' để xem kết quả."
                 )
-                if st.button("Dự đoán số đã vẽ", key="predict_draw_button"):
-                    if canvas_result.image_data is not None:
-                        with st.spinner("Đang xử lý vẽ..."):
-                            for i in range(0, 51, 5):
-                                progress_bar.progress(i)
-                                status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
-                                time.sleep(0.1)
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("Dự đoán số đã vẽ", key="predict_draw_button"):
+                        if canvas_result.image_data is not None and np.any(canvas_result.image_data):
+                            with st.spinner("Đang xử lý hình vẽ..."):
+                                for i in range(0, 51, 5):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Đang xử lý {i}%{'.' * (i % 4)}")
+                                    time.sleep(0.05)
 
-                            image_data = canvas_result.image_data
-                            if image_data is None or image_data.size == 0:
-                                st.warning("Không có dữ liệu từ canvas. Vui lòng vẽ một số!")
+                                img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
+                                img_array = np.array(img).flatten().reshape(1, -1)
+                                if not is_normalized:
+                                    img_array = preprocess_input(img_array)
+                                model = st.session_state['model']
+                                prediction = model.predict(img_array)[0]
+                                proba = model.predict_proba(img_array)[0]
+                                max_proba = np.max(proba) * 100  # Xác suất cao nhất
+
+                                for i in range(50, 101, 5):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Đang dự đoán {i}%{'.' * (i % 4)}")
+                                    time.sleep(0.05)
+
+                                # Hiển thị kết quả
+                                st.success(f"Dự đoán: **{prediction}** | Xác suất: **{max_proba:.2f}%**")
+                                st.image(img, caption="Hình vẽ của bạn", use_container_width=True)
+
+                                time.sleep(0.5)
                                 progress_bar.empty()
                                 status_text.empty()
-                                return
-
-                            img = Image.fromarray((image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
-                            img_array = np.array(img).flatten().reshape(1, -1)
-                            if not is_normalized:
-                                img_array = preprocess_input(img_array)
-                            model = st.session_state['model']
-                            prediction = model.predict(img_array)[0]
-                            proba = model.predict_proba(img_array)[0]
-                            confidence = calculate_confidence(proba)
-
-                            for i in range(50, 101, 5):
-                                progress_bar.progress(i)
-                                status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
-                                time.sleep(0.1)
-
-                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
-
-                            time.sleep(1)
+                        else:
+                            st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
                             progress_bar.empty()
                             status_text.empty()
-                    else:
-                        st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
+                with col2:
+                    if st.button("Xóa Canvas", key="clear_canvas_button"):
+                        # Reset canvas bằng cách thay đổi key
+                        st.session_state['canvas_key'] = st.session_state.get('canvas_key', 0) + 1
+                        st.rerun()
 
     with tab_log_info:
         st.header("Theo dõi Kết quả")
