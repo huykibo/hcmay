@@ -22,7 +22,6 @@ def run_mnist_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
-        # Kiểm tra thông tin xác thực từ st.secrets
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(mlflow_tracking_uri)
@@ -30,7 +29,6 @@ def run_mnist_neural_network_app():
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm hình secrets.toml hoặc môi trường triển khai.")
         st.stop()
 
-    # Kiểm tra kết nối đến MLflow server
     try:
         response = requests.get(mlflow_tracking_uri, timeout=5)
         if response.status_code != 200:
@@ -40,25 +38,20 @@ def run_mnist_neural_network_app():
         st.error(f"Không thể kết nối đến MLflow server tại {mlflow_tracking_uri}. Lỗi: {e}. Vui lòng kiểm tra kết nối mạng hoặc URI.")
         st.stop()
 
-    # Định nghĩa Experiment ID
     EXPERIMENT_ID = "5"
 
-    # Kiểm tra xem Experiment ID có tồn tại không
     try:
         client = MlflowClient()
         experiment = client.get_experiment(EXPERIMENT_ID)
         if experiment is None:
             st.error(f"Experiment ID {EXPERIMENT_ID} không tồn tại. Vui lòng kiểm tra Experiment ID trên MLflow UI.")
             st.stop()
-        else:
-            st.write(f"Kết nối thành công với Experiment ID: {EXPERIMENT_ID} - Tên: {experiment.name}")
     except Exception as e:
         st.error(f"Lỗi khi truy xuất Experiment ID {EXPERIMENT_ID}: {e}. Vui lòng kiểm tra MLflow server hoặc thông tin xác thực.")
         st.stop()
 
     st.title("Phân loại Chữ số MNIST với Neural Network")
 
-    # CSS cho tooltip và MathJax
     st.markdown("""
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
         <style>
@@ -96,11 +89,9 @@ def run_mnist_neural_network_app():
         </style>
     """, unsafe_allow_html=True)
 
-    # Các tab
     tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # Tab 1: Thông tin
     with tab_info:
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
@@ -362,7 +353,6 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
 
@@ -417,7 +407,6 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 3: Xử lý dữ liệu
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
 
@@ -492,7 +481,6 @@ def run_mnist_neural_network_app():
             else:
                 st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
-    # Tab 4: Chia dữ liệu
     with tab_split:
         st.header("Chia Tập Dữ liệu")
 
@@ -533,187 +521,175 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
-      st.header("Huấn luyện và Đánh giá Mô hình")
+        st.header("Huấn luyện và Đánh giá Mô hình")
 
-    if 'split_data' not in st.session_state:
-        st.info("Vui lòng chia dữ liệu trước khi huấn luyện mô hình.")
-    else:
-        X_train = st.session_state['split_data']["X_train"]
-        num_samples = len(X_train)
-        st.write(f"**Số mẫu huấn luyện**: {num_samples}")
+        if 'split_data' not in st.session_state:
+            st.info("Vui lòng chia dữ liệu trước khi huấn luyện mô hình.")
+        else:
+            X_train = st.session_state['split_data']["X_train"]
+            num_samples = len(X_train)
+            st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-        # Bảng tham số tối ưu
-        st.subheader("⚙️ Cấu hình tham số mô hình")
-        st.markdown("""
-        Các tham số tối ưu được tự động chọn dựa trên số mẫu để đảm bảo hiệu suất tốt nhất:
-        | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver |
-        |--------------|--------------------|---------------|----------|------------|--------|
-        | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  |
-        | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   |
-        | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   |
-        | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   |
-        """, unsafe_allow_html=True)
+            st.subheader("⚙️ Cấu hình tham số mô hình")
+            st.markdown("""
+            Các tham số tối ưu được tự động chọn dựa trên số mẫu để đảm bảo hiệu suất tốt nhất:
+            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver |
+            |--------------|--------------------|---------------|----------|------------|--------|
+            | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  |
+            | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   |
+            | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   |
+            | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   |
+            """, unsafe_allow_html=True)
 
-        # Hàm chọn tham số tối ưu
-        def get_optimal_params(num_samples):
-            if num_samples < 1000:
-                return {"hidden_size": 50, "learning_rate": 0.01, "max_iter": 100, "activation": "relu", "solver": "lbfgs"}
-            elif 1000 <= num_samples <= 5000:
-                return {"hidden_size": 100, "learning_rate": 0.001, "max_iter": 200, "activation": "relu", "solver": "adam"}
-            elif 5000 < num_samples <= 20000:
-                return {"hidden_size": 200, "learning_rate": 0.0005, "max_iter": 300, "activation": "relu", "solver": "adam"}
-            else:
-                return {"hidden_size": 300, "learning_rate": 0.0001, "max_iter": 400, "activation": "relu", "solver": "adam"}
+            def get_optimal_params(num_samples):
+                if num_samples < 1000:
+                    return {"hidden_size": 50, "learning_rate": 0.01, "max_iter": 100, "activation": "relu", "solver": "lbfgs"}
+                elif 1000 <= num_samples <= 5000:
+                    return {"hidden_size": 100, "learning_rate": 0.001, "max_iter": 200, "activation": "relu", "solver": "adam"}
+                elif 5000 < num_samples <= 20000:
+                    return {"hidden_size": 200, "learning_rate": 0.0005, "max_iter": 300, "activation": "relu", "solver": "adam"}
+                else:
+                    return {"hidden_size": 300, "learning_rate": 0.0001, "max_iter": 400, "activation": "relu", "solver": "adam"}
 
-        # Lưu tham số tối ưu vào session_state để khôi phục
-        if "optimal_params" not in st.session_state:
-            st.session_state["optimal_params"] = get_optimal_params(num_samples)
+            if "optimal_params" not in st.session_state:
+                st.session_state["optimal_params"] = get_optimal_params(num_samples)
 
-        # Khởi tạo tham số từ session_state hoặc tối ưu
-        params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
+            params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-        # Hiển thị tham số tối ưu được chọn
-        st.info(f"**Tham số tối ưu tự động**: Hidden Size = {params['hidden_size']}, Learning Rate = {params['learning_rate']}, "
-                f"Max Iter = {params['max_iter']}, Activation = {params['activation']}, Solver = {params['solver']}")
+            st.info(f"**Tham số tối ưu tự động**: Hidden Size = {params['hidden_size']}, Learning Rate = {params['learning_rate']}, "
+                    f"Max Iter = {params['max_iter']}, Activation = {params['activation']}, Solver = {params['solver']}")
 
-        # Phân chia giao diện thành các cột
-        col1, col2 = st.columns(2)
+            col1, col2 = st.columns(2)
 
-        with col1:
-            with st.expander("🧠 Cấu trúc mạng", expanded=True):
-                num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
-                                                   help="Số lớp ẩn quyết định độ sâu của mạng.")
-                params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp", min_value=10, max_value=500, value=params["hidden_size"],
-                                                       help="Số nơ-ron ảnh hưởng đến độ phức tạp của mô hình.")
-                hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
-                params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
-                                                   index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                                                   help="Hàm kích hoạt giúp học đặc trưng phi tuyến.")
+            with col1:
+                with st.expander("🧠 Cấu trúc mạng", expanded=True):
+                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
+                                                       help="Số lớp ẩn quyết định độ sâu của mạng.")
+                    params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp", min_value=10, max_value=500, value=params["hidden_size"],
+                                                           help="Số nơ-ron ảnh hưởng đến độ phức tạp của mô hình.")
+                    hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
+                    params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
+                                                       index=["relu", "sigmoid", "tanh"].index(params["activation"]),
+                                                       help="Hàm kích hoạt giúp học đặc trưng phi tuyến.")
 
-        with col2:
-            with st.expander("📉 Tối ưu hóa", expanded=True):
-                params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
-                                                      index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
-                                                      help="Điều chỉnh tốc độ cập nhật trọng số.")
-                params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
-                                                    help="Số epoch tối đa để huấn luyện.")
-                params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"],
-                                               index=["lbfgs", "sgd", "adam"].index(params["solver"]),
-                                               help="Phương pháp tối ưu hóa trọng số.")
+            with col2:
+                with st.expander("📉 Tối ưu hóa", expanded=True):
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
+                                                          index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
+                                                          help="Điều chỉnh tốc độ cập nhật trọng số.")
+                    params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
+                                                        help="Số epoch tối đa để huấn luyện.")
+                    params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"],
+                                                   index=["lbfgs", "sgd", "adam"].index(params["solver"]),
+                                                   help="Phương pháp tối ưu hóa trọng số.")
 
-        # Nút khôi phục tham số tối ưu
-        if st.button("🔄 Khôi phục tham số tối ưu", help="Quay lại tham số tối ưu dựa trên số mẫu"):
-            st.session_state["training_params"] = st.session_state["optimal_params"].copy()
-            st.success("Đã khôi phục tham số tối ưu!")
-            st.rerun()
+            if st.button("🔄 Khôi phục tham số tối ưu", help="Quay lại tham số tối ưu dựa trên số mẫu"):
+                st.session_state["training_params"] = st.session_state["optimal_params"].copy()
+                st.success("Đã khôi phục tham số tối ưu!")
+                st.rerun()
 
-        # Lưu tham số vào session_state
-        st.session_state["training_params"] = params
+            st.session_state["training_params"] = params
 
-        # Nút huấn luyện
-        if st.button("🚀 Thực hiện Huấn luyện", key="train_button", type="primary"):
-            with st.spinner("Đang huấn luyện mô hình..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                start_time = time.time()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Tiến độ: {i}%")
-                    time.sleep(0.1)
+            if st.button("🚀 Thực hiện Huấn luyện", key="train_button", type="primary"):
+                with st.spinner("Đang huấn luyện mô hình..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    start_time = time.time()
+                    for i in range(0, 91, 10):
+                        progress_bar.progress(i)
+                        status_text.text(f"Tiến độ: {i}%")
+                        time.sleep(0.1)
 
-                X_train = st.session_state['split_data']["X_train"]
-                y_train = st.session_state['split_data']["y_train"]
-                X_valid = st.session_state['split_data']["X_valid"]
-                y_valid = st.session_state['split_data']["y_valid"]
-                X_test = st.session_state['split_data']["X_test"]
-                y_test = st.session_state['split_data']["y_test"]
+                    X_train = st.session_state['split_data']["X_train"]
+                    y_train = st.session_state['split_data']["y_train"]
+                    X_valid = st.session_state['split_data']["X_valid"]
+                    y_valid = st.session_state['split_data']["y_valid"]
+                    X_test = st.session_state['split_data']["X_test"]
+                    y_test = st.session_state['split_data']["y_test"]
 
-                pipeline = Pipeline([
-                    ('pca', PCA(n_components=50)),
-                    ('classifier', MLPClassifier(
-                        hidden_layer_sizes=hidden_sizes,
-                        max_iter=params["max_iter"],
-                        learning_rate_init=params["learning_rate"],
-                        activation=params["activation"],
-                        solver=params["solver"],
-                    ))
-                ])
-                pipeline.fit(X_train, y_train)
+                    pipeline = Pipeline([
+                        ('pca', PCA(n_components=50)),
+                        ('classifier', MLPClassifier(
+                            hidden_layer_sizes=hidden_sizes,
+                            max_iter=params["max_iter"],
+                            learning_rate_init=params["learning_rate"],
+                            activation=params["activation"],
+                            solver=params["solver"],
+                        ))
+                    ])
+                    pipeline.fit(X_train, y_train)
 
-                run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                    mlflow.log_param("hidden_layer_sizes", hidden_sizes)
-                    mlflow.log_param("learning_rate_init", params["learning_rate"])
-                    mlflow.log_param("max_iter", params["max_iter"])
-                    mlflow.log_param("activation", params["activation"])
-                    mlflow.log_param("solver", params["solver"])
+                    run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
+                        mlflow.log_param("hidden_layer_sizes", hidden_sizes)
+                        mlflow.log_param("learning_rate_init", params["learning_rate"])
+                        mlflow.log_param("max_iter", params["max_iter"])
+                        mlflow.log_param("activation", params["activation"])
+                        mlflow.log_param("solver", params["solver"])
 
-                    y_valid_pred = pipeline.predict(X_valid)
-                    y_test_pred = pipeline.predict(X_test)
-                    acc_valid = accuracy_score(y_valid, y_valid_pred)
-                    acc_test = accuracy_score(y_test, y_test_pred)
-                    cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                    cm_test = confusion_matrix(y_test, y_test_pred)
+                        y_valid_pred = pipeline.predict(X_valid)
+                        y_test_pred = pipeline.predict(X_test)
+                        acc_valid = accuracy_score(y_valid, y_valid_pred)
+                        acc_test = accuracy_score(y_test, y_test_pred)
+                        cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                        cm_test = confusion_matrix(y_test, y_test_pred)
 
-                    mlflow.log_metric("accuracy_val", acc_valid)
-                    mlflow.log_metric("accuracy_test", acc_test)
+                        mlflow.log_metric("accuracy_val", acc_valid)
+                        mlflow.log_metric("accuracy_test", acc_test)
 
-                    st.session_state['model'] = pipeline
-                    st.session_state['training_results'] = {
-                        'accuracy_val': acc_valid,
-                        'accuracy_test': acc_test,
-                        'cm_valid': cm_valid,
-                        'cm_test': cm_test,
-                        'run_name': run_name,
-                        'run_id': run.info.run_id,
-                        'params': params,
-                        'training_time': time.time() - start_time
-                    }
+                        st.session_state['model'] = pipeline
+                        st.session_state['training_results'] = {
+                            'accuracy_val': acc_valid,
+                            'accuracy_test': acc_test,
+                            'cm_valid': cm_valid,
+                            'cm_test': cm_test,
+                            'run_name': run_name,
+                            'run_id': run.info.run_id,
+                            'params': params,
+                            'training_time': time.time() - start_time
+                        }
 
-                progress_bar.progress(100)
-                status_text.text("Hoàn tất: 100%")
-                st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+                    progress_bar.progress(100)
+                    status_text.text("Hoàn tất: 100%")
+                    st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
 
-        # Hiển thị kết quả nếu đã huấn luyện
-        if 'training_results' in st.session_state:
-            results = st.session_state['training_results']
-            st.subheader("📊 Kết quả huấn luyện")
-            col_result1, col_result2 = st.columns(2)
-            with col_result1:
-                st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
-            with col_result2:
-                st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+            if 'training_results' in st.session_state:
+                results = st.session_state['training_results']
+                st.subheader("📊 Kết quả huấn luyện")
+                col_result1, col_result2 = st.columns(2)
+                with col_result1:
+                    st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
+                with col_result2:
+                    st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
-            st.subheader("📈 Ma trận nhầm lẫn")
-            col_cm1, col_cm2 = st.columns(2)
-            with col_cm1:
-                fig, ax = plt.subplots(figsize=(5, 4))
-                sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Validation")
-                st.pyplot(fig)
-            with col_cm2:
-                fig, ax = plt.subplots(figsize=(5, 4))
-                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Test")
-                st.pyplot(fig)
+                st.subheader("📈 Ma trận nhầm lẫn")
+                col_cm1, col_cm2 = st.columns(2)
+                with col_cm1:
+                    fig, ax = plt.subplots(figsize=(5, 4))
+                    sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                    ax.set_title("Validation")
+                    st.pyplot(fig)
+                with col_cm2:
+                    fig, ax = plt.subplots(figsize=(5, 4))
+                    sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                    ax.set_title("Test")
+                    st.pyplot(fig)
 
-            st.subheader("ℹ️ Chi tiết")
-            with st.expander("Xem chi tiết", expanded=False):
-                st.markdown("**Thông tin lần chạy**:")
-                st.write(f"- Tên: {results['run_name']}")
-                st.write(f"- ID: {results['run_id']}")
-                st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
-                st.markdown("**Tham số đã chọn**:")
-                st.write(f"- Số lớp ẩn: {len(results['params']['hidden_size'])}")
-                st.write(f"- Số nơ-ron mỗi lớp: {results['params']['hidden_size']}")
-                st.write(f"- Tốc độ học: {results['params']['learning_rate']}")
-                st.write(f"- Số lần lặp tối đa: {results['params']['max_iter']}")
-                st.write(f"- Hàm kích hoạt: {results['params']['activation']}")
-                st.write(f"- Optimizer: {results['params']['solver']}")
+                st.subheader("ℹ️ Chi tiết")
+                with st.expander("Xem chi tiết", expanded=False):
+                    st.markdown("**Thông tin lần chạy**:")
+                    st.write(f"- Tên: {results['run_name']}")
+                    st.write(f"- ID: {results['run_id']}")
+                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.markdown("**Tham số đã chọn**:")
+                    st.write(f"- Số lớp ẩn: {len(results['params']['hidden_size'] if isinstance(results['params']['hidden_size'], tuple) else [results['params']['hidden_size']])}")
+                    st.write(f"- Số nơ-ron mỗi lớp: {results['params']['hidden_size']}")
+                    st.write(f"- Tốc độ học: {results['params']['learning_rate']}")
+                    st.write(f"- Số lần lặp tối đa: {results['params']['max_iter']}")
+                    st.write(f"- Hàm kích hoạt: {results['params']['activation']}")
+                    st.write(f"- Optimizer: {results['params']['solver']}")
 
-    # Tab 6: Demo dự đoán
     with tab_demo:
         st.header("Demo Dự đoán")
 
@@ -808,7 +784,6 @@ def run_mnist_neural_network_app():
                     else:
                         st.warning("Vui lòng vẽ trước!")
 
-    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.header("Theo dõi Kết quả")
 
