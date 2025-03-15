@@ -18,16 +18,52 @@ from datetime import datetime
 import time
 
 def run_mnist_neural_network_app():
+    # Thiết lập MLflow
+    try:
+        os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
+        os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
+        mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
+        mlflow.set_experiment("MNIST_NeuralNetwork")
+    except KeyError as e:
+        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
+        st.stop()
+
     st.title("Ứng dụng Phân loại Chữ số MNIST với Neural Network")
 
-    # CSS cho MathJax và giao diện
+    # CSS cho MathJax và Tooltip
     st.markdown("""
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
         <style>
-            .inline-container {
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
+            .tooltip {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+                color: #1f77b4;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 400px;
+                background-color: #f9f9f9;
+                color: #333;
+                text-align: left;
+                border-radius: 6px;
+                padding: 10px;
+                position: absolute;
+                z-index: 1;
+                right: 105%;
+                top: 50%;
+                transform: translateY(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                border: 1px solid #ccc;
+                font-size: 0.9em;
+                line-height: 1.4;
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -290,9 +326,9 @@ def run_mnist_neural_network_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu
+    # Tab 3: Xử lý dữ liệu
     with tab_preprocess:
-        st.header("Xử lí Dữ liệu")
+        st.header("Xử lý Dữ liệu")
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
@@ -319,7 +355,7 @@ def run_mnist_neural_network_app():
                 if st.button("Normalization", key="normalize_btn"):
                     X_norm = X / 255.0
                     st.session_state["data_processed"] = (X_norm, y)
-                    st.success("Đã chuẩn hoá dữ liệu!")
+                    st.success("Đã chuẩn hóa dữ liệu!")
                     st.rerun()
             with col2:
                 st.markdown("""
@@ -327,12 +363,11 @@ def run_mnist_neural_network_app():
                         ?
                         <span class="tooltiptext">
                             Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
-                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
+                            Công dụng: Đảm bảo thang đo đồng nhất, cải thiện hiệu suất của Neural Network.
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
 
-            # Hiển thị dữ liệu đã xử lý
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if isinstance(data_processed, tuple) and len(data_processed) == 2:
@@ -398,7 +433,7 @@ def run_mnist_neural_network_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh giá (Phiên bản cập nhật)
+    # Tab 5: Huấn luyện/Đánh giá (Cập nhật chuyên nghiệp)
     with tab_train_eval:
         st.header("Huấn Luyện và Đánh Giá Mô Hình Neural Network")
         st.markdown("""
@@ -408,7 +443,6 @@ def run_mnist_neural_network_app():
             </div>
         """, unsafe_allow_html=True)
 
-        # Kiểm tra dữ liệu đã chia
         if 'split_data' not in st.session_state:
             st.info("Vui lòng chia dữ liệu từ tab 'Chia dữ liệu' trước khi tiếp tục.")
         else:
@@ -417,14 +451,6 @@ def run_mnist_neural_network_app():
             st.markdown(f"""
                 <div style='background-color: #f0f2f6; padding: 10px; border-radius: 5px;'>
                     <b>Số lượng mẫu huấn luyện:</b> {num_samples} mẫu
-                </div>
-            """, unsafe_allow_html=True)
-
-            # Phần thiết lập mô hình
-            st.subheader("⚙️ Thiết Lập Tham Số Mô Hình")
-            st.markdown("""
-                <div style='text-align: justify;'>
-                    Bạn chỉ cần điều chỉnh 3 tham số chính dưới đây. Các giá trị gợi ý sẽ được tự động đề xuất dựa trên số lượng mẫu huấn luyện để đảm bảo hiệu quả tối ưu.
                 </div>
             """, unsafe_allow_html=True)
 
@@ -440,7 +466,7 @@ def run_mnist_neural_network_app():
             suggested_params = suggest_parameters(num_samples)
 
             # Bảng gợi ý tham số
-            st.markdown("**📋 Gợi ý tham số dựa trên số mẫu:**")
+            st.subheader("📋 Gợi ý tham số tối ưu dựa trên số lượng mẫu")
             param_table = pd.DataFrame({
                 "Tham số": ["Số nơ-ron lớp ẩn (hidden_size)", "Số lần huấn luyện tối đa (max_iter)", "Tốc độ học (learning_rate)"],
                 "Giá trị gợi ý": [suggested_params["hidden_size"], suggested_params["max_iter"], suggested_params["lr"]],
@@ -453,6 +479,7 @@ def run_mnist_neural_network_app():
             st.table(param_table)
 
             # Form nhập tham số
+            st.subheader("⚙️ Thiết lập tham số mô hình")
             with st.form(key="training_form"):
                 col1, col2, col3 = st.columns(3)
                 with col1:
@@ -473,7 +500,7 @@ def run_mnist_neural_network_app():
                         options=[0.01, 0.001, 0.0001], index=[0.01, 0.001, 0.0001].index(suggested_params["lr"]),
                         help="Giá trị nhỏ hơn giúp mô hình học ổn định nhưng chậm hơn."
                     )
-                submit_button = st.form_submit_button(label="Bắt Đầu Huấn Luyện")
+                submit_button = st.form_submit_button(label="Thực hiện Huấn luyện")
 
             # Huấn luyện mô hình
             if submit_button:
@@ -502,7 +529,12 @@ def run_mnist_neural_network_app():
                         ))
                     ])
 
-                    # Huấn luyện
+                    # Tiến trình huấn luyện
+                    for i in range(0, 51, 5):
+                        progress_bar.progress(i)
+                        status_text.text(f"Đang huấn luyện {i}%{i % 4 * '.'}")
+                        time.sleep(0.1)
+
                     pipeline.fit(X_train, y_train)
                     model = pipeline
 
@@ -520,6 +552,11 @@ def run_mnist_neural_network_app():
                         mlflow.log_metric("accuracy_val", accuracy_val)
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
 
+                        for i in range(50, 76, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang đánh giá validation {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+
                         # Đánh giá trên tập test
                         y_test_pred = model.predict(X_test)
                         accuracy_test = accuracy_score(y_test, y_test_pred)
@@ -530,26 +567,35 @@ def run_mnist_neural_network_app():
                         mlflow.log_metric("training_time_seconds", training_time)
                         mlflow.sklearn.log_model(model, "model")
 
+                        for i in range(75, 101, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+
                         run_id = run.info.run_id
                         st.session_state['model'] = model
+                        st.session_state['latest_run'] = {
+                            'run_name': run_name,
+                            'run_id': run_id
+                        }
                         st.session_state['training_results'] = {
                             'training_time': training_time,
                             'accuracy_val': accuracy_val,
                             'accuracy_test': accuracy_test,
                             'cm_valid': cm_valid,
                             'cm_test': cm_test,
+                            'model_choice': 'Neural Network',
+                            'params': {'hidden_size': hidden_size, 'max_iter': max_iter, 'learning_rate': lr},
+                            'num_samples': num_samples,
                             'run_name': run_name,
                             'run_id': run_id
                         }
 
-                    progress_bar.progress(100)
-                    status_text.text("Huấn luyện hoàn tất!")
-                    time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
 
             # Hiển thị kết quả huấn luyện
-            if 'training_results' in st.session_state:
+            if 'training_results' in st.session_state and st.session_state['training_results']['model_choice'] == 'Neural Network':
                 st.subheader("📊 Kết Quả Huấn Luyện")
                 results = st.session_state['training_results']
                 st.markdown(f"""
@@ -563,7 +609,6 @@ def run_mnist_neural_network_app():
                     </div>
                 """, unsafe_allow_html=True)
 
-                # Ma trận nhầm lẫn
                 st.subheader("📉 Ma Trận Nhầm Lẫn")
                 col1, col2 = st.columns(2)
                 with col1:
@@ -581,6 +626,28 @@ def run_mnist_neural_network_app():
                     ax.set_ylabel("Thực tế")
                     st.pyplot(fig)
 
+                st.subheader("Thông tin Kết quả")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
+                    st.write(f"- **Tên lần chạy (Run Name)**: {results['run_name']}")
+                    st.write(f"- **ID lần chạy (Run ID)**: {results['run_id']}")
+
+                    st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
+                    st.write(f"- **Mô hình**: Neural Network")
+                    st.write(f"- **Tham số**:")
+                    for key, value in results['params'].items():
+                        st.write(f"  - {key}: {value}")
+                    st.write(f"- **Thời gian chạy**: {results['training_time']:.2f} giây")
+                    st.write(f"- **Số mẫu huấn luyện**: {results['num_samples']}")
+
+                    st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    - **Độ chính xác Validation**: {results['accuracy_val']*100:.2f}%  
+                    - **Độ chính xác Test**: {results['accuracy_test']*100:.2f}%  
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện' để xem kết quả.")
+
     # Tab 6: Demo dự đoán
     with tab_demo:
         st.header("Demo Dự đoán")
@@ -593,6 +660,9 @@ def run_mnist_neural_network_app():
         else:
             mode = st.radio("Chọn phương thức dự đoán:", ["Dữ liệu từ Test", "Upload ảnh mới", "Vẽ số"])
             
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
             def preprocess_input(data):
                 return data / 255.0
 
@@ -604,6 +674,11 @@ def run_mnist_neural_network_app():
                 idx = st.slider("Chọn mẫu từ Test", 0, len(X_test)-1, 0)
                 if st.button("Dự đoán"):
                     with st.spinner("Đang dự đoán..."):
+                        for i in range(0, 51, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+                        
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         if not is_normalized:
                             sample = preprocess_input(sample)
@@ -613,17 +688,31 @@ def run_mnist_neural_network_app():
                         confidence = max(proba) * 100
                         y_true = y_test.iloc[idx]
                         
-                        st.success(f"Dự đoán: **${prediction}$** | Độ tin cậy: **${confidence:.2f}\\%$** | Giá trị thực: **${y_true}$**")
+                        for i in range(50, 101, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+                        
+                        st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
                         fig, ax = plt.subplots()
                         ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
                         ax.axis("off")
                         st.pyplot(fig)
+                        
+                        time.sleep(1)
+                        progress_bar.empty()
+                        status_text.empty()
 
             elif mode == "Upload ảnh mới":
                 uploaded_images = st.file_uploader("Upload ảnh ($28\\times28$, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
                 if uploaded_images:
                     for i, uploaded_image in enumerate(uploaded_images):
                         with st.spinner(f"Đang xử lý ảnh {i+1}/{len(uploaded_images)}..."):
+                            for j in range(0, 51, 5):
+                                progress_bar.progress(j)
+                                status_text.text(f"Đang tải ảnh {i+1} - {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
                             img = Image.open(uploaded_image).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
@@ -633,8 +722,17 @@ def run_mnist_neural_network_app():
                             proba = st.session_state['model'].predict_proba(img_array)[0]
                             confidence = max(proba) * 100
                             
-                            st.success(f"Dự đoán: **${prediction}$** | Độ tin cậy: **${confidence:.2f}\\%$**")
+                            for j in range(50, 101, 5):
+                                progress_bar.progress(j)
+                                status_text.text(f"Đang dự đoán ảnh {i+1} - {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
                             st.image(img, caption=f"Ảnh {i+1} được upload", use_container_width=True)
+                            
+                            time.sleep(1)
+                            progress_bar.empty()
+                            status_text.empty()
 
             elif mode == "Vẽ số":
                 st.write("Vẽ một chữ số từ $0$-$9$ trên canvas bên dưới ($28\\times28$ pixel):")
@@ -651,6 +749,11 @@ def run_mnist_neural_network_app():
                 if st.button("Dự đoán số đã vẽ"):
                     if canvas_result.image_data is not None:
                         with st.spinner("Đang xử lý vẽ..."):
+                            for i in range(0, 51, 5):
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
                             img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
@@ -660,7 +763,16 @@ def run_mnist_neural_network_app():
                             proba = st.session_state['model'].predict_proba(img_array)[0]
                             confidence = max(proba) * 100
                             
-                            st.success(f"Dự đoán: **${prediction}$** | Độ tin cậy: **${confidence:.2f}\\%$**")
+                            for i in range(50, 101, 5):
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
+                            
+                            time.sleep(1)
+                            progress_bar.empty()
+                            status_text.empty()
                     else:
                         st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
@@ -668,35 +780,97 @@ def run_mnist_neural_network_app():
     with tab_log_info:
         st.header("Theo dõi kết quả")
         st.markdown("""
-        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện và chi tiết từng lần chạy.
+        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
         """, unsafe_allow_html=True)
 
         try:
             client = MlflowClient()
-            experiment = client.get_experiment_by_name("Neural Network ")
+            experiment = client.get_experiment_by_name("MNIST_NeuralNetwork")
             if not experiment:
-                st.error("Không tìm thấy experiment 'Neural Network '.")
+                st.error("Không tìm thấy experiment 'MNIST_NeuralNetwork'. Vui lòng kiểm tra lại MLflow tracking URI.")
             else:
-                runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["attributes.start_time DESC"])
+                experiment_id = experiment.experiment_id
+                runs = client.search_runs(experiment_ids=[experiment_id], order_by=["attributes.start_time DESC"])
+                
                 if not runs:
                     st.info("Chưa có lần chạy nào được ghi nhận.")
                 else:
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
-                    selected_run_name = st.selectbox("Chọn run:", list(run_options.values()))
+                    run_names = list(run_options.values())
+
+                    default_run_name = st.session_state.get('training_results', {}).get('run_name', run_names[0]) if 'training_results' in st.session_state else run_names[0]
+
+                    st.subheader("Danh sách run")
+                    selected_run_name = st.selectbox(
+                        "Chọn run:",
+                        options=run_names,
+                        index=run_names.index(default_run_name) if default_run_name in run_names else 0,
+                        key="main_select",
+                        help="Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa."
+                    )
                     selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
                     selected_run = client.get_run(selected_run_id)
 
-                    st.subheader("📘 Thông tin chi tiết")
+                    st.subheader("Đổi tên Run")
+                    new_run_name = st.text_input(
+                        "Nhập tên mới:",
+                        value=selected_run_name,
+                        key="rename_input"
+                    )
+                    if st.button("Cập nhật tên", key="rename_button"):
+                        if new_run_name.strip() and new_run_name.strip() != selected_run_name:
+                            with st.spinner("Đang cập nhật tên..."):
+                                client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
+                                if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
+                                    st.session_state['training_results']['run_name'] = new_run_name.strip()
+                                st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
+                                time.sleep(0.5)
+                                st.rerun()
+                        elif not new_run_name.strip():
+                            st.warning("Vui lòng nhập tên hợp lệ.")
+                        else:
+                            st.info("Tên mới trùng với tên hiện tại.")
+
+                    st.subheader("Xóa Run")
+                    if st.button("Xóa lần chạy", key="delete_button"):
+                        with st.spinner("Đang xóa lần chạy..."):
+                            client.delete_run(selected_run_id)
+                            if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
+                                del st.session_state['training_results']
+                            st.success(f"Đã xóa: {selected_run_name}")
+                            time.sleep(0.5)
+                            st.rerun()
+
+                    st.subheader("Thông tin chi tiết của Run")
                     st.write(f"**Tên lần chạy:** {selected_run_name}")
                     st.write(f"**ID lần chạy:** {selected_run_id}")
                     st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
-                    st.markdown("**Tham số:**", unsafe_allow_html=True)
-                    st.json(selected_run.data.params, expanded=True)
-                    st.markdown("**Kết quả:**", unsafe_allow_html=True)
-                    st.json(selected_run.data.metrics, expanded=True)
 
+                    st.markdown("**Tham số:**", unsafe_allow_html=True)
+                    if selected_run.data.params:
+                        st.json(selected_run.data.params, expanded=True)
+                    else:
+                        st.write("Không có tham số được ghi nhận.")
+
+                    st.markdown("**Kết quả:**", unsafe_allow_html=True)
+                    if selected_run.data.metrics:
+                        metrics_display = {}
+                        training_time = selected_run.data.metrics.get("training_time_seconds", "N/A")
+                        metrics_display["Thời gian thực hiện (giây)"] = f"{float(training_time):.2f}" if training_time != "N/A" else "N/A"
+                        accuracy_val = selected_run.data.metrics.get("accuracy_val", "N/A")
+                        metrics_display["Độ chính xác Validation"] = f"{float(accuracy_val)*100:.2f}%" if accuracy_val != "N/A" else "N/A"
+                        accuracy_test = selected_run.data.metrics.get("accuracy_test", "N/A")
+                        metrics_display["Độ chính xác Test"] = f"{float(accuracy_test)*100:.2f}%" if accuracy_test != "N/A" else "N/A"
+                        st.json(metrics_display, expanded=True)
+                    else:
+                        st.write("Không có kết quả được ghi nhận.")
+
+            st.subheader("Truy cập MLflow UI")
+            mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"  # Cập nhật URL nếu cần
+            if st.button("Mở MLflow UI trên Dagshub"):
+                st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Lỗi kết nối MLflow: {e}")
+            st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
