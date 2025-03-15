@@ -23,7 +23,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
-        mlflow.set_experiment("MNIST_NeuralNetwork")
+        mlflow.set_experiment("Neural Network ")
     except KeyError as e:
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
         st.stop()
@@ -578,9 +578,9 @@ def run_mnist_neural_network_app():
         st.header("Theo dõi kết quả")
         try:
             client = MlflowClient()
-            experiment = client.get_experiment_by_name("MNIST_NeuralNetwork")
+            experiment = client.get_experiment_by_name("Neural Network ")
             if not experiment:
-                st.error("Không tìm thấy experiment 'MNIST_NeuralNetwork'.")
+                st.error("Không tìm thấy experiment 'Neural Network '.")
             else:
                 runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["attributes.start_time DESC"])
                 if not runs:
