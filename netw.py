@@ -286,62 +286,43 @@ def run_mnist_neural_network_app():
 
                 st.subheader("⚙️ Các tham số cơ bản và công dụng")
                 st.markdown("""
-                Dưới đây là các tham số bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này, kèm công thức liên quan:  
-                
-                - **hidden_layer_sizes**:  
-                  - **Ý nghĩa**: Số lớp ẩn và số nơ-ron trong mỗi lớp ẩn (ví dụ: $(128, 64)$ cho 2 lớp ẩn với 128 và 64 nơ-ron).  
-                  - **Công dụng**: Quyết định cấu trúc mạng, ảnh hưởng đến khả năng học đặc trưng phức tạp. Nhiều lớp và nơ-ron tăng sức mạnh nhưng cũng tăng thời gian tính toán.  
+                Dưới đây là các tham số cơ bản bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này:  
+
+                - **Số lớp ẩn (Number of Hidden Layers)**:  
+                  - **Ý nghĩa**: Quyết định độ sâu của mạng (từ $1$ đến $3$ lớp).  
+                  - **Công dụng**: Nhiều lớp ẩn giúp học đặc trưng phức tạp hơn, nhưng tăng thời gian tính toán.  
+                  - **Ví dụ**: $1$ lớp ẩn cho bài toán đơn giản, $2$-$3$ lớp cho độ chính xác cao hơn.  
+
+                - **Số nơ-ron mỗi lớp (Neurons per Layer)**:  
+                  - **Ý nghĩa**: Số đơn vị xử lý trong mỗi lớp ẩn (từ $10$ đến $500$).  
+                  - **Công dụng**: Nhiều nơ-ron tăng khả năng học, nhưng có thể gây quá tải.  
                   - **Công thức liên quan**: Đầu ra mỗi lớp:  
                     $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}) $$  
 
-                - **learning_rate_init ($\\eta$)**:  
-                  - **Ý nghĩa**: Tốc độ học ban đầu (ví dụ: $0.001$).  
-                  - **Công dụng**: Điều chỉnh mức độ cập nhật trọng số; nhỏ hơn thì học chậm nhưng ổn định, lớn hơn thì nhanh nhưng có thể không hội tụ.  
+                - **Tốc độ học (Learning Rate, $\\eta$)**:  
+                  - **Ý nghĩa**: Tốc độ cập nhật trọng số (ví dụ: $0.01$, $0.001$, $0.0005$, $0.0001$).  
+                  - **Công dụng**: Giá trị nhỏ học chậm nhưng ổn định, giá trị lớn học nhanh nhưng có thể không hội tụ.  
                   - **Công thức**: Cập nhật trọng số:  
                     $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
 
-                - **max_iter**:  
-                  - **Ý nghĩa**: Số lần lặp tối đa (epoch, ví dụ: $200$).  
-                  - **Công dụng**: Giới hạn số lần mạng học qua dữ liệu để đạt độ chính xác mong muốn.  
+                - **Số lần lặp tối đa (Max Iterations)**:  
+                  - **Ý nghĩa**: Số epoch tối đa để huấn luyện (từ $50$ đến $500$).  
+                  - **Công dụng**: Giới hạn số lần mạng học qua dữ liệu. Nhiều lần lặp tăng độ chính xác nhưng tốn thời gian.  
 
-                - **activation ($\\sigma$)**:  
-                  - **Ý nghĩa**: Hàm kích hoạt áp dụng cho nơ-ron (ví dụ: ReLU, Sigmoid, Tanh).  
-                  - **Công dụng**: Quyết định cách nơ-ron xử lý đầu vào, ảnh hưởng đến khả năng học đặc trưng phi tuyến.  
+                - **Hàm kích hoạt (Activation Function, $\\sigma$)**:  
+                  - **Ý nghĩa**: Quyết định cách nơ-ron xử lý đầu vào (ReLU, Sigmoid, Tanh).  
+                  - **Công dụng**: Giúp mạng học đặc trưng phi tuyến.  
                   - **Công thức**:  
                     - ReLU: $$ \\sigma(z) = \\max(0, z) $$  
                     - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
                     - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
 
-                - **solver**:  
-                  - **Ý nghĩa**: Phương pháp tối ưu hóa (ví dụ: 'lbfgs', 'sgd', 'adam').  
-                  - **Công dụng**: Quyết định cách cập nhật trọng số để giảm mất mát.  
-                    - **SGD**: Gradient Descent ngẫu nhiên:  
-                      $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                    - **Adam**: Kết hợp momentum và RMSProp, thích nghi tốc độ học.  
-
-                - **batch_size**:  
-                  - **Ý nghĩa**: Số mẫu trong mỗi lần cập nhật trọng số (ví dụ: $32$).  
-                  - **Công dụng**: Ảnh hưởng đến tốc độ và độ ổn định của huấn luyện; batch nhỏ nhanh hơn nhưng nhiễu hơn.  
-                  - **Công thức**: Gradient trung bình trên batch:  
-                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = \\frac{1}{B} \\sum_{i=1}^{B} (A^{(l-1)}_i)^T \\cdot \\delta^{(l)}_i $$  
-                    ($B$ là batch size).  
-
-                - **alpha**:  
-                  - **Ý nghĩa**: Hệ số điều chuẩn L2 (ví dụ: $0.0001$).  
-                  - **Công dụng**: Giảm overfitting bằng cách phạt các trọng số lớn.  
-                  - **Công thức**: Hàm mất mát có điều chuẩn:  
-                    $$ L = L_{\\text{data}} + \\frac{\\alpha}{2} \\sum_{l} ||W^{(l)}||^2 $$  
-                """, unsafe_allow_html=True)
-
-                st.subheader("📋 Bảng tham số tối ưu dựa trên số mẫu")
-                st.markdown("""
-                Các tham số tối ưu được tự động chọn dựa trên số lượng mẫu huấn luyện để cân bằng giữa hiệu suất và thời gian tính toán:  
-                | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver | Batch Size | Alpha   |
-                |--------------|--------------------|---------------|----------|------------|--------|------------|---------|
-                | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  | auto       | 0.0001  |
-                | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   | 32         | 0.0001  |
-                | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   | 64         | 0.0001  |
-                | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   | 128        | 0.0001  |
+                - **Optimizer (Solver)**:  
+                  - **Ý nghĩa**: Phương pháp tối ưu hóa trọng số (LBFGS, SGD, Adam).  
+                  - **Công dụng**: Điều chỉnh cách mạng cập nhật tham số để giảm mất mát.  
+                  - **Ví dụ**:  
+                    - **SGD**: Gradient Descent ngẫu nhiên, đơn giản nhưng chậm.  
+                    - **Adam**: Nhanh và hiệu quả với dữ liệu lớn.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("🟪 Ưu điểm và nhược điểm")
