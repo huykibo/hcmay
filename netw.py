@@ -525,109 +525,107 @@ def run_mnist_neural_network_app():
 
     # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
-        st.header("Huấn luyện và Đánh giá")
+        st.header("Huấn luyện và Đánh giá Mô hình")
 
         if 'split_data' not in st.session_state:
-            st.info("Vui lòng chia dữ liệu trước.")
+            st.info("Vui lòng chia dữ liệu trước khi huấn luyện mô hình.")
         else:
             X_train = st.session_state['split_data']["X_train"]
             num_samples = len(X_train)
-            st.write(f"Số mẫu huấn luyện: {num_samples}")
+            st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-            st.subheader("⚙️ Cài đặt tham số mô hình")
+            # Bảng tham số tối ưu
+            st.subheader("⚙️ Cấu hình tham số mô hình")
             st.markdown("""
-            Dựa trên số lượng mẫu, các tham số tối ưu sẽ được tự động chọn như sau:
+            Các tham số tối ưu được tự động chọn dựa trên số mẫu để đảm bảo hiệu suất tốt nhất:
             | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver | Batch Size | Alpha   |
             |--------------|--------------------|---------------|----------|------------|--------|------------|---------|
             | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  | auto       | 0.0001  |
             | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   | 32         | 0.0001  |
             | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   | 64         | 0.0001  |
             | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   | 128        | 0.0001  |
-            Bạn có thể điều chỉnh thủ công nếu muốn!
             """, unsafe_allow_html=True)
 
-            # Tự động chọn tham số tối ưu dựa trên num_samples
-            params = {}
-            if num_samples < 1000:
-                params["hidden_size"] = 50
-                params["learning_rate"] = 0.01
-                params["max_iter"] = 100
-                params["activation"] = "relu"
-                params["solver"] = "lbfgs"
-                params["batch_size"] = "auto"
-                params["alpha"] = 0.0001
-            elif 1000 <= num_samples <= 5000:
-                params["hidden_size"] = 100
-                params["learning_rate"] = 0.001
-                params["max_iter"] = 200
-                params["activation"] = "relu"
-                params["solver"] = "adam"
-                params["batch_size"] = 32
-                params["alpha"] = 0.0001
-            elif 5000 < num_samples <= 20000:
-                params["hidden_size"] = 200
-                params["learning_rate"] = 0.0005
-                params["max_iter"] = 300
-                params["activation"] = "relu"
-                params["solver"] = "adam"
-                params["batch_size"] = 64
-                params["alpha"] = 0.0001
-            else:
-                params["hidden_size"] = 300
-                params["learning_rate"] = 0.0001
-                params["max_iter"] = 400
-                params["activation"] = "relu"
-                params["solver"] = "adam"
-                params["batch_size"] = 128
-                params["alpha"] = 0.0001
+            # Hàm chọn tham số tối ưu
+            def get_optimal_params(num_samples):
+                if num_samples < 1000:
+                    return {"hidden_size": 50, "learning_rate": 0.01, "max_iter": 100, "activation": "relu", "solver": "lbfgs", "batch_size": "auto", "alpha": 0.0001}
+                elif 1000 <= num_samples <= 5000:
+                    return {"hidden_size": 100, "learning_rate": 0.001, "max_iter": 200, "activation": "relu", "solver": "adam", "batch_size": 32, "alpha": 0.0001}
+                elif 5000 < num_samples <= 20000:
+                    return {"hidden_size": 200, "learning_rate": 0.0005, "max_iter": 300, "activation": "relu", "solver": "adam", "batch_size": 64, "alpha": 0.0001}
+                else:
+                    return {"hidden_size": 300, "learning_rate": 0.0001, "max_iter": 400, "activation": "relu", "solver": "adam", "batch_size": 128, "alpha": 0.0001}
 
-            # Hiển thị thông báo về tham số tối ưu được chọn tự động
-            st.info(f"Tham số tối ưu tự động chọn cho {num_samples} mẫu: "
-                    f"Hidden Size = {params['hidden_size']}, "
-                    f"Learning Rate = {params['learning_rate']}, "
-                    f"Max Iter = {params['max_iter']}, "
-                    f"Activation = {params['activation']}, "
-                    f"Solver = {params['solver']}, "
-                    f"Batch Size = {params['batch_size']}, "
-                    f"Alpha = {params['alpha']}")
+            # Lưu tham số tối ưu vào session_state để khôi phục
+            if "optimal_params" not in st.session_state:
+                st.session_state["optimal_params"] = get_optimal_params(num_samples)
 
-            # Cho phép người dùng chỉnh sửa tham số
-            num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
-                                               help="Số lớp ẩn trong mạng nơ-ron, ảnh hưởng đến độ sâu và khả năng học.")
-            params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp ẩn", min_value=10, max_value=500, value=params["hidden_size"],
-                                                   help="Số nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến độ phức tạp của mô hình.")
-            hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
+            # Khởi tạo tham số từ session_state hoặc tối ưu
+            params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-            params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001], 
-                                                  index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
-                                                  help="Tốc độ cập nhật trọng số trong quá trình huấn luyện.")
-            params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
-                                                help="Số epoch tối đa để huấn luyện mô hình.")
-            params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
-                                               index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                                               help="Hàm kích hoạt cho các nơ-ron trong lớp ẩn.")
-            params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"], 
-                                           index=["lbfgs", "sgd", "adam"].index(params["solver"]),
-                                           help="Phương pháp tối ưu hóa: 'lbfgs' cho dữ liệu nhỏ, 'sgd' hoặc 'adam' cho dữ liệu lớn.")
-            
-            # Chỉ hiển thị batch_size nếu solver là 'sgd' hoặc 'adam'
-            if params["solver"] in ["sgd", "adam"]:
-                params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=params["batch_size"],
-                                                      help="Số mẫu trong mỗi lần cập nhật trọng số (chỉ áp dụng với 'sgd' hoặc 'adam').")
-            else:
-                params["batch_size"] = "auto"  # Với 'lbfgs', batch_size không áp dụng trực tiếp
+            # Hiển thị tham số tối ưu được chọn
+            st.info(f"**Tham số tối ưu tự động**: Hidden Size = {params['hidden_size']}, Learning Rate = {params['learning_rate']}, "
+                    f"Max Iter = {params['max_iter']}, Activation = {params['activation']}, Solver = {params['solver']}, "
+                    f"Batch Size = {params['batch_size']}, Alpha = {params['alpha']}")
 
-            params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=params["alpha"], step=0.0001,
-                                             help="Hệ số điều chuẩn L2 để giảm overfitting.")
+            # Phân chia giao diện thành các cột
+            col1, col2 = st.columns(2)
 
-            if st.button("Thực hiện Huấn luyện", key="train_button"):
+            with col1:
+                with st.expander("🧠 Cấu trúc mạng", expanded=True):
+                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
+                                                       help="Số lớp ẩn quyết định độ sâu của mạng.")
+                    params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp", min_value=10, max_value=500, value=params["hidden_size"],
+                                                           help="Số nơ-ron ảnh hưởng đến độ phức tạp của mô hình.")
+                    hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
+                    params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
+                                                       index=["relu", "sigmoid", "tanh"].index(params["activation"]),
+                                                       help="Hàm kích hoạt giúp học đặc trưng phi tuyến.")
+
+            with col2:
+                with st.expander("📉 Tối ưu hóa", expanded=True):
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
+                                                          index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
+                                                          help="Điều chỉnh tốc độ cập nhật trọng số.")
+                    params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
+                                                        help="Số epoch tối đa để huấn luyện.")
+                    params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"],
+                                                   index=["lbfgs", "sgd", "adam"].index(params["solver"]),
+                                                   help="Phương pháp tối ưu hóa trọng số.")
+
+            # Điều chuẩn và batch size
+            with st.expander("🔧 Điều chỉnh nâng cao", expanded=False):
+                col3, col4 = st.columns(2)
+                with col3:
+                    if params["solver"] in ["sgd", "adam"]:
+                        params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=params["batch_size"],
+                                                              help="Số mẫu mỗi lần cập nhật (chỉ áp dụng với SGD/Adam).")
+                    else:
+                        params["batch_size"] = "auto"
+                        st.write("Kích thước batch: **auto** (dành cho lbfgs)")
+                with col4:
+                    params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=params["alpha"], step=0.0001,
+                                                     help="Hệ số L2 để giảm overfitting.")
+
+            # Nút khôi phục tham số tối ưu
+            if st.button("🔄 Khôi phục tham số tối ưu", help="Quay lại tham số tối ưu dựa trên số mẫu"):
+                st.session_state["training_params"] = st.session_state["optimal_params"].copy()
+                st.success("Đã khôi phục tham số tối ưu!")
+                st.rerun()
+
+            # Lưu tham số vào session_state
+            st.session_state["training_params"] = params
+
+            # Nút huấn luyện
+            if st.button("🚀 Thực hiện Huấn luyện", key="train_button", type="primary"):
                 with st.spinner("Đang huấn luyện mô hình..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     start_time = time.time()
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
-                        status_text.text(f"Đang huấn luyện {i}%...")
+                        status_text.text(f"Tiến độ: {i}%")
                         time.sleep(0.1)
 
                     X_train = st.session_state['split_data']["X_train"]
@@ -638,7 +636,7 @@ def run_mnist_neural_network_app():
                     y_test = st.session_state['split_data']["y_test"]
 
                     pipeline = Pipeline([
-                        ('pca', PCA(n_components=50)),  # Giữ nguyên PCA cố định
+                        ('pca', PCA(n_components=50)),
                         ('classifier', MLPClassifier(
                             hidden_layer_sizes=hidden_sizes,
                             max_iter=params["max_iter"],
@@ -653,7 +651,6 @@ def run_mnist_neural_network_app():
 
                     run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
-                        # Log "Tham số đã chọn"
                         mlflow.log_param("hidden_layer_sizes", hidden_sizes)
                         mlflow.log_param("learning_rate_init", params["learning_rate"])
                         mlflow.log_param("max_iter", params["max_iter"])
@@ -670,7 +667,6 @@ def run_mnist_neural_network_app():
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
                         cm_test = confusion_matrix(y_test, y_test_pred)
 
-                        # Log "Kết quả đạt được"
                         mlflow.log_metric("accuracy_val", acc_valid)
                         mlflow.log_metric("accuracy_test", acc_test)
 
@@ -686,43 +682,46 @@ def run_mnist_neural_network_app():
                         }
 
                     progress_bar.progress(100)
-                    status_text.text("Đã huấn luyện 100%!")
-                    st.success(f"Huấn luyện hoàn tất!")
-                    st.write(f"Độ chính xác Validation: {acc_valid:.4f}")
-                    st.write(f"Độ chính xác Test: {acc_test:.4f}")
+                    status_text.text("Hoàn tất: 100%")
+                    st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+
+                    # Hiển thị kết quả
+                    st.subheader("📊 Kết quả huấn luyện")
+                    col_result1, col_result2 = st.columns(2)
+                    with col_result1:
+                        st.metric("Độ chính xác Validation", f"{acc_valid*100:.2f}%")
+                    with col_result2:
+                        st.metric("Độ chính xác Test", f"{acc_test*100:.2f}%")
 
                     st.subheader("📈 Ma trận nhầm lẫn")
-                    fig, ax = plt.subplots()
-                    sns.heatmap(cm_valid, annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Confusion Matrix - Validation")
-                    st.pyplot(fig)
+                    col_cm1, col_cm2 = st.columns(2)
+                    with col_cm1:
+                        fig, ax = plt.subplots(figsize=(5, 4))
+                        sns.heatmap(cm_valid, annot=True, fmt="d", cmap="Blues", ax=ax)
+                        ax.set_title("Validation")
+                        st.pyplot(fig)
+                    with col_cm2:
+                        fig, ax = plt.subplots(figsize=(5, 4))
+                        sns.heatmap(cm_test, annot=True, fmt="d", cmap="Blues", ax=ax)
+                        ax.set_title("Test")
+                        st.pyplot(fig)
 
-                    fig, ax = plt.subplots()
-                    sns.heatmap(cm_test, annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Confusion Matrix - Test")
-                    st.pyplot(fig)
-
-                    st.subheader("ℹ️ Chi tiết kết quả")
-                    with st.expander("Xem chi tiết", expanded=True):
-                        st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
-                        st.write(f"- **Tên lần chạy**: {run_name}")
-                        st.write(f"- **ID lần chạy**: {run.info.run_id}")
-
-                        st.markdown("#### Tham số đã chọn:", unsafe_allow_html=True)
-                        st.write(f"- **Số lớp ẩn**: {num_hidden_layers}")
-                        st.write(f"- **Số nơ-ron mỗi lớp ẩn**: {params['hidden_size']}")
-                        st.write(f"- **Tốc độ học**: {params['learning_rate']}")
-                        st.write(f"- **Số lần lặp tối đa**: {params['max_iter']}")
-                        st.write(f"- **Hàm kích hoạt**: {params['activation']}")
-                        st.write(f"- **Optimizer**: {params['solver']}")
+                    st.subheader("ℹ️ Chi tiết")
+                    with st.expander("Xem chi tiết", expanded=False):
+                        st.markdown("**Thông tin lần chạy**:")
+                        st.write(f"- Tên: {run_name}")
+                        st.write(f"- ID: {run.info.run_id}")
+                        st.markdown("**Tham số đã chọn**:")
+                        st.write(f"- Số lớp ẩn: {num_hidden_layers}")
+                        st.write(f"- Số nơ-ron mỗi lớp: {params['hidden_size']}")
+                        st.write(f"- Tốc độ học: {params['learning_rate']}")
+                        st.write(f"- Số lần lặp tối đa: {params['max_iter']}")
+                        st.write(f"- Hàm kích hoạt: {params['activation']}")
+                        st.write(f"- Optimizer: {params['solver']}")
                         if params["solver"] in ["sgd", "adam"]:
-                            st.write(f"- **Kích thước batch**: {params['batch_size']}")
-                        st.write(f"- **Tham số điều chuẩn (alpha)**: {params['alpha']}")
+                            st.write(f"- Kích thước batch: {params['batch_size']}")
+                        st.write(f"- Alpha: {params['alpha']}")
 
-                        st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
-                        st.write(f"- **Độ chính xác Validation**: {acc_valid*100:.2f}%")
-                        st.write(f"- **Độ chính xác Test**: {acc_test*100:.2f}%")
-                    time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
 
