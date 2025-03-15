@@ -594,12 +594,12 @@ def run_mnist_neural_network_app():
             st.subheader("⚙️ Cấu hình tham số mô hình")
             st.markdown("""
             Các tham số tối ưu được tự động chọn dựa trên số mẫu để đạt hiệu suất tốt nhất:
-            | Số mẫu       | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu |
-            |--------------|-------------------|------------|------------|---------------|--------------|
-            | <1000        | 50                | 0.01       | 100        | ReLU          | lbfgs        |
-            | 1000-5000    | 100               | 0.001      | 200        | ReLU          | adam         |
-            | 5000-20000   | 200               | 0.0005     | 300        | ReLU          | adam         |
-            | >20000       | 300               | 0.0001     | 400        | ReLU          | adam         |
+            | Số mẫu       | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
+            |--------------|-------------------|------------|------------|---------------|--------------|------------------|
+            | <1000        | 50                | 0.01       | 100        | ReLU          | lbfgs        | 5                |
+            | 1000-5000    | 100               | 0.001      | 200        | ReLU          | adam         | 5                |
+            | 5000-20000   | 200               | 0.0005     | 300        | ReLU          | adam         | 5                |
+            | >20000       | 300               | 0.0001     | 400        | ReLU          | adam         | 5                |
             """, unsafe_allow_html=True)
 
             # Hiển thị thông tin tham số tối ưu tự động
@@ -660,44 +660,42 @@ def run_mnist_neural_network_app():
 
             # Nút huấn luyện
             if st.button("🚀 Bắt đầu Huấn luyện", key="train_button", type="primary"):
-                with st.spinner("Đang huấn luyện mô hình..."):
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    start_time = time.time()
+                try:
+                    with st.spinner("Đang huấn luyện mô hình..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        start_time = time.time()
 
-                    # Cập nhật tiến trình
-                    for i in range(0, 101, 10):
-                        progress_bar.progress(i)
-                        status_text.text(f"Tiến độ huấn luyện: {i}%")
-                        time.sleep(0.1)
+                        # Cập nhật tiến trình giả lập
+                        status_text.text("Đang chuẩn bị dữ liệu...")
+                        progress_bar.progress(10)
 
-                    # Tạo và huấn luyện pipeline
-                    pipeline = Pipeline([
-                        ('pca', PCA(n_components=50)),
-                        ('classifier', MLPClassifier(
-                            hidden_layer_sizes=params["hidden_layer_sizes"],
-                            max_iter=params["max_iter"],
-                            learning_rate_init=params["learning_rate_init"],
-                            activation=params["activation"],
-                            solver=params["solver"],
-                            batch_size=params["batch_size"]
-                        ))
-                    ])
-                    pipeline.fit(X_train, y_train)
+                        # Tạo và huấn luyện pipeline
+                        pipeline = Pipeline([
+                            ('pca', PCA(n_components=50)),
+                            ('classifier', MLPClassifier(
+                                hidden_layer_sizes=params["hidden_layer_sizes"],
+                                max_iter=params["max_iter"],
+                                learning_rate_init=params["learning_rate_init"],
+                                activation=params["activation"],
+                                solver=params["solver"],
+                                batch_size=params["batch_size"],
+                                verbose=True
+                            ))
+                        ])
 
-                    # Ghi log vào MLflow
-                    run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                        mlflow.log_params({
-                            "hidden_layer_sizes": params["hidden_layer_sizes"],
-                            "learning_rate_init": params["learning_rate_init"],
-                            "max_iter": params["max_iter"],
-                            "activation": params["activation"],
-                            "solver": params["solver"],
-                            "batch_size": params["batch_size"]
-                        })
+                        # Huấn luyện mô hình
+                        status_text.text("Đang huấn luyện mô hình...")
+                        for i in range(10, 80, 5):
+                            progress_bar.progress(i)
+                            time.sleep(0.1)
+                        pipeline.fit(X_train, y_train)
 
                         # Đánh giá mô hình
+                        status_text.text("Đang đánh giá mô hình...")
+                        for i in range(80, 90, 2):
+                            progress_bar.progress(i)
+                            time.sleep(0.05)
                         y_valid_pred = pipeline.predict(X_valid)
                         y_test_pred = pipeline.predict(X_test)
                         acc_valid = accuracy_score(y_valid, y_valid_pred)
@@ -705,26 +703,50 @@ def run_mnist_neural_network_app():
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
                         cm_test = confusion_matrix(y_test, y_test_pred)
 
-                        mlflow.log_metric("accuracy_val", acc_valid)
-                        mlflow.log_metric("accuracy_test", acc_test)
-                        mlflow.log_metric("training_time", time.time() - start_time)
+                        # Lưu kết quả và log vào MLflow
+                        status_text.text("Đang lưu kết quả...")
+                        for i in range(90, 101, 2):
+                            progress_bar.progress(i)
+                            time.sleep(0.05)
 
-                        # Lưu kết quả vào session state
-                        st.session_state['model'] = pipeline
-                        st.session_state['training_results'] = {
-                            'accuracy_val': acc_valid,
-                            'accuracy_test': acc_test,
-                            'cm_valid': cm_valid,
-                            'cm_test': cm_test,
-                            'run_name': run_name,
-                            'run_id': run.info.run_id,
-                            'params': params,
-                            'training_time': time.time() - start_time
-                        }
+                        run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
+                            mlflow.log_params({
+                                "hidden_layer_sizes": params["hidden_layer_sizes"],
+                                "learning_rate_init": params["learning_rate_init"],
+                                "max_iter": params["max_iter"],
+                                "activation": params["activation"],
+                                "solver": params["solver"],
+                                "batch_size": params["batch_size"]
+                            })
+                            mlflow.log_metric("accuracy_val", acc_valid)
+                            mlflow.log_metric("accuracy_test", acc_test)
+                            mlflow.log_metric("training_time", time.time() - start_time)
 
-                    progress_bar.progress(100)
-                    status_text.text("Hoàn tất huấn luyện: 100%")
-                    st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+                            # Lưu kết quả vào session state
+                            st.session_state['model'] = pipeline
+                            st.session_state['training_results'] = {
+                                'accuracy_val': acc_valid,
+                                'accuracy_test': acc_test,
+                                'cm_valid': cm_valid,
+                                'cm_test': cm_test,
+                                'run_name': run_name,
+                                'run_id': run.info.run_id,
+                                'params': params,
+                                'training_time': time.time() - start_time
+                            }
+
+                        status_text.text("Hoàn tất huấn luyện!")
+                        progress_bar.progress(100)
+                        st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+
+                        # Đảm bảo giao diện cập nhật
+                        st.rerun()
+
+                except Exception as e:
+                    st.error(f"Lỗi trong quá trình huấn luyện: {e}")
+                    progress_bar.progress(0)
+                    status_text.empty()
 
             # Hiển thị kết quả nếu có
             if 'training_results' in st.session_state:
