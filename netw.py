@@ -7,8 +7,6 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.neural_network import MLPClassifier
-from sklearn.decomposition import PCA
-from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
@@ -544,43 +542,43 @@ def run_mnist_neural_network_app():
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-            # Hàm tự động chọn tham số tối ưu dựa trên số mẫu
+            # Hàm tự động chọn tham số tối ưu dựa trên số mẫu, ưu tiên tốc độ
             def get_optimal_params(num_samples):
                 if num_samples < 1000:
                     return {
-                        "hidden_layer_sizes": (50,),
+                        "hidden_layer_sizes": (32,),
                         "learning_rate_init": 0.01,
-                        "max_iter": 100,
+                        "max_iter": 50,
                         "activation": "relu",
-                        "solver": "lbfgs",
-                        "batch_size": 5
+                        "solver": "adam",
+                        "batch_size": 32
                     }
                 elif 1000 <= num_samples <= 5000:
                     return {
-                        "hidden_layer_sizes": (100,),
-                        "learning_rate_init": 0.001,
-                        "max_iter": 200,
+                        "hidden_layer_sizes": (64,),
+                        "learning_rate_init": 0.005,
+                        "max_iter": 100,
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 5
+                        "batch_size": 64
                     }
                 elif 5000 < num_samples <= 20000:
                     return {
-                        "hidden_layer_sizes": (200,),
-                        "learning_rate_init": 0.0005,
-                        "max_iter": 300,
+                        "hidden_layer_sizes": (128,),
+                        "learning_rate_init": 0.001,
+                        "max_iter": 150,
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 5
+                        "batch_size": 128
                     }
                 else:
                     return {
-                        "hidden_layer_sizes": (300,),
-                        "learning_rate_init": 0.0001,
-                        "max_iter": 400,
+                        "hidden_layer_sizes": (256,),
+                        "learning_rate_init": 0.0005,
+                        "max_iter": 200,
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 5
+                        "batch_size": 256
                     }
 
             # Tự động chọn tham số tối ưu ban đầu
@@ -591,15 +589,15 @@ def run_mnist_neural_network_app():
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
             # Hiển thị bảng tham số tối ưu
-            st.subheader("⚙️ Cấu hình tham số mô hình")
+            st.subheader("⚙️ Cấu hình tham số mô hình (Ưu tiên tốc độ)")
             st.markdown("""
-            Các tham số tối ưu được tự động chọn dựa trên số mẫu để đạt hiệu suất tốt nhất:
+            Các tham số tối ưu được tự động chọn dựa trên số mẫu để huấn luyện nhanh:
             | Số mẫu       | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-------------------|------------|------------|---------------|--------------|------------------|
-            | <1000        | 50                | 0.01       | 100        | ReLU          | lbfgs        | 5                |
-            | 1000-5000    | 100               | 0.001      | 200        | ReLU          | adam         | 5                |
-            | 5000-20000   | 200               | 0.0005     | 300        | ReLU          | adam         | 5                |
-            | >20000       | 300               | 0.0001     | 400        | ReLU          | adam         | 5                |
+            | <1000        | 32                | 0.01       | 50         | ReLU          | adam         | 32               |
+            | 1000-5000    | 64                | 0.005      | 100        | ReLU          | adam         | 64               |
+            | 5000-20000   | 128               | 0.001      | 150        | ReLU          | adam         | 128              |
+            | >20000       | 256               | 0.0005     | 200        | ReLU          | adam         | 256              |
             """, unsafe_allow_html=True)
 
             # Hiển thị thông tin tham số tối ưu tự động
@@ -631,22 +629,22 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("Tối ưu hóa", expanded=False):
                     params["learning_rate_init"] = st.selectbox(
-                        "Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
-                        index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate_init"]),
+                        "Tốc độ học", [0.01, 0.005, 0.001, 0.0005],
+                        index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate_init"]),
                         help="Tốc độ cập nhật trọng số trong quá trình huấn luyện."
                     )
                     params["max_iter"] = st.number_input(
-                        "Số lần lặp", min_value=5, max_value=500, value=params["max_iter"],
-                        help="Số lần lặp toàn bộ dữ liệu (tối đa 500)."
+                        "Số lần lặp", min_value=5, max_value=200, value=params["max_iter"],
+                        help="Số lần lặp toàn bộ dữ liệu (tối đa 200 để tăng tốc)."
                     )
                     params["batch_size"] = st.number_input(
-                        "Kích thước batch", min_value=1, max_value=32, value=params["batch_size"],
-                        help="Số mẫu xử lý trong mỗi lần lặp (tối đa 32)."
+                        "Kích thước batch", min_value=1, max_value=256, value=params["batch_size"],
+                        help="Số mẫu xử lý trong mỗi lần lặp (tối đa 256 để tăng tốc)."
                     )
                     params["solver"] = st.selectbox(
                         "Trình tối ưu", ["lbfgs", "sgd", "adam"],
                         index=["lbfgs", "sgd", "adam"].index(params["solver"]),
-                        help="Phương pháp tối ưu hóa trọng số."
+                        help="Phương pháp tối ưu hóa trọng số (adam thường nhanh nhất)."
                     )
 
             # Nút khôi phục tham số tối ưu
@@ -670,34 +668,31 @@ def run_mnist_neural_network_app():
                         status_text.text("Đang chuẩn bị dữ liệu...")
                         progress_bar.progress(10)
 
-                        # Tạo và huấn luyện pipeline
-                        pipeline = Pipeline([
-                            ('pca', PCA(n_components=50)),
-                            ('classifier', MLPClassifier(
-                                hidden_layer_sizes=params["hidden_layer_sizes"],
-                                max_iter=params["max_iter"],
-                                learning_rate_init=params["learning_rate_init"],
-                                activation=params["activation"],
-                                solver=params["solver"],
-                                batch_size=params["batch_size"],
-                                verbose=True
-                            ))
-                        ])
+                        # Tạo và huấn luyện mô hình trực tiếp bằng MLPClassifier (không dùng PCA)
+                        model = MLPClassifier(
+                            hidden_layer_sizes=params["hidden_layer_sizes"],
+                            max_iter=params["max_iter"],
+                            learning_rate_init=params["learning_rate_init"],
+                            activation=params["activation"],
+                            solver=params["solver"],
+                            batch_size=params["batch_size"],
+                            verbose=True
+                        )
 
                         # Huấn luyện mô hình
                         status_text.text("Đang huấn luyện mô hình...")
                         for i in range(10, 80, 5):
                             progress_bar.progress(i)
-                            time.sleep(0.1)
-                        pipeline.fit(X_train, y_train)
+                            time.sleep(0.05)
+                        model.fit(X_train, y_train)
 
                         # Đánh giá mô hình
                         status_text.text("Đang đánh giá mô hình...")
                         for i in range(80, 90, 2):
                             progress_bar.progress(i)
-                            time.sleep(0.05)
-                        y_valid_pred = pipeline.predict(X_valid)
-                        y_test_pred = pipeline.predict(X_test)
+                            time.sleep(0.03)
+                        y_valid_pred = model.predict(X_valid)
+                        y_test_pred = model.predict(X_test)
                         acc_valid = accuracy_score(y_valid, y_valid_pred)
                         acc_test = accuracy_score(y_test, y_test_pred)
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
@@ -707,7 +702,7 @@ def run_mnist_neural_network_app():
                         status_text.text("Đang lưu kết quả...")
                         for i in range(90, 101, 2):
                             progress_bar.progress(i)
-                            time.sleep(0.05)
+                            time.sleep(0.03)
 
                         run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
@@ -724,7 +719,7 @@ def run_mnist_neural_network_app():
                             mlflow.log_metric("training_time", time.time() - start_time)
 
                             # Lưu kết quả vào session state
-                            st.session_state['model'] = pipeline
+                            st.session_state['model'] = model
                             st.session_state['training_results'] = {
                                 'accuracy_val': acc_valid,
                                 'accuracy_test': acc_test,
@@ -839,7 +834,7 @@ def run_mnist_neural_network_app():
                         for j in range(0, 51, 5):
                             progress_bar.progress(j)
                             status_text.text(f"Đang xử lý {j}%{'.' * (j % 4)}")
-                            time.sleep(0.05)  # Giảm thời gian chờ để tối ưu
+                            time.sleep(0.05)
 
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         if not is_normalized:
@@ -847,14 +842,13 @@ def run_mnist_neural_network_app():
                         model = st.session_state['model']
                         prediction = model.predict(sample)[0]
                         proba = model.predict_proba(sample)[0]
-                        max_proba = np.max(proba) * 100  # Xác suất cao nhất (max_proba)
+                        max_proba = np.max(proba) * 100
 
                         for j in range(50, 101, 5):
                             progress_bar.progress(j)
                             status_text.text(f"Đang hoàn tất {j}%{'.' * (j % 4)}")
                             time.sleep(0.05)
 
-                        # Hiển thị kết quả với max_proba
                         st.success(f"Dự đoán: **{prediction}** | Xác suất cao nhất (max_proba): **{max_proba:.2f}%** | Nhãn thực tế: **{y_test.iloc[idx]}**")
 
                         time.sleep(0.5)
@@ -867,16 +861,13 @@ def run_mnist_neural_network_app():
                 if uploaded_images:
                     for i, uploaded_image in enumerate(uploaded_images):
                         try:
-                            # Hiển thị ảnh vừa đủ với width=280
                             img = Image.open(uploaded_image).convert('L').resize((28, 28))
                             st.image(img, caption=f"Ảnh {i+1} được upload", width=280)
                             
-                            # Chuẩn bị dữ liệu để dự đoán
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
                             
-                            # Nút dự đoán cho từng ảnh
                             if st.button(f"Dự đoán ảnh {i+1}", key=f"predict_upload_{i}"):
                                 with st.spinner(f"Đang dự đoán ảnh {i+1}..."):
                                     for j in range(0, 51, 5):
@@ -887,14 +878,13 @@ def run_mnist_neural_network_app():
                                     model = st.session_state['model']
                                     prediction = model.predict(img_array)[0]
                                     proba = model.predict_proba(img_array)[0]
-                                    max_proba = np.max(proba) * 100  # Xác suất cao nhất (max_proba)
+                                    max_proba = np.max(proba) * 100
 
                                     for j in range(50, 101, 5):
                                         progress_bar.progress(j)
                                         status_text.text(f"Đang hoàn tất {j}%{'.' * (j % 4)}")
                                         time.sleep(0.05)
 
-                                    # Hiển thị kết quả với max_proba
                                     st.success(f"Dự đoán cho ảnh {i+1}: **{prediction}** | Xác suất cao nhất (max_proba): **{max_proba:.2f}%**")
 
                                     time.sleep(0.5)
@@ -936,14 +926,13 @@ def run_mnist_neural_network_app():
                                 model = st.session_state['model']
                                 prediction = model.predict(img_array)[0]
                                 proba = model.predict_proba(img_array)[0]
-                                max_proba = np.max(proba) * 100  # Xác suất cao nhất (max_proba)
+                                max_proba = np.max(proba) * 100
 
                                 for i in range(50, 101, 5):
                                     progress_bar.progress(i)
                                     status_text.text(f"Đang dự đoán {i}%{'.' * (i % 4)}")
                                     time.sleep(0.05)
 
-                                # Hiển thị kết quả với max_proba
                                 st.success(f"Dự đoán: **{prediction}** | Xác suất cao nhất (max_proba): **{max_proba:.2f}%**")
                                 st.image(img, caption="Hình vẽ của bạn", use_container_width=True)
 
@@ -956,7 +945,6 @@ def run_mnist_neural_network_app():
                             status_text.empty()
                 with col2:
                     if st.button("Xóa Canvas", key="clear_canvas_button"):
-                        # Reset canvas bằng cách thay đổi key
                         st.session_state['canvas_key'] = st.session_state.get('canvas_key', 0) + 1
                         st.rerun()
 
