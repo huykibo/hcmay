@@ -705,6 +705,12 @@ def run_mnist_neural_network_app():
             def preprocess_input(data):
                 return data / 255.0
 
+            # Hàm tính độ tin cậy bằng Confidence Margin
+            def calculate_confidence(proba):
+                sorted_proba = np.sort(proba)[::-1]  # Sắp xếp xác suất giảm dần
+                confidence = (sorted_proba[0] - sorted_proba[1]) * 100  # Khoảng cách giữa top 1 và top 2
+                return confidence
+
             is_normalized = 'data_processed' in st.session_state
 
             if mode == "Dữ liệu Test":
@@ -724,7 +730,7 @@ def run_mnist_neural_network_app():
                         model = st.session_state['model']
                         prediction = model.predict(sample)[0]
                         proba = model.predict_proba(sample)[0]
-                        confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                        confidence = calculate_confidence(proba)
                         true_label = y_test.iloc[idx]
                         
                         for j in range(50, 101, 5):
@@ -759,7 +765,7 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = calculate_confidence(proba)
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -807,7 +813,7 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = calculate_confidence(proba)
 
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
