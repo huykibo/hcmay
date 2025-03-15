@@ -82,16 +82,17 @@ def run_mnist_neural_network_app():
         info_option = st.selectbox(
             "",
             [
+                "Bài toán phân loại chữ số viết tay",
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
                 "Neural Network – Mạng nơ-ron nhân tạo",
                 "Công thức đánh giá độ chính xác (Accuracy)"
             ],
             label_visibility="collapsed",
-            help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
+            help="Chọn để xem chi tiết về bài toán, ứng dụng, dữ liệu, hoặc mô hình."
         )
 
-        if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
+        if info_option == "Bài toán phân loại chữ số viết tay":
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
@@ -99,7 +100,56 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
                     time.sleep(0.05)
-                st.subheader("📘 1. Ứng dụng này là gì và mục tiêu của nó?")
+                st.subheader("📘 1. Bài toán phân loại chữ số viết tay")
+                st.markdown("""
+                ### Mô tả bài toán
+                - **Tên bài toán**: Phân loại chữ số viết tay (Handwritten Digit Classification).  
+                - **Tập dữ liệu**: MNIST, một tập dữ liệu chuẩn trong học máy, chứa 70,000 ảnh chữ số từ 0 đến 9, mỗi ảnh có kích thước 28x28 pixel (tổng cộng 784 đặc trưng), được biểu diễn dưới dạng thang độ xám (giá trị từ 0 đến 255).  
+                - **Mục tiêu**: Xây dựng và huấn luyện một mô hình Neural Network để dự đoán nhãn (0-9) của các chữ số viết tay với độ chính xác cao.  
+                - **Đặc điểm bài toán**:  
+                  - Dữ liệu đầu vào: Ma trận 28x28 pixel, được làm phẳng thành vector 784 chiều.  
+                  - Dữ liệu đầu ra: Nhãn số nguyên từ 0 đến 9.  
+                  - Thách thức: Phân biệt các chữ số tương tự (ví dụ: 4 và 9) và xử lý nhiễu trong ảnh viết tay.  
+                - **Ứng dụng**:  
+                  - Hỗ trợ nghiên cứu học máy cơ bản.  
+                  - Ứng dụng thực tế như nhận diện chữ số trong các hệ thống tự động (OCR, kiểm tra tài liệu).  
+
+                ### Quy trình thực hiện
+                1. **Tải dữ liệu**: Lấy dữ liệu MNIST từ OpenML.  
+                2. **Xử lý dữ liệu**: Chuẩn hóa dữ liệu (từ [0, 255] về [0, 1]) và chọn mẫu ngẫu nhiên.  
+                3. **Chia dữ liệu**: Phân chia thành tập huấn luyện, validation và test.  
+                4. **Huấn luyện mô hình**: Sử dụng Neural Network với các tham số như kích thước lớp ẩn, tốc độ học, số epoch, và tối ưu hóa.  
+                5. **Đánh giá**: Đo độ chính xác trên tập validation và test.  
+                6. **Demo**: Dự đoán trên dữ liệu test, ảnh upload hoặc vẽ tay.  
+
+                ### Thông tin kỹ thuật
+                - **Công cụ**: Streamlit (giao diện), MLflow (theo dõi thí nghiệm), Scikit-learn (mô hình), PCA (giảm chiều).  
+                - **Tham số chính**:  
+                  - `hidden_size`: Số nơ-ron trong lớp ẩn.  
+                  - `learning_rate`: Tốc độ học.  
+                  - `max_iter`: Số epoch tối đa.  
+                  - `batch_size`: Kích thước lô huấn luyện.  
+                  - `optimizer`: Thuật toán tối ưu (ví dụ: Adam, SGD).  
+                - **Đánh giá**: Độ chính xác (Accuracy) được tính bằng công thức:  
+                  \[
+                  \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}}
+                  \]
+                """, unsafe_allow_html=True)
+                progress_bar.progress(100)
+                status_text.text("Đã tải 100%!")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
+        elif info_option == "Ứng dụng này là gì và mục tiêu của nó?":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 91, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải {i}%...")
+                    time.sleep(0.05)
+                st.subheader("📘 2. Ứng dụng này là gì và mục tiêu của nó?")
                 st.markdown("""
                 Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, sử dụng **Mạng nơ-ron nhân tạo (Neural Network)**.  
                 - **MNIST**: Tập dữ liệu gồm $70,000$ ảnh chữ số từ $0$ đến $9$, mỗi ảnh kích thước $28 \\times 28$ pixel (tổng cộng $784$ đặc trưng).  
@@ -126,7 +176,7 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
                     time.sleep(0.05)
-                st.subheader("📘 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+                st.subheader("📘 3. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
                 st.markdown("""
                 **MNIST** là tập dữ liệu chuẩn trong học máy, được tạo bởi Yann LeCun và các cộng sự.  
                 - **Đặc điểm**:  
@@ -164,7 +214,7 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
                     time.sleep(0.05)
-                st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
+                st.subheader("📊 4. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người.  
                 - **Cấu trúc**: Gồm các **nơ-ron nhân tạo** (nodes) được tổ chức thành các **lớp (layers)**:  
@@ -293,7 +343,7 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải {i}%...")
                     time.sleep(0.05)
-                st.subheader("📘 4. Công thức đánh giá độ chính xác (Accuracy)")
+                st.subheader("📘 5. Công thức đánh giá độ chính xác (Accuracy)")
                 st.markdown("""
                 Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
                 $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
@@ -477,7 +527,7 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá
+    # Tab 5: Huấn luyện/Đánh giá (Đã cập nhật)
     with tab_train_eval:
         st.header("Huấn luyện và Đánh giá")
 
@@ -491,12 +541,12 @@ def run_mnist_neural_network_app():
             st.subheader("⚙️ Cài đặt tham số mô hình")
             st.markdown("""
             Dựa trên số lượng mẫu, các tham số tối ưu sẽ được tự động chọn như sau:
-            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter |
-            |--------------|--------------------|---------------|----------|
-            | <1000        | 50                | 0.01          | 100      |
-            | 1000-5000    | 100               | 0.001         | 200      |
-            | 5000-20000   | 200               | 0.0005        | 300      |
-            | >20000       | 300               | 0.0001        | 400      |
+            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Batch Size | Optimizer |
+            |--------------|--------------------|---------------|----------|------------|-----------|
+            | <1000        | 50                | 0.01          | 100      | 32         | SGD       |
+            | 1000-5000    | 100               | 0.001         | 200      | 64         | Adam      |
+            | 5000-20000   | 200               | 0.0005        | 300      | 128        | Adam      |
+            | >20000       | 300               | 0.0001        | 400      | 256        | Adam      |
             Bạn có thể điều chỉnh thủ công nếu muốn!
             """, unsafe_allow_html=True)
 
@@ -506,44 +556,64 @@ def run_mnist_neural_network_app():
                 params["hidden_size"] = 50
                 params["learning_rate"] = 0.01
                 params["max_iter"] = 100
+                params["batch_size"] = 32
+                params["optimizer"] = "sgd"
             elif 1000 <= num_samples <= 5000:
                 params["hidden_size"] = 100
                 params["learning_rate"] = 0.001
                 params["max_iter"] = 200
+                params["batch_size"] = 64
+                params["optimizer"] = "adam"
             elif 5000 < num_samples <= 20000:
                 params["hidden_size"] = 200
                 params["learning_rate"] = 0.0005
                 params["max_iter"] = 300
+                params["batch_size"] = 128
+                params["optimizer"] = "adam"
             else:
                 params["hidden_size"] = 300
                 params["learning_rate"] = 0.0001
                 params["max_iter"] = 400
+                params["batch_size"] = 256
+                params["optimizer"] = "adam"
 
             # Hiển thị thông báo về tham số tối ưu được chọn tự động
             st.info(f"Tham số tối ưu tự động chọn cho {num_samples} mẫu: "
                     f"Hidden Size = {params['hidden_size']}, "
                     f"Learning Rate = {params['learning_rate']}, "
-                    f"Max Iter = {params['max_iter']}")
+                    f"Max Iter = {params['max_iter']}, "
+                    f"Batch Size = {params['batch_size']}, "
+                    f"Optimizer = {params['optimizer']}")
 
             # Cho phép người dùng chỉnh sửa tham số
-            params["hidden_size"] = st.number_input("Số nơ-ron lớp ẩn", 
-                                                   min_value=10, max_value=500, 
-                                                   value=params["hidden_size"],
-                                                   help="Số nơ-ron trong lớp ẩn, ảnh hưởng đến độ phức tạp của mô hình.")
-            params["learning_rate"] = st.selectbox("Tốc độ học", 
-                                                  [0.01, 0.001, 0.0005, 0.0001], 
-                                                  index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
-                                                  help="Tốc độ cập nhật trọng số trong quá trình huấn luyện.")
-            params["max_iter"] = st.number_input("Số lần lặp tối đa", 
-                                                min_value=50, max_value=500, 
-                                                value=params["max_iter"],
-                                                help="Số epoch tối đa để huấn luyện mô hình.")
+            col1, col2 = st.columns(2)
+            with col1:
+                params["hidden_size"] = st.number_input("Số nơ-ron lớp ẩn", 
+                                                       min_value=10, max_value=500, 
+                                                       value=params["hidden_size"],
+                                                       help="Số nơ-ron trong lớp ẩn, ảnh hưởng đến độ phức tạp của mô hình.")
+                params["learning_rate"] = st.selectbox("Tốc độ học", 
+                                                      [0.01, 0.001, 0.0005, 0.0001], 
+                                                      index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
+                                                      help="Tốc độ cập nhật trọng số trong quá trình huấn luyện.")
+            with col2:
+                params["max_iter"] = st.number_input("Số epoch tối đa", 
+                                                    min_value=50, max_value=500, 
+                                                    value=params["max_iter"],
+                                                    help="Số epoch tối đa để huấn luyện mô hình.")
+                params["batch_size"] = st.number_input("Kích thước lô", 
+                                                      min_value=16, max_value=512, 
+                                                      value=params["batch_size"],
+                                                      help="Kích thước lô dữ liệu trong mỗi lần huấn luyện.")
+                params["optimizer"] = st.selectbox("Thuật toán tối ưu", 
+                                                  ["sgd", "adam"], 
+                                                  index=["sgd", "adam"].index(params["optimizer"]),
+                                                  help="Thuật toán tối ưu hóa (SGD hoặc Adam).")
 
             if st.button("Thực hiện Huấn luyện", key="train_button"):
                 with st.spinner("Đang huấn luyện mô hình..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    start_time = time.time()
                     for i in range(0, 91, 10):
                         progress_bar.progress(i)
                         status_text.text(f"Đang huấn luyện {i}%...")
@@ -556,21 +626,28 @@ def run_mnist_neural_network_app():
                     X_test = st.session_state['split_data']["X_test"]
                     y_test = st.session_state['split_data']["y_test"]
 
+                    # Sử dụng MLPClassifier với tham số batch_size và optimizer
                     pipeline = Pipeline([
                         ('pca', PCA(n_components=50)),
                         ('classifier', MLPClassifier(hidden_layer_sizes=(params["hidden_size"],), 
-                                                     max_iter=params["max_iter"], 
-                                                     learning_rate_init=params["learning_rate"],
-                                                     solver='lbfgs'))
+                                                    max_iter=params["max_iter"], 
+                                                    learning_rate_init=params["learning_rate"],
+                                                    batch_size=params["batch_size"],
+                                                    solver=params["optimizer"],
+                                                    random_state=42))
                     ])
                     pipeline.fit(X_train, y_train)
 
                     run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
+                        # Log "Tham số đã chọn"
                         mlflow.log_param("hidden_size", params["hidden_size"])
                         mlflow.log_param("learning_rate", params["learning_rate"])
                         mlflow.log_param("max_iter", params["max_iter"])
+                        mlflow.log_param("batch_size", params["batch_size"])
+                        mlflow.log_param("optimizer", params["optimizer"])
 
+                        # Dự đoán và tính độ chính xác
                         y_valid_pred = pipeline.predict(X_valid)
                         y_test_pred = pipeline.predict(X_test)
                         acc_valid = accuracy_score(y_valid, y_valid_pred)
@@ -578,15 +655,12 @@ def run_mnist_neural_network_app():
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
                         cm_test = confusion_matrix(y_test, y_test_pred)
 
-                        training_time = time.time() - start_time
+                        # Log "Kết quả đạt được"
                         mlflow.log_metric("accuracy_val", acc_valid)
                         mlflow.log_metric("accuracy_test", acc_test)
-                        mlflow.log_metric("training_time_seconds", training_time)
-                        mlflow.sklearn.log_model(pipeline, "model")
 
                         st.session_state['model'] = pipeline
                         st.session_state['training_results'] = {
-                            'training_time': training_time,
                             'accuracy_val': acc_valid,
                             'accuracy_test': acc_test,
                             'cm_valid': cm_valid,
@@ -598,33 +672,32 @@ def run_mnist_neural_network_app():
 
                     progress_bar.progress(100)
                     status_text.text("Đã huấn luyện 100%!")
-                    st.success(f"Huấn luyện hoàn tất! Thời gian: {training_time:.2f} giây")
+                    st.success(f"Huấn luyện hoàn tất!")
                     st.write(f"Độ chính xác Validation: {acc_valid:.4f}")
                     st.write(f"Độ chính xác Test: {acc_test:.4f}")
 
                     st.subheader("📈 Ma trận nhầm lẫn")
-                    fig, ax = plt.subplots()
-                    sns.heatmap(cm_valid, annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Confusion Matrix - Validation")
-                    st.pyplot(fig)
-
-                    fig, ax = plt.subplots()
-                    sns.heatmap(cm_test, annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Confusion Matrix - Test")
+                    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+                    sns.heatmap(cm_valid, annot=True, fmt="d", cmap="Blues", ax=ax[0])
+                    ax[0].set_title("Confusion Matrix - Validation")
+                    sns.heatmap(cm_test, annot=True, fmt="d", cmap="Blues", ax=ax[1])
+                    ax[1].set_title("Confusion Matrix - Test")
                     st.pyplot(fig)
 
                     st.subheader("ℹ️ Chi tiết kết quả")
                     with st.expander("Xem chi tiết", expanded=True):
-                        st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
+                        st.markdown("#### Thông tin lần chạy:")
                         st.write(f"- **Tên lần chạy**: {run_name}")
                         st.write(f"- **ID lần chạy**: {run.info.run_id}")
 
-                        st.markdown("#### Tham số đã chọn:", unsafe_allow_html=True)
+                        st.markdown("#### Tham số đã chọn:")
                         st.write(f"- **Số nơ-ron lớp ẩn**: {params['hidden_size']}")
                         st.write(f"- **Tốc độ học**: {params['learning_rate']}")
-                        st.write(f"- **Số lần lặp tối đa**: {params['max_iter']}")
+                        st.write(f"- **Số epoch**: {params['max_iter']}")
+                        st.write(f"- **Kích thước lô**: {params['batch_size']}")
+                        st.write(f"- **Thuật toán tối ưu**: {params['optimizer']}")
 
-                        st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
+                        st.markdown("#### Kết quả đạt được:")
                         st.write(f"- **Độ chính xác Validation**: {acc_valid*100:.2f}%")
                         st.write(f"- **Độ chính xác Test**: {acc_test*100:.2f}%")
                     time.sleep(0.5)
