@@ -304,6 +304,17 @@ def run_mnist_neural_network_app():
                     $$ L = L_{\\text{data}} + \\frac{\\alpha}{2} \\sum_{l} ||W^{(l)}||^2 $$  
                 """, unsafe_allow_html=True)
 
+                st.subheader("📋 Bảng tham số tối ưu dựa trên số mẫu")
+                st.markdown("""
+                Các tham số tối ưu được tự động chọn dựa trên số lượng mẫu huấn luyện để cân bằng giữa hiệu suất và thời gian tính toán:  
+                | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver | Batch Size | Alpha   |
+                |--------------|--------------------|---------------|----------|------------|--------|------------|---------|
+                | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  | auto       | 0.0001  |
+                | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   | 32         | 0.0001  |
+                | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   | 64         | 0.0001  |
+                | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   | 128        | 0.0001  |
+                """, unsafe_allow_html=True)
+
                 st.subheader("🟪 Ưu điểm và nhược điểm")
                 st.markdown("""
                 ##### ✅ **Ưu điểm**:  
@@ -526,12 +537,12 @@ def run_mnist_neural_network_app():
             st.subheader("⚙️ Cài đặt tham số mô hình")
             st.markdown("""
             Dựa trên số lượng mẫu, các tham số tối ưu sẽ được tự động chọn như sau:
-            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter |
-            |--------------|--------------------|---------------|----------|
-            | <1000        | 50                | 0.01          | 100      |
-            | 1000-5000    | 100               | 0.001         | 200      |
-            | 5000-20000   | 200               | 0.0005        | 300      |
-            | >20000       | 300               | 0.0001        | 400      |
+            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver | Batch Size | Alpha   |
+            |--------------|--------------------|---------------|----------|------------|--------|------------|---------|
+            | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  | auto       | 0.0001  |
+            | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   | 32         | 0.0001  |
+            | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   | 64         | 0.0001  |
+            | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   | 128        | 0.0001  |
             Bạn có thể điều chỉnh thủ công nếu muốn!
             """, unsafe_allow_html=True)
 
@@ -541,24 +552,44 @@ def run_mnist_neural_network_app():
                 params["hidden_size"] = 50
                 params["learning_rate"] = 0.01
                 params["max_iter"] = 100
+                params["activation"] = "relu"
+                params["solver"] = "lbfgs"
+                params["batch_size"] = "auto"
+                params["alpha"] = 0.0001
             elif 1000 <= num_samples <= 5000:
                 params["hidden_size"] = 100
                 params["learning_rate"] = 0.001
                 params["max_iter"] = 200
+                params["activation"] = "relu"
+                params["solver"] = "adam"
+                params["batch_size"] = 32
+                params["alpha"] = 0.0001
             elif 5000 < num_samples <= 20000:
                 params["hidden_size"] = 200
                 params["learning_rate"] = 0.0005
                 params["max_iter"] = 300
+                params["activation"] = "relu"
+                params["solver"] = "adam"
+                params["batch_size"] = 64
+                params["alpha"] = 0.0001
             else:
                 params["hidden_size"] = 300
                 params["learning_rate"] = 0.0001
                 params["max_iter"] = 400
+                params["activation"] = "relu"
+                params["solver"] = "adam"
+                params["batch_size"] = 128
+                params["alpha"] = 0.0001
 
             # Hiển thị thông báo về tham số tối ưu được chọn tự động
             st.info(f"Tham số tối ưu tự động chọn cho {num_samples} mẫu: "
                     f"Hidden Size = {params['hidden_size']}, "
                     f"Learning Rate = {params['learning_rate']}, "
-                    f"Max Iter = {params['max_iter']}")
+                    f"Max Iter = {params['max_iter']}, "
+                    f"Activation = {params['activation']}, "
+                    f"Solver = {params['solver']}, "
+                    f"Batch Size = {params['batch_size']}, "
+                    f"Alpha = {params['alpha']}")
 
             # Cho phép người dùng chỉnh sửa tham số
             num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
@@ -572,19 +603,21 @@ def run_mnist_neural_network_app():
                                                   help="Tốc độ cập nhật trọng số trong quá trình huấn luyện.")
             params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
                                                 help="Số epoch tối đa để huấn luyện mô hình.")
-            params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], index=0,
+            params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
+                                               index=["relu", "sigmoid", "tanh"].index(params["activation"]),
                                                help="Hàm kích hoạt cho các nơ-ron trong lớp ẩn.")
-            params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"], index=0,
+            params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"], 
+                                           index=["lbfgs", "sgd", "adam"].index(params["solver"]),
                                            help="Phương pháp tối ưu hóa: 'lbfgs' cho dữ liệu nhỏ, 'sgd' hoặc 'adam' cho dữ liệu lớn.")
             
             # Chỉ hiển thị batch_size nếu solver là 'sgd' hoặc 'adam'
             if params["solver"] in ["sgd", "adam"]:
-                params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=32,
+                params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=params["batch_size"],
                                                       help="Số mẫu trong mỗi lần cập nhật trọng số (chỉ áp dụng với 'sgd' hoặc 'adam').")
             else:
                 params["batch_size"] = "auto"  # Với 'lbfgs', batch_size không áp dụng trực tiếp
 
-            params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=0.0001, step=0.0001,
+            params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=params["alpha"], step=0.0001,
                                              help="Hệ số điều chuẩn L2 để giảm overfitting.")
 
             if st.button("Thực hiện Huấn luyện", key="train_button"):
