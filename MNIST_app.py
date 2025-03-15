@@ -6,8 +6,9 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.neural_network import MLPClassifier
-from sklearn.decomposition import PCA
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -16,42 +17,21 @@ from mlflow.tracking import MlflowClient
 from streamlit_drawable_canvas import st_canvas
 from datetime import datetime
 import time
-import requests
 
-def run_mnist_neural_network_app():
+def run_mnist_classification_app():
     # Thiết lập MLflow
-    mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
-        mlflow.set_tracking_uri(mlflow_tracking_uri)
+        mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
+        mlflow.set_experiment("MNIST")
     except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm hình secrets.toml hoặc môi trường triển khai.")
+        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
         st.stop()
 
-    try:
-        response = requests.get(mlflow_tracking_uri, timeout=5)
-        if response.status_code != 200:
-            st.error(f"Kết nối đến MLflow server thất bại. Mã trạng thái: {response.status_code}. Vui lòng kiểm tra MLFLOW_TRACKING_URI: {mlflow_tracking_uri}")
-            st.stop()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Không thể kết nối đến MLflow server tại {mlflow_tracking_uri}. Lỗi: {e}. Vui lòng kiểm tra kết nối mạng hoặc URI.")
-        st.stop()
+    st.title("Ứng dụng Phân loại Chữ số MNIST")
 
-    EXPERIMENT_ID = "5"
-
-    try:
-        client = MlflowClient()
-        experiment = client.get_experiment(EXPERIMENT_ID)
-        if experiment is None:
-            st.error(f"Experiment ID {EXPERIMENT_ID} không tồn tại. Vui lòng kiểm tra Experiment ID trên MLflow UI.")
-            st.stop()
-    except Exception as e:
-        st.error(f"Lỗi khi truy xuất Experiment ID {EXPERIMENT_ID}: {e}. Vui lòng kiểm tra MLflow server hoặc thông tin xác thực.")
-        st.stop()
-
-    st.title("Phân loại Chữ số MNIST với Neural Network")
-
+    # CSS cho tooltip và MathJax
     st.markdown("""
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
         <style>
@@ -89,327 +69,364 @@ def run_mnist_neural_network_app():
         </style>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
+    # Các tab
+    tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lí dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh Giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
+    # Tab 1: Thông tin
     with tab_info:
-        st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
-        st.markdown("""
-        Chào bạn! Đây là ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** bằng **Mạng nơ-ron nhân tạo (Neural Network)**. Hãy khám phá các tính năng và cách hoạt động của nó nhé!
-        """, unsafe_allow_html=True)
-
-        st.subheader("Chọn thông tin để xem")
+        st.header("Giới thiệu về Ứng dụng và Các Mô hình Phân loại MNIST")
         info_option = st.selectbox(
-            "",
+            "Chọn thông tin để xem:",
             [
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
-                "Neural Network – Mạng nơ-ron nhân tạo",
+                "Decision Tree – Mô hình cây quyết định",
+                "SVM – Máy vector hỗ trợ",
+                "So sánh Decision Tree và SVM",
                 "Công thức đánh giá độ chính xác (Accuracy)"
             ],
-            label_visibility="collapsed",
-            help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
+            index=0,
+            key="info_selectbox"
         )
 
         if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.05)
-                st.subheader("📘 1. Ứng dụng này là gì và mục tiêu của nó?")
-                st.markdown("""
-                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, sử dụng **Mạng nơ-ron nhân tạo (Neural Network)**.  
-                - **MNIST**: Tập dữ liệu gồm $70,000$ ảnh chữ số từ $0$ đến $9$, mỗi ảnh kích thước $28 \\times 28$ pixel (tổng cộng $784$ đặc trưng).  
-                - **Mục tiêu**:  
-                  - Xây dựng và huấn luyện một mạng nơ-ron để nhận diện chính xác các chữ số.  
-                  - Cung cấp công cụ trực quan để học tập và đánh giá hiệu quả của thuật toán.  
+            st.subheader("1. Ứng dụng này là gì và mục tiêu của nó?")
+            st.markdown("""
+            Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu MNIST – một trong những tập dữ liệu nổi tiếng nhất trong lĩnh vực học máy. MNIST bao gồm 70,000 ảnh chữ số từ 0 đến 9, mỗi ảnh có kích thước 28x28 pixel, tương đương với 784 đặc trưng (pixel). Mục tiêu của ứng dụng là xây dựng và huấn luyện các mô hình học máy (SVM và Decision Tree) để nhận diện chính xác các chữ số này, từ đó cung cấp một công cụ trực quan cho việc học tập, thử nghiệm và đánh giá hiệu quả của các thuật toán phân loại.
 
-                **Thông tin cơ bản**:  
-                - **$784$ đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng vector $784$ chiều (giá trị pixel từ $0$ đến $255$).  
-                - **$70,000$ mẫu**: Tổng số ảnh, được chia thành tập huấn luyện và kiểm tra.  
-                - **Nhiệm vụ**: Dự đoán nhãn ($0$-$9$) dựa trên đặc trưng pixel.  
-                """, unsafe_allow_html=True)
-                progress_bar.progress(100)
-                status_text.text("Đã tải 100%!")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
+            Để dễ hình dung:  
+            - **784 đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng một vector 784 chiều, với mỗi chiều là giá trị độ sáng của một pixel (từ 0 đến 255).  
+            - **70,000 mẫu**: Tổng số ảnh trong tập dữ liệu, bao gồm cả tập huấn luyện và kiểm tra.  
+            - **Nhiệm vụ**: Dự đoán nhãn (từ 0 đến 9) của mỗi ảnh dựa trên các đặc trưng pixel.
+            """)
 
         elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.05)
-                st.subheader("📘 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
-                st.markdown("""
-                **MNIST** là tập dữ liệu chuẩn trong học máy, được tạo bởi Yann LeCun và các cộng sự.  
-                - **Đặc điểm**:  
-                  - Gồm các ảnh chữ số viết tay từ học sinh trung học và nhân viên điều tra dân số Mỹ.  
-                  - Chuẩn hóa thành kích thước $28 \\times 28$ pixel, thang độ xám (giá trị từ $0$ đến $255$).  
+            st.subheader("2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+            st.markdown("""
+            MNIST được tạo ra bởi Yann LeCun và các cộng sự, là một tập dữ liệu chuẩn trong nghiên cứu học máy và thị giác máy tính. Các ảnh trong MNIST được thu thập từ chữ số viết tay của học sinh trung học và nhân viên điều tra dân số Mỹ, sau đó được chuẩn hóa thành kích thước 28x28 pixel và chuyển thành thang độ xám (grayscale).  
 
-                **Ý nghĩa**:  
-                - Là bài toán cơ bản để kiểm tra khả năng phân loại của các mô hình học máy.  
-                - Đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt các lớp tương tự (ví dụ: "$4$" và "$9$").  
-                - Phù hợp cho cả người mới bắt đầu và nghiên cứu mô hình phức tạp.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("📷 Minh họa dữ liệu MNIST")
-                st.markdown("""
-                Dưới đây là ảnh minh họa $10$ chữ số từ $0$ đến $9$ từ tập dữ liệu MNIST để bạn hình dung. Mỗi chữ số được biểu diễn dưới dạng ma trận $28 \\times 28$ pixel.
-                """, unsafe_allow_html=True)
+            **Ý nghĩa của MNIST**:  
+            - Là bài toán cơ bản để kiểm tra hiệu quả của các thuật toán phân loại.  
+            - Dữ liệu đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt giữa các lớp tương tự (ví dụ: "4" và "9").  
+            - Phù hợp cho cả người mới bắt đầu và các nhà nghiên cứu muốn thử nghiệm các mô hình phức tạp hơn.
+            """)
+            st.subheader("Minh họa dữ liệu MNIST")
+            with st.spinner("Đang tải ảnh minh họa..."):
                 try:
                     mnist_image = Image.open("mnist.png")
-                    st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
+                    st.image(mnist_image, caption="Ảnh minh họa 10 chữ số từ 0 đến 9 trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng đảm bảo file nằm trong cùng thư mục với code hoặc cung cấp đường dẫn chính xác.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
-                progress_bar.progress(100)
-                status_text.text("Đã tải 100%!")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
 
-        elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.05)
-                st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
-                st.markdown("""
-                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người.  
-                - **Cấu trúc**: Gồm các **nơ-ron nhân tạo** (nodes) được tổ chức thành các **lớp (layers)**:  
-                  - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu ($784$ pixel từ ảnh MNIST).  
-                  - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin bằng cách kết hợp tuyến tính và áp dụng hàm kích hoạt phi tuyến.  
-                  - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (nhãn từ $0$-$9$).  
+        elif info_option == "Decision Tree – Mô hình cây quyết định":
+            st.subheader("3. Decision Tree – Mô hình cây quyết định")
+            st.markdown("""
+            **Decision Tree (Cây quyết định)** xây dựng một cấu trúc phân cấp giống như cây, trong đó dữ liệu được chia nhỏ dần dựa trên các đặc trưng (pixel trong MNIST) để đưa ra dự đoán cuối cùng. Trong bài toán này, tham số quan trọng như **Max Depth** được sử dụng để kiểm soát độ phức tạp của cây, tránh hiện tượng quá khớp (overfitting).
+            """)
 
-                Neural Network đặc biệt hiệu quả với bài toán MNIST nhờ khả năng học các đặc trưng phức tạp từ dữ liệu hình ảnh.
-                """, unsafe_allow_html=True)
+            st.subheader("Cách hoạt động chi tiết:")
+            st.markdown("""
+            1. **Nút gốc (Root Node)**:  
+               - Thuật toán bắt đầu với toàn bộ dữ liệu MNIST (70,000 mẫu, nhãn 0-9) và chọn một pixel quan trọng, ví dụ: "Pixel 5 > 100?" (giả sử Pixel 5 là giá trị tại vị trí [0, 5] trong ảnh 28x28).  
+               - Dữ liệu được chia thành hai nhánh: nhánh "Yes" nếu Pixel 5 > 100, nhánh "No" nếu Pixel 5 ≤ 100.  
+            """)
+            try:
+                tree_step_1 = Image.open("illustrations/tree_step_1.png")
+                st.image(tree_step_1, caption="Bước 1: Nút gốc với toàn bộ dữ liệu MNIST", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_1.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.subheader("🛠️ Các bước thực hiện trong Neural Network")
-                st.markdown("""
-                1. **Khởi tạo mô hình**:  
-                   - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp).  
-                   - Khởi tạo **trọng số** $W$ và **bias** $b$ ngẫu nhiên (thường từ phân phối Gaussian).  
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa Bước 1: Khởi tạo mô hình", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+            st.markdown("""
+            2. **Chia nhánh đầu tiên (Splitting)**:  
+               - Từ nút gốc, nhánh "Yes" (Pixel 5 > 100) chứa các mẫu có giá trị pixel sáng hơn, ví dụ: chữ số "1" hoặc "7" (thường có nét dày ở đầu).  
+               - Nhánh "No" (Pixel 5 ≤ 100) chứa các mẫu tối hơn, ví dụ: chữ số "0" hoặc "2".  
+            """)
+            try:
+                tree_step_2 = Image.open("illustrations/tree_step_2.png")
+                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu tiên dựa trên Pixel 5 > 100", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_2.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                2. **Lan truyền thuận (Feedforward)**:  
-                   - Tính giá trị dự đoán $\\hat{Y}$ từ dữ liệu đầu vào $X$:  
-                     - **Lớp đầu vào**: $A^{(0)} = X$ (ma trận $N \\times 784$, $N$ là số mẫu).  
-                     - **Cho mỗi lớp $l$**:  
-                       - Tổng tuyến tính:  
-                         $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
-                       - Áp dụng hàm kích hoạt:  
-                         $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
-                     - **Lớp đầu ra**: $\\hat{Y} = A^{(L)}$ (ma trận $N \\times 10$).  
-                   - Ví dụ hàm kích hoạt **sigmoid**:  
-                     $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa Bước 2: Lan truyền thuận", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+            st.markdown("""
+            3. **Chia nhánh tiếp theo**:  
+               - Từ nhánh "Yes" (Pixel 5 > 100), tiếp tục chia dựa trên "Pixel 10 > 50?" (giả sử Pixel 10 là vị trí [0, 10]).  
+               - Nhánh "Yes" (Pixel 10 > 50) chứa các mẫu có nét dày hơn, ví dụ: "1" (nét đứng rõ rệt).  
+               - Nhánh "No" (Pixel 10 ≤ 50) chứa các mẫu mỏng hơn, ví dụ: "7".  
+            """)
+            try:
+                tree_step_3 = Image.open("illustrations/tree_step_3.png")
+                st.image(tree_step_3, caption="Bước 3: Chia nhánh tiếp theo dựa trên Pixel 10 > 50", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_3.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                3. **Tính hàm mất mát (Loss Function)**:  
-                   - Đo độ sai lệch giữa $\\hat{Y}$ và $Y$ (giá trị thực). Với MNIST, dùng **Cross-Entropy**:  
-                     $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
-                   - Trong đó:  
-                     - $y_{ij}$: Nhãn thực (dạng one-hot encoded).  
-                     - $\\hat{y}_{ij}$: Xác suất dự đoán cho lớp $j$.  
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa Bước 3: Tính hàm mất mát", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+            st.markdown("""
+            4. **Nút lá và tiêu chí dừng**:  
+               - Quá trình dừng khi nhóm dữ liệu thuần nhất (tất cả mẫu trong nhánh thuộc cùng một nhãn) hoặc đạt **Max Depth** (độ sâu tối đa của cây).  
+               - Ví dụ: Nhánh "Yes" của "Pixel 10 > 50" → Nhãn "1" (thuần nhất).  
+               - Nhánh "No" của "Pixel 10 ≤ 50" → Nhãn "9" (thuần nhất).  
+               - Nhánh "No" của "Pixel 5 > 100" → Nhãn "0" (đạt Max Depth).  
+            """)
+            try:
+                tree_step_4 = Image.open("illustrations/tree_step_4.png")
+                st.image(tree_step_4, caption="Bước 4: Nút lá với nhãn dự đoán (1, 9, 0)", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_4.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                4. **Lan truyền ngược (Backpropagation)**:  
-                   - Tính đạo hàm của $L$ theo $W^{(l)}$ và $b^{(l)}$ để cập nhật tham số:  
-                     - Tại **Lớp đầu ra**:  
-                       $$ \\delta^{(L)} = \\hat{Y} - Y $$  
-                     - Tại **Lớp ẩn**:  
-                       $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
-                     - $\\sigma'(z)$: Đạo hàm hàm kích hoạt (với sigmoid: $\\sigma'(z) = \\sigma(z) \\cdot (1 - \\sigma(z))$).  
-                     - Đạo hàm theo trọng số và bias:  
-                       $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
-                       $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa Bước 4: Lan truyền ngược", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+            st.markdown("""
+            5. **Dự đoán**:  
+               - Với một mẫu mới có Pixel 5 = 150 (> 100) và Pixel 10 = 60 (> 50), thuật toán đi qua nhánh "Yes" rồi "Yes", dẫn đến nhãn "1".  
+               - Kết quả dự đoán: "1" với độ tin cậy cao dựa trên các điều kiện pixel.  
+            """)
+            try:
+                tree_step_5 = Image.open("illustrations/tree_step_5.png")
+                st.image(tree_step_5, caption="Bước 5: Dự đoán nhãn '1' cho mẫu mới", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/tree_step_5.png`. Vui lòng đảm bảo file đã được tạo.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.markdown("""
-                5. **Cập nhật tham số (Gradient Descent)**:  
-                   - Điều chỉnh $W$ và $b$ để giảm mất mát:  
-                     $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                     $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
-                   - Trong đó: $\\eta$ là **tốc độ học (learning rate)**.  
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa Bước 5: Cập nhật tham số", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+            st.markdown("""
+            ### Tiêu chí lựa chọn đặc trưng, ngưỡng và tham số Max Depth:  
+            - **Entropy**: Đo mức độ "hỗn loạn" của dữ liệu dựa trên phân bố nhãn:  
+              $$ Entropy(S) = -\\sum_{i=0}^{9} p_i \\log_2(p_i) $$  
+              - $p_i$: Tỷ lệ mẫu thuộc nhãn $i$.  
+            - **Gini Index**: Đo độ "tinh khiết" của nhóm:  
+              $$ Gini(S) = 1 - \\sum_{i=0}^{9} p_i^2 $$  
+            - **Max Depth**:  
+              - Là tham số giới hạn số mức chia tối đa của cây (độ sâu).  
+              - Trong bài toán MNIST, nếu không giới hạn Max Depth, cây có thể phát triển quá sâu (ví dụ: 784 mức tương ứng 784 pixel), dẫn đến overfitting (học quá chi tiết dữ liệu huấn luyện, không khái quát tốt trên dữ liệu mới).  
+              - Giá trị thường dùng:  
+                - Dữ liệu nhỏ (<1000 mẫu): 5-10.  
+                - Dữ liệu trung bình (1000-5000 mẫu): 10-20.  
+                - Dữ liệu lớn (>5000 mẫu): 20-50.  
+              - Ví dụ: Với Max Depth = 10, cây dừng sau 10 lần chia, ngay cả khi dữ liệu chưa hoàn toàn thuần nhất.
 
-                st.markdown("""
-                6. **Lặp lại**:  
-                   - Quay lại bước $2$ qua nhiều **epoch** cho đến khi $L$ hội tụ.  
-                """, unsafe_allow_html=True)
-                try:
-                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa Bước 6: Lặp lại", width=600)
-                except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+            ### Áp dụng với MNIST:
+            - Decision Tree chia dữ liệu dựa trên giá trị pixel (ví dụ: Pixel 5, Pixel 10) để phân biệt nhãn (0-9).  
+            - Tham số Max Depth giúp cân bằng giữa độ chính xác và khả năng khái quát hóa, đặc biệt với dữ liệu phức tạp như MNIST (784 đặc trưng).
 
-                st.subheader("⚙️ Các tham số cơ bản và công dụng")
-                st.markdown("""
-                Dưới đây là các tham số cơ bản bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này:  
+            ### Ưu điểm:
+            - Dễ hiểu, trực quan như một biểu đồ cây hỏi đáp.  
+            - Nhanh với dữ liệu nhỏ, không yêu cầu chuẩn hóa dữ liệu.  
 
-                - **Số lớp ẩn (Number of Hidden Layers)**:  
-                  - **Ý nghĩa**: Quyết định độ sâu của mạng (từ $1$ đến $3$ lớp).  
-                  - **Công dụng**: Nhiều lớp ẩn giúp học đặc trưng phức tạp hơn, nhưng tăng thời gian tính toán.  
-                  - **Ví dụ**: $1$ lớp ẩn cho bài toán đơn giản, $2$-$3$ lớp cho độ chính xác cao hơn.  
+            ### Nhược điểm:
+            - Dễ bị **overfitting** nếu Max Depth quá lớn, đặc biệt khi dữ liệu phức tạp như MNIST.  
+            - Khó xử lý các mẫu có đặc trưng tương tự (ví dụ: "3" và "8").  
+            """)
 
-                - **Số nơ-ron mỗi lớp (Neurons per Layer)**:  
-                  - **Ý nghĩa**: Số đơn vị xử lý trong mỗi lớp ẩn (từ $10$ đến $500$).  
-                  - **Công dụng**: Nhiều nơ-ron tăng khả năng học, nhưng có thể gây quá tải.  
-                  - **Công thức liên quan**: Đầu ra mỗi lớp:  
-                    $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}) $$  
+        elif info_option == "SVM – Máy vector hỗ trợ":
+            st.subheader("4. SVM – Máy vector hỗ trợ")
+            st.markdown("""
+            **SVM (Support Vector Machine)** tìm một **siêu phẳng** trong không gian đặc trưng (784 chiều với MNIST) để phân tách các lớp nhãn sao cho khoảng cách từ siêu phẳng đến các mẫu gần nhất (support vectors) là lớn nhất. Nếu dữ liệu không phân tách tuyến tính, nó sử dụng **kernel** để chuyển dữ liệu lên không gian cao hơn.
 
-                - **Tốc độ học (Learning Rate, $\\eta$)**:  
-                  - **Ý nghĩa**: Tốc độ cập nhật trọng số (ví dụ: $0.01$, $0.001$, $0.0005$, $0.0001$).  
-                  - **Công dụng**: Giá trị nhỏ học chậm nhưng ổn định, giá trị lớn học nhanh nhưng có thể không hội tụ.  
-                  - **Công thức**: Cập nhật trọng số:  
-                    $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+            ### Cách hoạt động chi tiết:
+            1. **Siêu phẳng**:  
+               - Siêu phẳng là một ranh giới phân tách trong không gian cao chiều, được định nghĩa bởi:  
+                 $$ f(x) = w \\cdot x + b $$  
+                 - $w$: Vector trọng số, xác định hướng của siêu phẳng.  
+                 - $x$: Vector đặc trưng (784 pixel).  
+                 - $b$: Độ lệch, điều chỉnh vị trí siêu phẳng.  
+               - Mẫu nằm ở phía nào của siêu phẳng được xác định bởi dấu của $f(x)$.  
+            """)
+            try:
+                svm_step_1 = Image.open("illustrations/svm_step_1.png")
+                st.image(svm_step_1, caption="Bước 1: Siêu phẳng phân tách dữ liệu", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_1.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                - **Số lần lặp tối đa (Max Iterations)**:  
-                  - **Ý nghĩa**: Số epoch tối đa để huấn luyện (từ $50$ đến $500$).  
-                  - **Công dụng**: Giới hạn số lần mạng học qua dữ liệu. Nhiều lần lặp tăng độ chính xác nhưng tốn thời gian.  
+            st.markdown("""
+            2. **Tối ưu hóa lề**:  
+               - Khoảng cách lề (margin) từ siêu phẳng đến các điểm gần nhất được tính là:  
+                 $$ Margin = \\frac{2}{\\|w\\|} $$  
+                 - $\\|w\\|$: Độ dài vector $w$.  
+               - Mục tiêu tối ưu hóa:  
+                 $$ \\min_{w,b} \\frac{1}{2} \\|w\\|^2 $$  
+                 Với ràng buộc:  
+                 $$ y_i (w \\cdot x_i + b) \\geq 1 $$  
+                 - $y_i$: Nhãn thực tế (+1 hoặc -1 cho phân loại nhị phân).  
+                 - $x_i$: Vector đặc trưng của mẫu.  
+            """)
+            try:
+                svm_step_2 = Image.open("illustrations/svm_step_2.png")
+                st.image(svm_step_2, caption="Bước 2: Siêu phẳng tối ưu với lề lớn nhất và support vectors", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_2.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                - **Hàm kích hoạt (Activation Function, $\\sigma$)**:  
-                  - **Ý nghĩa**: Quyết định cách nơ-ron xử lý đầu vào (ReLU, Sigmoid, Tanh).  
-                  - **Công dụng**: Giúp mạng học đặc trưng phi tuyến.  
-                  - **Công thức**:  
-                    - ReLU: $$ \\sigma(z) = \\max(0, z) $$  
-                    - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
-                    - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
+            st.markdown("""
+            3. **Soft Margin**:  
+               - Khi dữ liệu không phân tách hoàn hảo (có lẫn lộn giữa các lớp), SVM cho phép sai số:  
+                 $$ \\min_{w,b,\\xi} \\frac{1}{2} \\|w\\|^2 + C \\sum \\xi_i $$  
+                 - $\\xi_i$: Biến "lỏng" (slack variable), đo mức độ vi phạm của mẫu.  
+                 - $C$: Tham số điều chỉnh, cân bằng giữa việc tối đa hóa lề và giảm thiểu lỗi.  
+               - $C$ lớn ưu tiên ít lỗi hơn, $C$ nhỏ ưu tiên lề lớn hơn.  
+            """)
+            try:
+                svm_step_4 = Image.open("illustrations/svm_step_4.png")
+                st.image(svm_step_4, caption="Bước 3: Soft Margin với dữ liệu lẫn lộn", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_4.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                - **Optimizer (Solver)**:  
-                  - **Ý nghĩa**: Phương pháp tối ưu hóa trọng số (LBFGS, SGD, Adam).  
-                  - **Công dụng**: Điều chỉnh cách mạng cập nhật tham số để giảm mất mát.  
-                  - **Ví dụ**:  
-                    - **SGD**: Gradient Descent ngẫu nhiên, đơn giản nhưng chậm.  
-                    - **Adam**: Nhanh và hiệu quả với dữ liệu lớn.  
-                """, unsafe_allow_html=True)
+            st.markdown("""
+            4. **Kernel Trick**:  
+               - Khi dữ liệu không phân tách tuyến tính trong không gian ban đầu, SVM ánh xạ dữ liệu lên không gian cao hơn thông qua hàm kernel:  
+                 $$ K(x_i, x_j) = \\phi(x_i) \\cdot \\phi(x_j) $$  
+                 - $\\phi$: Hàm ánh xạ (không cần tính trực tiếp).  
+               - Các loại kernel:  
+                 - **Linear**: $K(x_i, x_j) = x_i \\cdot x_j$.  
+                 - **Polynomial**: $K(x_i, x_j) = (x_i \\cdot x_j + c)^d$.  
+                 - **RBF**: $K(x_i, x_j) = \\exp(-\\gamma \\|x_i - x_j\\|^2)$, thường dùng cho dữ liệu phi tuyến.  
+               - Kernel giúp tìm ranh giới phân tách trong không gian mới mà không cần tính toán tọa độ trực tiếp.  
+            """)
+            try:
+                svm_step_3 = Image.open("illustrations/svm_step_3.png")
+                st.image(svm_step_3, caption="Bước 4: Kernel nâng dữ liệu lên không gian cao hơn", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_3.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.subheader("🟪 Ưu điểm và nhược điểm")
-                st.markdown("""
-                ##### ✅ **Ưu điểm**:  
-                - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
-                - Linh hoạt với nhiều tham số để tối ưu hóa.  
+            st.markdown("""
+            5. **Dự đoán**:  
+               - Với mẫu mới $x$:  
+                 $$ f(x) = \\text{sign} \\left( \\sum_{i} \\alpha_i y_i K(x_i, x) + b \\right) $$  
+                 - $\\alpha_i$: Trọng số xác định từ quá trình huấn luyện, chỉ khác 0 với support vectors.  
+                 - $K(x_i, x)$: Đo độ tương đồng giữa mẫu mới và support vectors.  
+               - Với phân loại đa lớp (0-9), SVM áp dụng chiến lược như "One-vs-Rest" hoặc "One-vs-One".  
+            """)
+            try:
+                svm_step_5 = Image.open("illustrations/svm_step_5.png")
+                st.image(svm_step_5, caption="Bước 5: Dự đoán điểm mới dựa trên siêu phẳng và support vectors", width=500)
+            except FileNotFoundError:
+                st.error("Không tìm thấy file `illustrations/svm_step_5.png`. Vui lòng chạy code tạo ảnh trước hoặc kiểm tra đường dẫn.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-                ##### ❌ **Nhược điểm**:  
-                - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
-                - Cần điều chỉnh tham số cẩn thận để đạt hiệu quả tốt nhất.  
-                """, unsafe_allow_html=True)
-                progress_bar.progress(100)
-                status_text.text("Đã tải 100%!")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
+            st.markdown("""
+            ### Áp dụng với MNIST:
+            - SVM tìm ranh giới phân tách dựa trên toàn bộ đặc trưng pixel, tận dụng kernel để xử lý các mẫu phi tuyến.  
+
+            ### Ưu điểm:
+            - Hiệu quả với dữ liệu phức tạp, chính xác cao khi có kernel phù hợp.  
+            - Tốt cho việc phân biệt các chữ số như "4" và "9".  
+
+            ### Nhược điểm:
+            - Tốn thời gian tính toán với dữ liệu lớn.  
+            - Yêu cầu chuẩn hóa dữ liệu trước để đạt hiệu quả tối ưu.  
+            """)
+
+        elif info_option == "So sánh Decision Tree và SVM":
+            st.subheader("5. So sánh Decision Tree và SVM")
+            st.markdown("""
+            | **Yếu tố**             | **Decision Tree**                                  | **SVM**                                      |
+            |-------------------------|---------------------------------------------------|---------------------------------------------|
+            | **Nguyên lý**          | Chia dữ liệu bằng các điều kiện logic             | Tìm siêu phẳng tối ưu phân tách lớp         |
+            | **Quyết định**         | Dựa trên Entropy hoặc Gini tại mỗi bước          | Dựa trên khoảng cách lề và support vectors  |
+            | **Không gian**         | Làm việc trực tiếp trên dữ liệu gốc               | Có thể ánh xạ lên không gian cao hơn (kernel)|
+            | **Độ phức tạp**        | Tăng theo độ sâu cây                              | Tăng theo số lượng support vectors          |
+
+            **Kết luận**:  
+            - **Decision Tree**: Nhanh, dễ hiểu, phù hợp với dữ liệu nhỏ hoặc đơn giản, nhưng dễ bị overfitting.  
+            - **SVM**: Chính xác hơn với dữ liệu phức tạp, phi tuyến như MNIST, nhưng chậm hơn và cần chuẩn hóa dữ liệu.
+            """)
 
         elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.05)
-                st.subheader("📘 4. Công thức đánh giá độ chính xác (Accuracy)")
-                st.markdown("""
-                Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
-                $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 92\\%$.  
-                - **Ý nghĩa**: Với Neural Network, Accuracy đo khả năng mô hình phân loại đúng các chữ số dựa trên đặc trưng pixel học được.  
-                """, unsafe_allow_html=True)
-                progress_bar.progress(100)
-                status_text.text("Đã tải 100%!")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
+            st.subheader("6. Công thức đánh giá độ chính xác (Accuracy)")
+            st.markdown("""
+            Độ chính xác (Accuracy) đo tỷ lệ dự đoán đúng:  
+            $$ Accuracy = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
+            - **Ví dụ**: Dự đoán đúng 92/100 ảnh → Accuracy = 92%.  
 
+            **Ý nghĩa**:  
+            - **Decision Tree**: Đo khả năng chia nhóm đúng dựa trên các đặc trưng pixel.  
+            - **SVM**: Đo hiệu quả của siêu phẳng trong việc phân tách các lớp.
+            """)
+
+    # Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
-
         if st.button("Tải dữ liệu MNIST từ OpenML"):
             with st.spinner("Đang tải dữ liệu từ OpenML..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.1)
                 try:
                     mnist = openml.datasets.get_dataset(554)
+                    progress_bar.progress(20)
+                    status_text.text("Đã tải 20% - Đang lấy dữ liệu...")
+
                     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
+                    progress_bar.progress(50)
+                    status_text.text("Đã tải 50% - Đang xử lý dữ liệu...")
+
                     st.session_state['full_data'] = (X, y)
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
+                    progress_bar.progress(90)
+                    status_text.text(f"Đã tải 90% - Hoàn tất {X.shape[0]} mẫu...")
+
+                    with mlflow.start_run(run_name="Data_Load"):
                         mlflow.log_param("total_samples", X.shape[0])
-                    st.success("Tải dữ liệu thành công!")
-                    st.write("Kích thước dữ liệu gốc:", X.shape)
+
                     progress_bar.progress(100)
-                    status_text.text("Đã tải 100%!")
-                    time.sleep(0.5)
+                    status_text.text("Đã tải 100% - Hoàn tất!")
+                    time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
+                    st.success("Tải dữ liệu thành công!")
+                    st.write("Kích thước dữ liệu gốc:", X.shape)
                 except Exception as e:
                     st.error(f"Không thể tải dữ liệu: {e}")
-                    progress_bar.progress(0)
-                    status_text.empty()
 
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
             num_samples = st.slider("Chọn số lượng mẫu:", 
-                                    min_value=10, max_value=70000, value=min(1000, len(X_full)), step=1)
+                                    min_value=10, max_value=len(X_full), value=min(1000, len(X_full)), step=1)
             if st.button("Chốt số lượng mẫu"):
                 with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    for i in range(0, 91, 10):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý {i}%...")
-                        time.sleep(0.05)
-                    indices = np.random.choice(len(X_full), size=num_samples, replace=False)
-                    X_sampled = X_full.iloc[indices]
-                    y_sampled = y_full.iloc[indices]
+
+                    df = pd.concat([X_full, y_full.rename("label")], axis=1)
+                    progress_bar.progress(30)
+                    status_text.text("Đã xử lý 30% - Đang nối dữ liệu...")
+
+                    sampled_df = df.sample(n=num_samples, random_state=42)
+                    progress_bar.progress(70)
+                    status_text.text("Đã xử lý 70% - Đang lấy mẫu...")
+
+                    X_sampled = sampled_df.drop(columns=["label"])
+                    y_sampled = sampled_df["label"]
                     st.session_state['data'] = (X_sampled, y_sampled)
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
+                    progress_bar.progress(90)
+                    status_text.text("Đã xử lý 90% - Đang lưu dữ liệu...")
+
+                    with mlflow.start_run(run_name="Data_Sample"):
                         mlflow.log_param("num_samples", num_samples)
-                    st.success(f"Đã chốt {num_samples} mẫu!")
+
                     progress_bar.progress(100)
-                    status_text.text("Đã xử lý 100%!")
-                    time.sleep(0.5)
+                    status_text.text("Đã xử lý 100% - Hoàn tất!")
+                    time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
+                    st.success(f"Đã chốt {num_samples} mẫu!")
 
+    # Tab 3: Xử lí dữ liệu (Đã xóa Standardization)
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
-
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
@@ -417,6 +434,7 @@ def run_mnist_neural_network_app():
             if "data_original" not in st.session_state:
                 st.session_state["data_original"] = (X.copy(), y.copy())
 
+            # Xóa data_processed nếu nó tồn tại nhưng không hợp lệ
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if not (isinstance(data_processed, tuple) and len(data_processed) == 2):
@@ -433,33 +451,22 @@ def run_mnist_neural_network_app():
             col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button("Normalization", key="normalize_btn"):
-                    with st.spinner("Đang chuẩn hóa dữ liệu..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in range(0, 91, 10):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%...")
-                            time.sleep(0.05)
-                        X_norm = X / 255.0
-                        st.session_state["data_processed"] = (X_norm, y)
-                        st.success("Đã chuẩn hoá dữ liệu!")
-                        progress_bar.progress(100)
-                        status_text.text("Đã xử lý 100%!")
-                        time.sleep(0.5)
-                        status_text.empty()
-                        progress_bar.empty()
-                        st.rerun()
+                    X_norm = X / 255.0
+                    st.session_state["data_processed"] = (X_norm, y)
+                    st.success("Đã chuẩn hoá dữ liệu!")
+                    st.rerun()
             with col2:
                 st.markdown("""
                     <div class="tooltip">
                         ?
                         <span class="tooltiptext">
                             Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
-                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho Neural Network.
+                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
 
+            # Chỉ hiển thị dữ liệu đã xử lý nếu data_processed tồn tại và hợp lệ
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if isinstance(data_processed, tuple) and len(data_processed) == 2:
@@ -481,126 +488,133 @@ def run_mnist_neural_network_app():
             else:
                 st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
 
+    # Tab 4: Chia dữ liệu
     with tab_split:
-        st.header("Chia Tập Dữ liệu")
-
+        st.header("Chia Tập Dữ Liệu")
         if 'data' not in st.session_state:
-            st.info("Vui lòng tải và xử lý dữ liệu trước.")
+            st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
-            data_source = st.session_state.get('data_processed', st.session_state['data'])
-            X, y = data_source
-            total_samples = len(X)
-            st.write(f"Tổng số mẫu: {total_samples}")
+            data_source = st.session_state.get("data_processed", st.session_state['data'])
+            try:
+                X, y = data_source
+            except (ValueError, TypeError) as e:
+                st.error(f"Lỗi: Dữ liệu không hợp lệ. Vui lòng kiểm tra bước tải hoặc xử lý dữ liệu. Chi tiết lỗi: {e}")
+            else:
+                total_samples = len(X)
+                st.write(f"Tổng số mẫu: {total_samples}")
 
-            test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20)
-            valid_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20)
+                test_pct = st.slider("Tỷ lệ tập Test (%)", 0, 100, 20)
+                valid_pct = st.slider("Tỷ lệ tập Validation (%) từ phần còn lại", 0, 100, 20)
+                
+                if test_pct + valid_pct > 100:
+                    st.warning("Tổng tỷ lệ Test và Validation vượt quá 100%!")
+                
+                test_size = int(total_samples * test_pct / 100)
+                if test_size > 0:
+                    X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size / total_samples, random_state=42)
+                else:
+                    X_temp, y_temp = X, y
+                    X_test, y_test = pd.DataFrame(), pd.Series()
 
-            test_size = test_pct / 100
-            X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-            valid_size = (valid_pct / 100) / (1 - test_size) if test_size < 1 else 0
-            X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42)
+                valid_size = int(len(X_temp) * valid_pct / 100)
+                if valid_size > 0 and len(X_temp) > valid_size:
+                    X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size / len(X_temp), random_state=42)
+                else:
+                    X_train, y_train = X_temp, y_temp
+                    X_valid, y_valid = pd.DataFrame(), pd.Series()
 
-            st.write(f"Train: {len(X_train)}, Validation: {len(X_valid)}, Test: {len(X_test)}")
-            if st.button("Xác nhận", key="confirm_split_button"):
-                with st.spinner("Đang chia dữ liệu..."):
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    for i in range(0, 91, 10):
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý {i}%...")
-                        time.sleep(0.05)
+                st.write(f"Train: {len(X_train)} mẫu, Validation: {len(X_valid)} mẫu, Test: {len(X_test)} mẫu")
+                if st.button("Xác nhận chia dữ liệu"):
                     st.session_state['split_data'] = {
                         "X_train": X_train, "y_train": y_train,
                         "X_valid": X_valid, "y_valid": y_valid,
                         "X_test": X_test, "y_test": y_test
                     }
-                    st.success("Đã chia dữ liệu!")
-                    progress_bar.progress(100)
-                    status_text.text("Đã xử lý 100%!")
-                    time.sleep(0.5)
-                    status_text.empty()
-                    progress_bar.empty()
+                    st.success("Dữ liệu đã được chia!")
 
+    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật để ẩn kết quả cũ khi đổi mô hình)
     with tab_train_eval:
-        st.header("Huấn luyện và Đánh giá Mô hình")
-
+        st.header("Huấn luyện và Đánh Giá")
         if 'split_data' not in st.session_state:
-            st.info("Vui lòng chia dữ liệu trước khi huấn luyện mô hình.")
+            st.info("Vui lòng chia dữ liệu trước.")
         else:
+            model_choice = st.selectbox("Chọn mô hình", ["Decision Tree", "SVM"])
             X_train = st.session_state['split_data']["X_train"]
             num_samples = len(X_train)
-            st.write(f"**Số mẫu huấn luyện**: {num_samples}")
+            st.write(f"Số lượng mẫu huấn luyện: {num_samples}")
 
-            st.subheader("⚙️ Cấu hình tham số mô hình")
-            st.markdown("""
-            Các tham số tối ưu được tự động chọn dựa trên số mẫu để đảm bảo hiệu suất tốt nhất:
-            | Số mẫu       | Hidden Layer Sizes | Learning Rate | Max Iter | Activation | Solver |
-            |--------------|--------------------|---------------|----------|------------|--------|
-            | <1000        | 50                 | 0.01          | 100      | ReLU       | lbfgs  |
-            | 1000-5000    | 100                | 0.001         | 200      | ReLU       | adam   |
-            | 5000-20000   | 200                | 0.0005        | 300      | ReLU       | adam   |
-            | >20000       | 300                | 0.0001        | 400      | ReLU       | adam   |
-            """, unsafe_allow_html=True)
+            st.subheader("Bảng gợi ý tham số tối ưu dựa trên số lượng mẫu")
+            if model_choice == "Decision Tree":
+                st.markdown("""
+                | Số lượng mẫu | Criterion          | Max Depth |
+                |--------------|--------------------|-----------|
+                | <1000        | gini hoặc entropy  | 5-10      |
+                | 1000-5000    | gini hoặc entropy  | 10-20     |
+                | 5000-50000   | gini hoặc entropy  | 20-30     |
+                | >50000       | gini hoặc entropy  | 30-50     |
+                """)
+                st.markdown("""
+                - **criterion**: "gini" đo độ tinh khiết, "entropy" đo độ hỗn loạn.  
+                - **max_depth**: Giới hạn độ sâu để tránh overfitting.
+                """)
+            else:
+                st.markdown("""
+                | Số lượng mẫu | C         | Kernel     |
+                |--------------|-----------|------------|
+                | <1000        | 0.1-1.0   | rbf        |
+                | 1000-5000    | 1.0-5.0   | rbf        |
+                | 5000-50000   | 5.0-10.0  | rbf        |
+                | >50000       | 10.0-50.0 | rbf hoặc poly |
+                """)
+                st.markdown("""
+                - **C**: Điều chỉnh giữa lề lớn và lỗi phân loại.  
+                - **kernel**: "rbf" phù hợp với dữ liệu phi tuyến như MNIST.
+                """)
 
-            def get_optimal_params(num_samples):
-                if num_samples < 1000:
-                    return {"hidden_size": 50, "learning_rate": 0.01, "max_iter": 100, "activation": "relu", "solver": "lbfgs"}
-                elif 1000 <= num_samples <= 5000:
-                    return {"hidden_size": 100, "learning_rate": 0.001, "max_iter": 200, "activation": "relu", "solver": "adam"}
-                elif 5000 < num_samples <= 20000:
-                    return {"hidden_size": 200, "learning_rate": 0.0005, "max_iter": 300, "activation": "relu", "solver": "adam"}
+            params = {}
+            if num_samples < 1000:
+                if model_choice == "Decision Tree":
+                    params["criterion"] = "gini"
+                    params["max_depth"] = 5
                 else:
-                    return {"hidden_size": 300, "learning_rate": 0.0001, "max_iter": 400, "activation": "relu", "solver": "adam"}
+                    params["C"] = 0.1
+                    params["kernel"] = "rbf"
+            elif 1000 <= num_samples <= 5000:
+                if model_choice == "Decision Tree":
+                    params["criterion"] = "gini"
+                    params["max_depth"] = 10
+                else:
+                    params["C"] = 1.0
+                    params["kernel"] = "rbf"
+            elif 5000 < num_samples <= 50000:
+                if model_choice == "Decision Tree":
+                    params["criterion"] = "gini"
+                    params["max_depth"] = 20
+                else:
+                    params["C"] = 5.0
+                    params["kernel"] = "rbf"
+            else:
+                if model_choice == "Decision Tree":
+                    params["criterion"] = "gini"
+                    params["max_depth"] = 30
+                else:
+                    params["C"] = 10.0
+                    params["kernel"] = "rbf"
 
-            if "optimal_params" not in st.session_state:
-                st.session_state["optimal_params"] = get_optimal_params(num_samples)
+            st.markdown("#### Tham số mô hình (đã đặt tự động, có thể điều chỉnh)")
+            if model_choice == "Decision Tree":
+                params["criterion"] = st.selectbox("Criterion", ["gini", "entropy"], index=["gini", "entropy"].index(params["criterion"]))
+                params["max_depth"] = st.number_input("Max Depth", min_value=1, max_value=100, value=params["max_depth"])
+            else:
+                params["C"] = st.number_input("C", min_value=0.01, max_value=100.0, value=params["C"])
+                params["kernel"] = st.selectbox("Kernel", ["linear", "rbf", "poly", "sigmoid"], index=["linear", "rbf", "poly", "sigmoid"].index(params["kernel"]))
 
-            params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
-
-            st.info(f"**Tham số tối ưu tự động**: Hidden Size = {params['hidden_size']}, Learning Rate = {params['learning_rate']}, "
-                    f"Max Iter = {params['max_iter']}, Activation = {params['activation']}, Solver = {params['solver']}")
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                with st.expander("🧠 Cấu trúc mạng", expanded=True):
-                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
-                                                       help="Số lớp ẩn quyết định độ sâu của mạng.")
-                    params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp", min_value=10, max_value=500, value=params["hidden_size"],
-                                                           help="Số nơ-ron ảnh hưởng đến độ phức tạp của mô hình.")
-                    hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
-                    params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
-                                                       index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                                                       help="Hàm kích hoạt giúp học đặc trưng phi tuyến.")
-
-            with col2:
-                with st.expander("📉 Tối ưu hóa", expanded=True):
-                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
-                                                          index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
-                                                          help="Điều chỉnh tốc độ cập nhật trọng số.")
-                    params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
-                                                        help="Số epoch tối đa để huấn luyện.")
-                    params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"],
-                                                   index=["lbfgs", "sgd", "adam"].index(params["solver"]),
-                                                   help="Phương pháp tối ưu hóa trọng số.")
-
-            if st.button("🔄 Khôi phục tham số tối ưu", help="Quay lại tham số tối ưu dựa trên số mẫu"):
-                st.session_state["training_params"] = st.session_state["optimal_params"].copy()
-                st.success("Đã khôi phục tham số tối ưu!")
-                st.rerun()
-
-            st.session_state["training_params"] = params
-
-            if st.button("🚀 Thực hiện Huấn luyện", key="train_button", type="primary"):
+            if st.button("Thực hiện Huấn luyện"):
                 with st.spinner("Đang huấn luyện mô hình..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     start_time = time.time()
-                    for i in range(0, 91, 10):
-                        progress_bar.progress(i)
-                        status_text.text(f"Tiến độ: {i}%")
-                        time.sleep(0.1)
-
+                   
                     X_train = st.session_state['split_data']["X_train"]
                     y_train = st.session_state['split_data']["y_train"]
                     X_valid = st.session_state['split_data']["X_valid"]
@@ -608,139 +622,179 @@ def run_mnist_neural_network_app():
                     X_test = st.session_state['split_data']["X_test"]
                     y_test = st.session_state['split_data']["y_test"]
 
-                    pipeline = Pipeline([
-                        ('pca', PCA(n_components=50)),
-                        ('classifier', MLPClassifier(
-                            hidden_layer_sizes=hidden_sizes,
-                            max_iter=params["max_iter"],
-                            learning_rate_init=params["learning_rate"],
-                            activation=params["activation"],
-                            solver=params["solver"],
-                        ))
-                    ])
-                    pipeline.fit(X_train, y_train)
+                    run_name = f"{model_choice}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    with mlflow.start_run(run_name=run_name) as run:
+                        for i in range(0, 11, 2):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang khởi tạo mô hình {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+                       
+                        if model_choice == "Decision Tree":
+                            pipeline = Pipeline([
+                                ('imputer', SimpleImputer(strategy='mean')),
+                                ('classifier', DecisionTreeClassifier(**params))
+                            ])
+                            pipeline.fit(X_train, y_train)
+                            model = pipeline
+                        else:
+                            pipeline = Pipeline([
+                                ('imputer', SimpleImputer(strategy='mean')),
+                                ('classifier', SVC(probability=True, **params))
+                            ])
+                            pipeline.fit(X_train, y_train)
+                            model = pipeline
 
-                    run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                        mlflow.log_param("hidden_layer_sizes", hidden_sizes)
-                        mlflow.log_param("learning_rate_init", params["learning_rate"])
-                        mlflow.log_param("max_iter", params["max_iter"])
-                        mlflow.log_param("activation", params["activation"])
-                        mlflow.log_param("solver", params["solver"])
+                        for i in range(10, 51, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang huấn luyện {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
 
-                        y_valid_pred = pipeline.predict(X_valid)
-                        y_test_pred = pipeline.predict(X_test)
-                        acc_valid = accuracy_score(y_valid, y_valid_pred)
-                        acc_test = accuracy_score(y_test, y_test_pred)
+                        mlflow.log_params(params)
+                        y_valid_pred = model.predict(X_valid)
+                        accuracy_val = accuracy_score(y_valid, y_valid_pred)
+                        mlflow.log_metric("accuracy_val", accuracy_val)
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
+
+                        for i in range(50, 76, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang đánh giá validation {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
+
+                        y_test_pred = model.predict(X_test)
+                        accuracy_test = accuracy_score(y_test, y_test_pred)
+                        mlflow.log_metric("accuracy_test", accuracy_test)
                         cm_test = confusion_matrix(y_test, y_test_pred)
+                        training_time = time.time() - start_time
+                        mlflow.log_metric("training_time_seconds", training_time)
+                        mlflow.sklearn.log_model(model, "model")
 
-                        mlflow.log_metric("accuracy_val", acc_valid)
-                        mlflow.log_metric("accuracy_test", acc_test)
+                        for i in range(75, 101, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
+                            time.sleep(0.1)
 
-                        st.session_state['model'] = pipeline
-                        st.session_state['training_results'] = {
-                            'accuracy_val': acc_valid,
-                            'accuracy_test': acc_test,
-                            'cm_valid': cm_valid,
-                            'cm_test': cm_test,
+                        run_id = run.info.run_id
+                        st.session_state['model'] = model
+                        st.session_state['latest_run'] = {
                             'run_name': run_name,
-                            'run_id': run.info.run_id,
-                            'params': params,
-                            'training_time': time.time() - start_time
+                            'run_id': run_id
                         }
 
-                    progress_bar.progress(100)
-                    status_text.text("Hoàn tất: 100%")
-                    st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+                        st.session_state['training_results'] = {
+                            'training_time': training_time,
+                            'accuracy_val': accuracy_val,
+                            'accuracy_test': accuracy_test,
+                            'cm_valid': cm_valid,
+                            'cm_test': cm_test,
+                            'model_choice': model_choice,
+                            'params': params,
+                            'num_samples': len(X_train),
+                            'run_name': run_name,
+                            'run_id': run_id
+                        }
 
-            if 'training_results' in st.session_state:
-                results = st.session_state['training_results']
-                st.subheader("📊 Kết quả huấn luyện")
-                col_result1, col_result2 = st.columns(2)
-                with col_result1:
-                    st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
-                with col_result2:
-                    st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+                        status_text.empty()
+                        progress_bar.empty()
 
-                st.subheader("📈 Ma trận nhầm lẫn")
-                col_cm1, col_cm2 = st.columns(2)
-                with col_cm1:
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Validation")
-                    st.pyplot(fig)
-                with col_cm2:
-                    fig, ax = plt.subplots(figsize=(5, 4))
-                    sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Test")
-                    st.pyplot(fig)
+            # Chỉ hiển thị kết quả nếu mô hình hiện tại khớp với kết quả đã lưu
+            if 'training_results' in st.session_state and st.session_state['training_results']['model_choice'] == model_choice:
+                st.success(f"Huấn luyện hoàn tất. Thời gian thực hiện: {st.session_state['training_results']['training_time']:.2f} giây.")
+                st.write(f"Accuracy Validation: {st.session_state['training_results']['accuracy_val']:.4f}")
+                st.write(f"Accuracy Test: {st.session_state['training_results']['accuracy_test']:.4f}")
 
-                st.subheader("ℹ️ Chi tiết")
-                with st.expander("Xem chi tiết", expanded=False):
-                    st.markdown("**Thông tin lần chạy**:")
-                    st.write(f"- Tên: {results['run_name']}")
-                    st.write(f"- ID: {results['run_id']}")
-                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
-                    st.markdown("**Tham số đã chọn**:")
-                    st.write(f"- Số lớp ẩn: {len(results['params']['hidden_size'] if isinstance(results['params']['hidden_size'], tuple) else [results['params']['hidden_size']])}")
-                    st.write(f"- Số nơ-ron mỗi lớp: {results['params']['hidden_size']}")
-                    st.write(f"- Tốc độ học: {results['params']['learning_rate']}")
-                    st.write(f"- Số lần lặp tối đa: {results['params']['max_iter']}")
-                    st.write(f"- Hàm kích hoạt: {results['params']['activation']}")
-                    st.write(f"- Optimizer: {results['params']['solver']}")
+                fig, ax = plt.subplots()
+                sns.heatmap(st.session_state['training_results']['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Confusion Matrix - Validation")
+                st.pyplot(fig)
 
+                fig, ax = plt.subplots()
+                sns.heatmap(st.session_state['training_results']['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Confusion Matrix - Test")
+                st.pyplot(fig)
+
+                st.subheader("Thông tin Kết quả")
+                with st.expander("Xem chi tiết kết quả", expanded=True):
+                    run_name = st.session_state['training_results']['run_name']
+                    run_id = st.session_state['training_results']['run_id']
+                    model_choice_result = st.session_state['training_results']['model_choice']
+                    params = st.session_state['training_results']['params']
+                    training_time = st.session_state['training_results']['training_time']
+                    accuracy_val = st.session_state['training_results']['accuracy_val']
+                    accuracy_test = st.session_state['training_results']['accuracy_test']
+                    X_train = st.session_state['split_data']["X_train"]
+
+                    st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
+                    st.write(f"- **Tên lần chạy (Run Name)**: {run_name}")
+                    st.write(f"- **ID lần chạy (Run ID)**: {run_id}")
+
+                    st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
+                    st.write(f"- **Mô hình**: {model_choice_result}")
+                    st.write(f"- **Tham số**:")
+                    for key, value in params.items():
+                        st.write(f"  - {key}: {value}")
+                    st.write(f"- **Thời gian chạy**: {training_time:.2f} giây")
+                    st.write(f"- **Số mẫu huấn luyện**: {len(X_train)}")
+
+                    st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
+                    st.markdown(f"""
+                    - **Độ chính xác Validation**: {accuracy_val*100:.2f}%  
+                    - **Độ chính xác Test**: {accuracy_test*100:.2f}%  
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện' để xem kết quả.")
+
+    # Tab 6: Demo dự đoán
     with tab_demo:
         st.header("Demo Dự đoán")
-
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước.")
         else:
-            mode = st.radio("Chọn phương thức:", ["Dữ liệu Test", "Upload ảnh", "Vẽ số"])
+            mode = st.radio("Chọn phương thức dự đoán:", ["Dữ liệu từ Test", "Upload ảnh mới", "Vẽ số"])
+            
             progress_bar = st.progress(0)
             status_text = st.empty()
 
             def preprocess_input(data):
                 return data / 255.0
 
-            is_normalized = 'data_processed' in st.session_state
+            is_normalized = "data_processed" in st.session_state
 
-            if mode == "Dữ liệu Test":
+            if mode == "Dữ liệu từ Test":
                 X_test = st.session_state['split_data']["X_test"]
                 y_test = st.session_state['split_data']["y_test"]
-                idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
-                if st.button("Dự đoán", key="predict_test_button"):
+                idx = st.slider("Chọn mẫu từ Test", 0, len(X_test)-1, 0)
+                if st.button("Dự đoán"):
                     with st.spinner("Đang dự đoán..."):
-                        for j in range(0, 51, 5):
-                            progress_bar.progress(j)
-                            status_text.text(f"Đang xử lý {j}%{j % 4 * '.'}")
+                        for i in range(0, 51, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
                         
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         if not is_normalized:
                             sample = preprocess_input(sample)
-                        model = st.session_state['model']
-                        prediction = model.predict(sample)[0]
-                        proba = model.predict_proba(sample)[0]
-                        confidence = max(proba) * 100
-                        true_label = y_test.iloc[idx]
                         
-                        for j in range(50, 101, 5):
-                            progress_bar.progress(j)
-                            status_text.text(f"Đang dự đoán {j}%{j % 4 * '.'}")
+                        prediction = st.session_state['model'].predict(sample)[0]
+                        proba = st.session_state['model'].predict_proba(sample)[0]
+                        confidence = max(proba) * 100
+                        y_true = y_test.iloc[idx]
+                        
+                        for i in range(50, 101, 5):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
                             time.sleep(0.1)
                         
-                        st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Thực tế: **{true_label}**")
+                        st.success(f"Dự đoán: **{prediction}** | Confidence: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
                         fig, ax = plt.subplots()
-                        ax.imshow(sample.reshape(28, 28), cmap='gray')
-                        ax.axis('off')
+                        ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
+                        ax.axis("off")
                         st.pyplot(fig)
                         
                         time.sleep(1)
                         progress_bar.empty()
                         status_text.empty()
 
-            elif mode == "Upload ảnh":
+            elif mode == "Upload ảnh mới":
                 uploaded_images = st.file_uploader("Upload ảnh (28x28, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
                 if uploaded_images:
                     for i, uploaded_image in enumerate(uploaded_images):
@@ -754,9 +808,9 @@ def run_mnist_neural_network_app():
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
-                            model = st.session_state['model']
-                            prediction = model.predict(img_array)[0]
-                            proba = model.predict_proba(img_array)[0]
+                            
+                            prediction = st.session_state['model'].predict(img_array)[0]
+                            proba = st.session_state['model'].predict_proba(img_array)[0]
                             confidence = max(proba) * 100
                             
                             for j in range(50, 101, 5):
@@ -783,7 +837,7 @@ def run_mnist_neural_network_app():
                     drawing_mode="freedraw",
                     key="canvas"
                 )
-                if st.button("Dự đoán số đã vẽ", key="predict_draw_button"):
+                if st.button("Dự đoán số đã vẽ"):
                     if canvas_result.image_data is not None:
                         with st.spinner("Đang xử lý vẽ..."):
                             for i in range(0, 51, 5):
@@ -802,9 +856,9 @@ def run_mnist_neural_network_app():
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
-                            model = st.session_state['model']
-                            prediction = model.predict(img_array)[0]
-                            proba = model.predict_proba(img_array)[0]
+                            
+                            prediction = st.session_state['model'].predict(img_array)[0]
+                            proba = st.session_state['model'].predict_proba(img_array)[0]
                             confidence = max(proba) * 100
                             
                             for i in range(50, 101, 5):
@@ -813,7 +867,6 @@ def run_mnist_neural_network_app():
                                 time.sleep(0.1)
                             
                             st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
-                            st.image(img, caption="Bản vẽ của bạn", use_container_width=True)
                             
                             time.sleep(1)
                             progress_bar.empty()
@@ -821,46 +874,35 @@ def run_mnist_neural_network_app():
                     else:
                         st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
-        st.header("Theo dõi Kết quả")
-
-        st.markdown(f"""
-        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện từ Experiment ID {EXPERIMENT_ID}. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
+        st.header("Theo dõi kết quả")
+        st.markdown("""
+        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
         """, unsafe_allow_html=True)
-
+        
         try:
-            with st.spinner("Đang tải thông tin huấn luyện..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 91, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%...")
-                    time.sleep(0.05)
-                client = MlflowClient()
-                runs = client.search_runs(
-                    experiment_ids=[EXPERIMENT_ID],
-                    order_by=["attributes.start_time DESC"]
-                )
-
+            client = MlflowClient()
+            experiment = client.get_experiment_by_name("MNIST")
+            if not experiment:
+                st.error("Không tìm thấy experiment 'MNIST'. Vui lòng kiểm tra lại MLflow tracking URI.")
+            else:
+                experiment_id = experiment.experiment_id
+                runs = client.search_runs(experiment_ids=[experiment_id], order_by=["attributes.start_time DESC"])
+                
                 if not runs:
-                    st.info(f"Chưa có lần chạy nào được ghi nhận trong Experiment ID {EXPERIMENT_ID}.")
-                    progress_bar.progress(100)
-                    status_text.text("Đã tải 100%!")
-                    time.sleep(0.5)
-                    status_text.empty()
-                    progress_bar.empty()
+                    st.info("Chưa có lần chạy nào được ghi nhận.")
                 else:
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     run_names = list(run_options.values())
-                    run_ids = list(run_options.keys())
 
-                    default_index = 0
+                    default_run_name = st.session_state.get('training_results', {}).get('run_name', run_names[0]) if 'training_results' in st.session_state else run_names[0]
 
-                    st.subheader("Danh sách Run")
+                    st.subheader("Danh sách run")
                     selected_run_name = st.selectbox(
                         "Chọn run:",
                         options=run_names,
-                        index=default_index,
+                        index=run_names.index(default_run_name) if default_run_name in run_names else 0,
                         key="main_select",
                         help="Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa."
                     )
@@ -874,51 +916,27 @@ def run_mnist_neural_network_app():
                         key="rename_input"
                     )
                     if st.button("Cập nhật tên", key="rename_button"):
-                        with st.spinner("Đang cập nhật tên..."):
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            for i in range(0, 91, 10):
-                                progress_bar.progress(i)
-                                status_text.text(f"Đang xử lý {i}%...")
-                                time.sleep(0.05)
-                            if new_run_name.strip() and new_run_name.strip() != selected_run_name:
+                        if new_run_name.strip() and new_run_name.strip() != selected_run_name:
+                            with st.spinner("Đang cập nhật tên..."):
                                 client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
                                 if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
                                     st.session_state['training_results']['run_name'] = new_run_name.strip()
                                 st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
-                                progress_bar.progress(100)
-                                status_text.text("Đã xử lý 100%!")
                                 time.sleep(0.5)
-                                status_text.empty()
-                                progress_bar.empty()
                                 st.rerun()
-                            elif not new_run_name.strip():
-                                st.warning("Vui lòng nhập tên hợp lệ.")
-                                progress_bar.progress(0)
-                                status_text.empty()
-                            else:
-                                st.info("Tên mới trùng với tên hiện tại.")
-                                progress_bar.progress(0)
-                                status_text.empty()
+                        elif not new_run_name.strip():
+                            st.warning("Vui lòng nhập tên hợp lệ.")
+                        else:
+                            st.info("Tên mới trùng với tên hiện tại.")
 
                     st.subheader("Xóa Run")
                     if st.button("Xóa lần chạy", key="delete_button"):
                         with st.spinner("Đang xóa lần chạy..."):
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            for i in range(0, 91, 10):
-                                progress_bar.progress(i)
-                                status_text.text(f"Đang xử lý {i}%...")
-                                time.sleep(0.05)
                             client.delete_run(selected_run_id)
                             if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
                                 del st.session_state['training_results']
                             st.success(f"Đã xóa: {selected_run_name}")
-                            progress_bar.progress(100)
-                            status_text.text("Đã xử lý 100%!")
                             time.sleep(0.5)
-                            status_text.empty()
-                            progress_bar.empty()
                             st.rerun()
 
                     st.subheader("Thông tin chi tiết của Run")
@@ -945,21 +963,12 @@ def run_mnist_neural_network_app():
                     else:
                         st.write("Không có kết quả được ghi nhận.")
 
-                    st.subheader("Truy cập MLflow UI")
-                    mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
-                    if st.button("Mở MLflow UI trên Dagshub"):
-                        st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
-
-                    progress_bar.progress(100)
-                    status_text.text("Đã tải 100%!")
-                    time.sleep(0.5)
-                    status_text.empty()
-                    progress_bar.empty()
-
+            st.subheader("Truy cập MLflow UI")
+            mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
+            if st.button("Mở MLflow UI trên Dagshub"):
+                st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
         except Exception as e:
-            st.error(f"Lỗi kết nối MLflow hoặc không tìm thấy Experiment ID {EXPERIMENT_ID}: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
-            progress_bar.progress(0)
-            status_text.empty()
+            st.error(f"Lỗi kết nối MLflow: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()
+    run_mnist_classification_app()
