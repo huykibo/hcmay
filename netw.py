@@ -532,20 +532,20 @@ def run_mnist_neural_network_app():
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-            # Hàm tối ưu tham số
+            # Hàm tối ưu tham số - Đồng bộ với các mức mẫu trong tab Tải dữ liệu
             def get_optimal_params(num_samples):
-                if num_samples < 1000:
-                    return {"hidden_layer_sizes": (16,), "learning_rate_init": 0.01, "max_iter": 30, 
-                            "activation": "relu", "solver": "adam", "batch_size": 64}
-                elif 1000 <= num_samples < 5000:
+                if num_samples <= 100:
+                    return {"hidden_layer_sizes": (16,), "learning_rate_init": 0.01, "max_iter": 20, 
+                            "activation": "relu", "solver": "adam", "batch_size": 32}
+                elif num_samples <= 1000:
                     return {"hidden_layer_sizes": (32,), "learning_rate_init": 0.005, "max_iter": 50, 
-                            "activation": "relu", "solver": "adam", "batch_size": 128}
-                elif 5000 <= num_samples <= 20000:
+                            "activation": "relu", "solver": "adam", "batch_size": 64}
+                elif num_samples <= 10000:
                     return {"hidden_layer_sizes": (64, 32), "learning_rate_init": 0.001, "max_iter": 75, 
-                            "activation": "relu", "solver": "adam", "batch_size": 256}
-                else:
+                            "activation": "relu", "solver": "adam", "batch_size": 128}
+                else:  # > 10000, tức là 50,000
                     return {"hidden_layer_sizes": (128, 64), "learning_rate_init": 0.0005, "max_iter": 100, 
-                            "activation": "relu", "solver": "adam", "batch_size": 512}
+                            "activation": "relu", "solver": "adam", "batch_size": 256}
 
             if "optimal_params" not in st.session_state:
                 st.session_state["optimal_params"] = get_optimal_params(num_samples)
@@ -555,10 +555,10 @@ def run_mnist_neural_network_app():
             st.markdown("""
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-            | <1000        | 1         | 16                | 0.01       | 30         | ReLU          | adam         | 64               |
-            | 1000-5000    | 1         | 32                | 0.005      | 50         | ReLU          | adam         | 128              |
-            | 5000-20000   | 2         | (64, 32)          | 0.001      | 75         | ReLU          | adam         | 256              |
-            | >20000       | 2         | (128, 64)         | 0.0005     | 100        | ReLU          | adam         | 512              |
+            | ≤100         | 1         | 16                | 0.01       | 20         | ReLU          | adam         | 32               |
+            | ≤1,000       | 1         | 32                | 0.005      | 50         | ReLU          | adam         | 64               |
+            | ≤10,000      | 2         | (64, 32)          | 0.001      | 75         | ReLU          | adam         | 128              |
+            | >10,000      | 2         | (128, 64)         | 0.0005     | 100        | ReLU          | adam         | 256              |
             """, unsafe_allow_html=True)
 
             st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
@@ -576,7 +576,7 @@ def run_mnist_neural_network_app():
                     params["learning_rate_init"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005], 
                                                                 index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate_init"]))
                     params["max_iter"] = st.number_input("Số lần lặp", min_value=10, max_value=100, value=params["max_iter"])
-                    params["batch_size"] = st.number_input("Kích thước batch", min_value=64, max_value=512, value=params["batch_size"])
+                    params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"])
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd", "lbfgs"], 
                                                     index=["adam", "sgd", "lbfgs"].index(params["solver"]))
 
