@@ -18,12 +18,12 @@ from datetime import datetime
 import time
 
 def run_mnist_neural_network_app():
-    # Thiết lập MLflow
+    # Thiết lập MLflow (Cần cấu hình URI thực tế)
+    # Ví dụ: mlflow.set_tracking_uri("http://localhost:5000")
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
-        mlflow.set_experiment("Neural Network ")
     except KeyError as e:
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets.")
         st.stop()
@@ -72,7 +72,7 @@ def run_mnist_neural_network_app():
     tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # Tab 1: Thông tin (Thay thế bằng nội dung bạn cung cấp)
+    # Tab 1: Thông tin
     with tab_info:
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
@@ -365,7 +365,7 @@ def run_mnist_neural_network_app():
                 }
                 st.success("Đã chia dữ liệu!")
 
-    # Tab 5: Huấn luyện/Đánh giá (Đã chỉnh sửa)
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh giá")
         if 'split_data' not in st.session_state:
@@ -385,7 +385,6 @@ def run_mnist_neural_network_app():
             | >5000        | 200-500           | 0.0001        | 300-500  |
             """, unsafe_allow_html=True)
 
-            # Gợi ý tham số dựa trên số mẫu
             params = {}
             if num_samples < 1000:
                 params["hidden_size"] = 100
@@ -400,7 +399,6 @@ def run_mnist_neural_network_app():
                 params["learning_rate"] = 0.0001
                 params["max_iter"] = 500
 
-            # Điều chỉnh tham số
             params["hidden_size"] = st.number_input("Số nơ-ron lớp ẩn", 10, 500, params["hidden_size"])
             params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0001], index=[0.01, 0.001, 0.0001].index(params["learning_rate"]))
             params["max_iter"] = st.number_input("Số lần lặp tối đa", 50, 500, params["max_iter"])
@@ -468,7 +466,6 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-            # Hiển thị kết quả huấn luyện
             if 'training_results' in st.session_state:
                 st.success(f"Huấn luyện hoàn tất! Thời gian: {st.session_state['training_results']['training_time']:.2f} giây")
                 st.write(f"Độ chính xác Validation: {st.session_state['training_results']['accuracy_val']:.4f}")
@@ -571,31 +568,106 @@ def run_mnist_neural_network_app():
                     else:
                         st.warning("Vui lòng vẽ trước!")
 
-    # Tab 7: Thông tin huấn luyện
+    # Tab 7: Thông tin huấn luyện (Được trình bày lại dựa trên mã tham khảo)
     with tab_log_info:
         st.header("Theo dõi Kết quả")
+        st.markdown("""
+        Tab này cho phép bạn xem danh sách các lần huấn luyện đã thực hiện từ Experiment ID 5. Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa.
+        """, unsafe_allow_html=True)
+
         try:
             client = MlflowClient()
-            experiment = client.get_experiment_by_name("Neural Network ")
-            if not experiment:
-                st.error("Không tìm thấy experiment 'Neural Network '.")
-            else:
-                runs = client.search_runs(experiment_ids=[experiment.experiment_id], order_by=["attributes.start_time DESC"])
-                if not runs:
-                    st.info("Chưa có lần chạy nào.")
-                else:
-                    run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
-                    selected_run_name = st.selectbox("Chọn run:", list(run_options.values()), key="run_selectbox")
-                    selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
-                    selected_run = client.get_run(selected_run_id)
+            experiment_id = "5"  # Liên kết với Experiment ID 5
+            runs = client.search_runs(
+                experiment_ids=[experiment_id],
+                order_by=["attributes.start_time DESC"]
+            )
 
-                    st.write(f"**Tên lần chạy:** {selected_run_name}")
-                    st.write(f"**ID lần chạy:** {selected_run_id}")
-                    st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
+            if not runs:
+                st.info("Chưa có lần chạy nào được ghi nhận trong Experiment ID 5.")
+            else:
+                run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
+                run_names = list(run_options.values())
+
+                # Chọn mặc định lần chạy cuối cùng từ training_results nếu có
+                default_run_name = st.session_state.get('training_results', {}).get('run_name', run_names[0]) if 'training_results' in st.session_state else run_names[0]
+
+                st.subheader("Danh sách Run")
+                selected_run_name = st.selectbox(
+                    "Chọn run:",
+                    options=run_names,
+                    index=run_names.index(default_run_name) if default_run_name in run_names else 0,
+                    key="main_select",
+                    help="Chọn một lần chạy để xem chi tiết, đổi tên hoặc xóa."
+                )
+                selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
+                selected_run = client.get_run(selected_run_id)
+
+                # Đổi tên Run
+                st.subheader("Đổi tên Run")
+                new_run_name = st.text_input(
+                    "Nhập tên mới:",
+                    value=selected_run_name,
+                    key="rename_input"
+                )
+                if st.button("Cập nhật tên", key="rename_button"):
+                    if new_run_name.strip() and new_run_name.strip() != selected_run_name:
+                        with st.spinner("Đang cập nhật tên..."):
+                            client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
+                            if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
+                                st.session_state['training_results']['run_name'] = new_run_name.strip()
+                            st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
+                            time.sleep(0.5)
+                            st.rerun()
+                    elif not new_run_name.strip():
+                        st.warning("Vui lòng nhập tên hợp lệ.")
+                    else:
+                        st.info("Tên mới trùng với tên hiện tại.")
+
+                # Xóa Run
+                st.subheader("Xóa Run")
+                if st.button("Xóa lần chạy", key="delete_button"):
+                    with st.spinner("Đang xóa lần chạy..."):
+                        client.delete_run(selected_run_id)
+                        if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] == selected_run_id:
+                            del st.session_state['training_results']
+                        st.success(f"Đã xóa: {selected_run_name}")
+                        time.sleep(0.5)
+                        st.rerun()
+
+                # Thông tin chi tiết của Run
+                st.subheader("Thông tin chi tiết của Run")
+                st.write(f"**Tên lần chạy:** {selected_run_name}")
+                st.write(f"**ID lần chạy:** {selected_run_id}")
+                st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
+
+                st.markdown("**Tham số:**", unsafe_allow_html=True)
+                if selected_run.data.params:
                     st.json(selected_run.data.params, expanded=True)
-                    st.json(selected_run.data.metrics, expanded=True)
+                else:
+                    st.write("Không có tham số được ghi nhận.")
+
+                st.markdown("**Kết quả:**", unsafe_allow_html=True)
+                if selected_run.data.metrics:
+                    metrics_display = {}
+                    training_time = selected_run.data.metrics.get("training_time_seconds", "N/A")
+                    metrics_display["Thời gian thực hiện (giây)"] = f"{float(training_time):.2f}" if training_time != "N/A" else "N/A"
+                    accuracy_val = selected_run.data.metrics.get("accuracy_val", "N/A")
+                    metrics_display["Độ chính xác Validation"] = f"{float(accuracy_val)*100:.2f}%" if accuracy_val != "N/A" else "N/A"
+                    accuracy_test = selected_run.data.metrics.get("accuracy_test", "N/A")
+                    metrics_display["Độ chính xác Test"] = f"{float(accuracy_test)*100:.2f}%" if accuracy_test != "N/A" else "N/A"
+                    st.json(metrics_display, expanded=True)
+                else:
+                    st.write("Không có kết quả được ghi nhận.")
+
+                # Truy cập MLflow UI
+                st.subheader("Truy cập MLflow UI")
+                mlflow_url = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"  # URI mẫu, thay bằng URI thực tế nếu cần
+                if st.button("Mở MLflow UI trên Dagshub"):
+                    st.markdown(f'[Click để mở MLflow UI]({mlflow_url})', unsafe_allow_html=True)
+
         except Exception as e:
-            st.error(f"Lỗi kết nối MLflow: {e}")
+            st.error(f"Lỗi kết nối MLflow hoặc không tìm thấy Experiment ID 5: {e}. Vui lòng kiểm tra MLFLOW_TRACKING_URI và thông tin xác thực.")
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
