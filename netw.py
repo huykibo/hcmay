@@ -22,6 +22,7 @@ def run_mnist_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
+        # Kiểm tra thông tin xác thực từ st.secrets
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(mlflow_tracking_uri)
@@ -602,157 +603,39 @@ def run_mnist_neural_network_app():
 
             with col1:
                 with st.expander("🧠 Cấu trúc mạng", expanded=True):
-                    st.markdown("##### Số lớp ẩn")
                     num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=1,
                                                        help="Số lớp ẩn quyết định độ sâu của mạng.")
-                    with st.expander("ℹ️ Chi tiết về số lớp ẩn"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Quyết định độ sâu của mạng nơ-ron, tức là số lượng lớp ẩn giữa lớp đầu vào và lớp đầu ra.  
-                        - **Công dụng**:  
-                          - Tăng số lớp ẩn giúp mô hình học được các đặc trưng phức tạp hơn từ dữ liệu (ví dụ: nhận diện các nét chữ phức tạp trong MNIST).  
-                          - Tuy nhiên, quá nhiều lớp có thể dẫn đến hiện tượng quá khớp (overfitting) và tăng thời gian huấn luyện.  
-                        - **Lưu ý**: Với MNIST, 1-2 lớp ẩn thường là đủ để đạt hiệu suất tốt.
-                        """)
-
-                    st.markdown("##### Số nơ-ron mỗi lớp")
                     params["hidden_size"] = st.number_input("Số nơ-ron mỗi lớp", min_value=10, max_value=500, value=params["hidden_size"],
                                                            help="Số nơ-ron ảnh hưởng đến độ phức tạp của mô hình.")
-                    with st.expander("ℹ️ Chi tiết về số nơ-ron mỗi lớp"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Số lượng nơ-ron (đơn vị tính toán) trong mỗi lớp ẩn.  
-                        - **Công dụng**:  
-                          - Số nơ-ron lớn giúp mô hình học được nhiều đặc trưng hơn, nhưng cũng làm tăng độ phức tạp và thời gian tính toán.  
-                          - Số nơ-ron nhỏ có thể dẫn đến underfitting (mô hình không đủ mạnh để học tốt).  
-                        - **Công thức liên quan**: Đầu ra của mỗi lớp:  
-                          $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}) $$  
-                          Trong đó:  
-                          - $W^{(l)}$: Ma trận trọng số của lớp $l$, kích thước phụ thuộc vào số nơ-ron.  
-                          - $A^{(l-1)}$: Đầu ra của lớp trước.  
-                          - $b^{(l)}$: Vector bias.  
-                          - $\\sigma$: Hàm kích hoạt.  
-                        - **Lưu ý**: Với MNIST, 50-300 nơ-ron mỗi lớp thường là lựa chọn hợp lý.
-                        """)
-
                     hidden_sizes = tuple([params["hidden_size"]] * num_hidden_layers)
-
-                    st.markdown("##### Hàm kích hoạt")
                     params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
                                                        index=["relu", "sigmoid", "tanh"].index(params["activation"]),
                                                        help="Hàm kích hoạt giúp học đặc trưng phi tuyến.")
-                    with st.expander("ℹ️ Chi tiết về hàm kích hoạt"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Hàm áp dụng lên đầu ra của mỗi nơ-ron để tạo tính phi tuyến tính.  
-                        - **Công dụng**:  
-                          - Giúp mạng nơ-ron học được các mẫu phức tạp, không chỉ các mối quan hệ tuyến tính.  
-                          - Lựa chọn hàm kích hoạt ảnh hưởng đến tốc độ học và khả năng hội tụ.  
-                        - **Công thức**:  
-                          - **ReLU** (Rectified Linear Unit):  
-                            $$ \\sigma(z) = \\max(0, z) $$  
-                            Phổ biến vì tính đơn giản và hiệu quả trong việc tránh vanishing gradient.  
-                          - **Sigmoid**:  
-                            $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
-                            Đưa đầu ra về khoảng [0, 1], phù hợp cho bài toán nhị phân, nhưng dễ gặp vấn đề vanishing gradient.  
-                          - **Tanh**:  
-                            $$ \\sigma(z) = \\tanh(z) $$  
-                            Đưa đầu ra về khoảng [-1, 1], thường tốt hơn Sigmoid cho dữ liệu chuẩn hóa.  
-                        - **Lưu ý**: Với MNIST, ReLU thường được ưu tiên vì hiệu suất tốt và tính toán nhanh.
-                        """)
 
             with col2:
                 with st.expander("📉 Tối ưu hóa", expanded=True):
-                    st.markdown("##### Tốc độ học")
                     params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.001, 0.0005, 0.0001],
                                                           index=[0.01, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
                                                           help="Điều chỉnh tốc độ cập nhật trọng số.")
-                    with st.expander("ℹ️ Chi tiết về tốc độ học"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Quyết định mức độ thay đổi của trọng số trong mỗi bước huấn luyện. Ký hiệu: $\\eta$.  
-                        - **Công dụng**:  
-                          - Tốc độ học cao (ví dụ: 0.01) giúp mô hình học nhanh hơn, nhưng có thể vượt qua điểm tối ưu (không hội tụ).  
-                          - Tốc độ học thấp (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định hơn, ít bỏ sót điểm tối ưu.  
-                        - **Công thức**: Cập nhật trọng số:  
-                          $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                          Trong đó:  
-                          - $W^{(l)}$: Trọng số của lớp $l$.  
-                          - $\\eta$: Tốc độ học.  
-                          - $\\frac{\\partial L}{\\partial W^{(l)}}$: Đạo hàm của hàm mất mát theo $W^{(l)}$.  
-                        - **Lưu ý**: Với MNIST, tốc độ học từ 0.0001 đến 0.01 thường phù hợp, tùy vào số mẫu và solver.
-                        """)
-
-                    st.markdown("##### Số lần lặp tối đa")
                     params["max_iter"] = st.number_input("Số lần lặp tối đa", min_value=50, max_value=500, value=params["max_iter"],
                                                         help="Số epoch tối đa để huấn luyện.")
-                    with st.expander("ℹ️ Chi tiết về số lần lặp tối đa"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Số lần mô hình lặp lại toàn bộ dữ liệu huấn luyện (epoch).  
-                        - **Công dụng**:  
-                          - Quyết định thời gian huấn luyện: số lần lặp lớn giúp mô hình học kỹ hơn, nhưng có thể dẫn đến overfitting.  
-                          - Số lần lặp nhỏ có thể dẫn đến underfitting (mô hình chưa học đủ).  
-                        - **Lưu ý**: Với MNIST, 100-400 lần lặp thường đủ để đạt độ chính xác tốt, tùy thuộc vào số mẫu.
-                        """)
-
-                    st.markdown("##### Optimizer")
                     params["solver"] = st.selectbox("Optimizer", ["lbfgs", "sgd", "adam"],
                                                    index=["lbfgs", "sgd", "adam"].index(params["solver"]),
                                                    help="Phương pháp tối ưu hóa trọng số.")
-                    with st.expander("ℹ️ Chi tiết về optimizer"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Phương pháp tối ưu hóa để cập nhật trọng số, giảm hàm mất mát.  
-                        - **Công dụng**:  
-                          - **lbfgs**: Phương pháp tối ưu dựa trên đạo hàm bậc hai, phù hợp với tập dữ liệu nhỏ, hội tụ nhanh nhưng tốn bộ nhớ.  
-                          - **sgd** (Stochastic Gradient Descent): Cập nhật trọng số dựa trên gradient ngẫu nhiên:  
-                            $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                            Đơn giản, hiệu quả với tập dữ liệu lớn, nhưng có thể dao động nhiều.  
-                          - **adam** (Adaptive Moment Estimation): Kết hợp momentum và RMSProp, điều chỉnh tốc độ học tự động, thường cho kết quả tốt nhất.  
-                        - **Lưu ý**: Với MNIST, **adam** thường được ưu tiên vì hiệu suất cao và ổn định.
-                        """)
 
             # Điều chuẩn và batch size
             with st.expander("🔧 Điều chỉnh nâng cao", expanded=False):
                 col3, col4 = st.columns(2)
                 with col3:
-                    st.markdown("##### Kích thước batch")
                     if params["solver"] in ["sgd", "adam"]:
                         params["batch_size"] = st.number_input("Kích thước batch", min_value=1, max_value=512, value=params["batch_size"],
                                                               help="Số mẫu mỗi lần cập nhật (chỉ áp dụng với SGD/Adam).")
-                        with st.expander("ℹ️ Chi tiết về kích thước batch"):
-                            st.markdown("""
-                            - **Ý nghĩa**: Số mẫu dữ liệu được sử dụng để cập nhật trọng số trong mỗi lần lặp.  
-                            - **Công dụng**:  
-                              - Batch size nhỏ (ví dụ: 32) giúp cập nhật nhanh, nhưng có thể dao động (nhiễu) trong gradient.  
-                              - Batch size lớn (ví dụ: 128) làm gradient ổn định hơn, nhưng tốn thời gian và bộ nhớ.  
-                            - **Công thức**: Gradient trung bình trên batch:  
-                              $$ \\frac{\\partial L}{\\partial W^{(l)}} = \\frac{1}{B} \\sum_{i=1}^{B} (A^{(l-1)}_i)^T \\cdot \\delta^{(l)}_i $$  
-                              ($B$ là batch size).  
-                            - **Lưu ý**: Với MNIST, batch size từ 32-128 thường là lựa chọn tốt.
-                            """)
                     else:
                         params["batch_size"] = "auto"
                         st.write("Kích thước batch: **auto** (dành cho lbfgs)")
-                        with st.expander("ℹ️ Chi tiết về kích thước batch"):
-                            st.markdown("""
-                            - **Ý nghĩa**: Với solver **lbfgs**, kích thước batch được đặt là **auto**, nghĩa là toàn bộ dữ liệu sẽ được sử dụng trong mỗi lần cập nhật.  
-                            - **Công dụng**: Phù hợp với tập dữ liệu nhỏ, nhưng không hiệu quả với tập dữ liệu lớn do yêu cầu bộ nhớ cao.
-                            """)
-
                 with col4:
-                    st.markdown("##### Tham số điều chuẩn (alpha)")
                     params["alpha"] = st.number_input("Tham số điều chuẩn (alpha)", min_value=0.0, max_value=1.0, value=params["alpha"], step=0.0001,
                                                      help="Hệ số L2 để giảm overfitting.")
-                    with st.expander("ℹ️ Chi tiết về tham số điều chuẩn (alpha)"):
-                        st.markdown("""
-                        - **Ý nghĩa**: Hệ số điều chuẩn L2, thêm vào hàm mất mát để phạt các trọng số lớn.  
-                        - **Công dụng**:  
-                          - Giảm hiện tượng quá khớp (overfitting) bằng cách giới hạn độ lớn của trọng số.  
-                          - Giúp mô hình tổng quát hóa tốt hơn trên dữ liệu mới.  
-                        - **Công thức**: Hàm mất mát có điều chuẩn:  
-                          $$ L = L_{\\text{data}} + \\frac{\\alpha}{2} \\sum_{l} ||W^{(l)}||^2 $$  
-                          Trong đó:  
-                          - $L_{\\text{data}}$: Hàm mất mát gốc (cross-entropy).  
-                          - $\\alpha$: Hệ số điều chuẩn.  
-                          - $||W^{(l)}||^2$: Tổng bình phương trọng số.  
-                        - **Lưu ý**: Với MNIST, alpha từ 0.0001 đến 0.01 thường là đủ để kiểm soát overfitting.
-                        """)
 
             # Nút khôi phục tham số tối ưu
             if st.button("🔄 Khôi phục tham số tối ưu", help="Quay lại tham số tối ưu dựa trên số mẫu"):
