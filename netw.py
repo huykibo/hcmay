@@ -30,7 +30,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(mlflow_tracking_uri)
     except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm hình secrets.toml hoặc môi trường triển khai.")
+        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm tra secrets.toml hoặc môi trường triển khai.")
         st.stop()
 
     try:
@@ -534,62 +534,62 @@ def run_mnist_neural_network_app():
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-            # Hàm tự động chọn tham số tối ưu dựa trên số mẫu, bao gồm số lớp ẩn
+            # Hàm tự động chọn tham số tối ưu (đã tối ưu hóa)
             def get_optimal_params(num_samples):
                 if num_samples < 1000:
                     return {
-                        "hidden_layer_sizes": (32,),  # 1 lớp ẩn
+                        "hidden_layer_sizes": (16,),  # 1 lớp ẩn, giảm từ 32
                         "learning_rate_init": 0.01,
-                        "max_iter": 50,
+                        "max_iter": 30,              # Giảm từ 50
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 32
+                        "batch_size": 64             # Tăng từ 32
                     }
                 elif 1000 <= num_samples < 5000:
                     return {
-                        "hidden_layer_sizes": (64,),  # 1 lớp ẩn
+                        "hidden_layer_sizes": (32,),  # 1 lớp ẩn, giảm từ 64
                         "learning_rate_init": 0.005,
-                        "max_iter": 100,
+                        "max_iter": 50,              # Giảm từ 100
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 64
+                        "batch_size": 128            # Tăng từ 64
                     }
                 elif 5000 <= num_samples <= 20000:
                     return {
-                        "hidden_layer_sizes": (128, 64),  # 2 lớp ẩn
+                        "hidden_layer_sizes": (64, 32),  # 2 lớp ẩn, giảm từ (128, 64)
                         "learning_rate_init": 0.001,
-                        "max_iter": 150,
+                        "max_iter": 75,                 # Giảm từ 150
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 128
+                        "batch_size": 256               # Tăng từ 128
                     }
                 else:  # >20000 mẫu
                     return {
-                        "hidden_layer_sizes": (256, 128),  # 2 lớp ẩn
+                        "hidden_layer_sizes": (128, 64),  # 2 lớp ẩn, giảm từ (256, 128)
                         "learning_rate_init": 0.0005,
-                        "max_iter": 200,
+                        "max_iter": 100,                 # Giảm từ 200
                         "activation": "relu",
                         "solver": "adam",
-                        "batch_size": 256
+                        "batch_size": 512                # Tăng từ 256
                     }
 
             # Tự động chọn tham số tối ưu ban đầu
             if "optimal_params" not in st.session_state:
                 st.session_state["optimal_params"] = get_optimal_params(num_samples)
             
-            # Lấy tham số hiện tại (ưu tiên tham số người dùng chỉnh nếu có, nếu không thì dùng tối ưu)
+            # Lấy tham số hiện tại (ưu tiên tham số người dùng chỉnh nếu có)
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-            # Hiển thị bảng tham số tối ưu với cột "Số lớp ẩn"
-            st.subheader("⚙️ Cấu hình tham số mô hình (Tự động chọn số lớp ẩn)")
+            # Hiển thị bảng tham số tối ưu
+            st.subheader("⚙️ Cấu hình tham số mô hình (Tối ưu tốc độ)")
             st.markdown("""
-            Các tham số tối ưu được tự động chọn dựa trên số mẫu để huấn luyện nhanh:
+            Các tham số tối ưu được tự động chọn để huấn luyện nhanh:
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-            | <1000        | 1         | 32                | 0.01       | 50         | ReLU          | adam         | 32               |
-            | 1000-5000    | 1         | 64                | 0.005      | 100        | ReLU          | adam         | 64               |
-            | 5000-20000   | 2         | (128, 64)         | 0.001      | 150        | ReLU          | adam         | 128              |
-            | >20000       | 2         | (256, 128)        | 0.0005     | 200        | ReLU          | adam         | 256              |
+            | <1000        | 1         | 16                | 0.01       | 30         | ReLU          | adam         | 64               |
+            | 1000-5000    | 1         | 32                | 0.005      | 50         | ReLU          | adam         | 128              |
+            | 5000-20000   | 2         | (64, 32)          | 0.001      | 75         | ReLU          | adam         | 256              |
+            | >20000       | 2         | (128, 64)         | 0.0005     | 100        | ReLU          | adam         | 512              |
             """, unsafe_allow_html=True)
 
             # Hiển thị thông tin tham số tối ưu tự động
@@ -597,7 +597,8 @@ def run_mnist_neural_network_app():
                     f"Kích thước lớp ẩn = {st.session_state['optimal_params']['hidden_layer_sizes']}, "
                     f"Tốc độ học = {st.session_state['optimal_params']['learning_rate_init']}, Số lần lặp = {st.session_state['optimal_params']['max_iter']}, "
                     f"Hàm kích hoạt = {st.session_state['optimal_params']['activation']}, Trình tối ưu = {st.session_state['optimal_params']['solver']}, "
-                    f"Kích thước batch = {st.session_state['optimal_params']['batch_size']}")
+                    f"Kích thước batch = {st.session_state['optimal_params']['batch_size']}. "
+                    f"Thiết lập này tối ưu tốc độ mà vẫn giữ độ chính xác tốt.")
 
             # Giao diện tùy chỉnh tham số
             col_param1, col_param2 = st.columns(2)
@@ -605,18 +606,18 @@ def run_mnist_neural_network_app():
             with col_param1:
                 with st.expander("Cấu trúc mạng", expanded=False):
                     num_hidden_layers = st.number_input(
-                        "Số lớp ẩn", min_value=1, max_value=3, value=len(params["hidden_layer_sizes"]),
-                        help="Số lớp ẩn quyết định độ sâu của mạng (tối đa 3 lớp)."
+                        "Số lớp ẩn", min_value=1, max_value=2, value=len(params["hidden_layer_sizes"]),  # Giới hạn tối đa 2 lớp ẩn
+                        help="Số lớp ẩn quyết định độ sâu của mạng (tối đa 2 lớp để tăng tốc)."
                     )
                     hidden_size = st.number_input(
-                        "Số nơ-ron mỗi lớp", min_value=10, max_value=512, value=params["hidden_layer_sizes"][0],
-                        help="Số nơ-ron trong mỗi lớp ẩn (tối đa 512)."
+                        "Số nơ-ron mỗi lớp", min_value=16, max_value=128, value=params["hidden_layer_sizes"][0],  # Giới hạn 16-128
+                        help="Số nơ-ron trong mỗi lớp ẩn (16-128 để tối ưu tốc độ)."
                     )
                     params["hidden_layer_sizes"] = tuple([hidden_size] * num_hidden_layers)
                     params["activation"] = st.selectbox(
                         "Hàm kích hoạt", ["relu", "sigmoid", "tanh"],
                         index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                        help="Chọn hàm kích hoạt để xử lý phi tuyến tính."
+                        help="Chọn hàm kích hoạt để xử lý phi tuyến tính (ReLU nhanh nhất)."
                     )
 
             with col_param2:
@@ -627,17 +628,17 @@ def run_mnist_neural_network_app():
                         help="Tốc độ cập nhật trọng số trong quá trình huấn luyện."
                     )
                     params["max_iter"] = st.number_input(
-                        "Số lần lặp", min_value=5, max_value=200, value=params["max_iter"],
-                        help="Số lần lặp toàn bộ dữ liệu (tối đa 200 để tăng tốc)."
+                        "Số lần lặp", min_value=10, max_value=100, value=params["max_iter"],  # Giới hạn tối đa 100
+                        help="Số lần lặp toàn bộ dữ liệu (tối đa 100 để tăng tốc)."
                     )
                     params["batch_size"] = st.number_input(
-                        "Kích thước batch", min_value=1, max_value=256, value=params["batch_size"],
-                        help="Số mẫu xử lý trong mỗi lần lặp (tối đa 256 để tăng tốc)."
+                        "Kích thước batch", min_value=64, max_value=512, value=params["batch_size"],  # Giới hạn 64-512
+                        help="Số mẫu xử lý trong mỗi lần lặp (64-512 để tăng tốc)."
                     )
                     params["solver"] = st.selectbox(
-                        "Trình tối ưu", ["lbfgs", "sgd", "adam"],
-                        index=["lbfgs", "sgd", "adam"].index(params["solver"]),
-                        help="Phương pháp tối ưu hóa trọng số (adam thường nhanh nhất)."
+                        "Trình tối ưu", ["adam", "sgd", "lbfgs"],  # Ưu tiên adam
+                        index=["adam", "sgd", "lbfgs"].index(params["solver"]),
+                        help="Phương pháp tối ưu hóa trọng số (adam nhanh nhất)."
                     )
 
             # Nút khôi phục tham số tối ưu
