@@ -148,7 +148,7 @@ def run_mnist_classification_app():
             """)
             try:
                 tree_step_2 = Image.open("illustrations/tree_step_2.png")
-                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu tiên dựa trên Pixel 5 > 100", width=500)
+                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu             đã được tạo.")
             except FileNotFoundError:
                 st.error("Không tìm thấy file `illustrations/tree_step_2.png`. Vui lòng đảm bảo file đã được tạo.")
             except Exception as e:
@@ -424,7 +424,7 @@ def run_mnist_classification_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu (Đã xóa Standardization)
+    # Tab 3: Xử lí dữ liệu
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -434,7 +434,7 @@ def run_mnist_classification_app():
             if "data_original" not in st.session_state:
                 st.session_state["data_original"] = (X.copy(), y.copy())
 
-            # Xóa data_processed nếu nó tồn tại nhưng không hợp lệ
+            # Xóa data_processed nếu không hợp lệ
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if not (isinstance(data_processed, tuple) and len(data_processed) == 2):
@@ -466,7 +466,7 @@ def run_mnist_classification_app():
                     </div>
                 """, unsafe_allow_html=True)
 
-            # Chỉ hiển thị dữ liệu đã xử lý nếu data_processed tồn tại và hợp lệ
+            # Hiển thị dữ liệu đã xử lý nếu tồn tại
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if isinstance(data_processed, tuple) and len(data_processed) == 2:
@@ -532,89 +532,117 @@ def run_mnist_classification_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật để ẩn kết quả cũ khi đổi mô hình)
+    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật giống run_mnist_neural_network_app)
     with tab_train_eval:
-        st.header("Huấn luyện và Đánh Giá")
+        st.header("Huấn luyện và Đánh Giá Mô hình")
+
         if 'split_data' not in st.session_state:
-            st.info("Vui lòng chia dữ liệu trước.")
+            st.info("Vui lòng chia dữ liệu trước khi huấn luyện mô hình.")
         else:
-            model_choice = st.selectbox("Chọn mô hình", ["Decision Tree", "SVM"])
             X_train = st.session_state['split_data']["X_train"]
             num_samples = len(X_train)
-            st.write(f"Số lượng mẫu huấn luyện: {num_samples}")
+            st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
-            st.subheader("Bảng gợi ý tham số tối ưu dựa trên số lượng mẫu")
+            model_choice = st.selectbox("Chọn mô hình", ["Decision Tree", "SVM"], key="model_choice")
+
+            st.subheader("⚙️ Cấu hình tham số mô hình")
+            st.markdown("""
+            Các tham số tối ưu được tự động chọn dựa trên số mẫu để đảm bảo hiệu suất tốt nhất:
+            """, unsafe_allow_html=True)
+
+            # Bảng tham số tối ưu
             if model_choice == "Decision Tree":
                 st.markdown("""
-                | Số lượng mẫu | Criterion          | Max Depth |
-                |--------------|--------------------|-----------|
-                | <1000        | gini hoặc entropy  | 5-10      |
-                | 1000-5000    | gini hoặc entropy  | 10-20     |
-                | 5000-50000   | gini hoặc entropy  | 20-30     |
-                | >50000       | gini hoặc entropy  | 30-50     |
-                """)
-                st.markdown("""
-                - **criterion**: "gini" đo độ tinh khiết, "entropy" đo độ hỗn loạn.  
-                - **max_depth**: Giới hạn độ sâu để tránh overfitting.
-                """)
+                | Số mẫu       | Criterion | Max Depth |
+                |--------------|-----------|-----------|
+                | <1000        | gini      | 5         |
+                | 1000-5000    | gini      | 10        |
+                | 5000-50000   | gini      | 20        |
+                | >50000       | gini      | 30        |
+                """, unsafe_allow_html=True)
             else:
                 st.markdown("""
-                | Số lượng mẫu | C         | Kernel     |
-                |--------------|-----------|------------|
-                | <1000        | 0.1-1.0   | rbf        |
-                | 1000-5000    | 1.0-5.0   | rbf        |
-                | 5000-50000   | 5.0-10.0  | rbf        |
-                | >50000       | 10.0-50.0 | rbf hoặc poly |
-                """)
-                st.markdown("""
-                - **C**: Điều chỉnh giữa lề lớn và lỗi phân loại.  
-                - **kernel**: "rbf" phù hợp với dữ liệu phi tuyến như MNIST.
-                """)
+                | Số mẫu       | C    | Kernel |
+                |--------------|------|--------|
+                | <1000        | 0.1  | rbf    |
+                | 1000-5000    | 1.0  | rbf    |
+                | 5000-50000   | 5.0  | rbf    |
+                | >50000       | 10.0 | rbf    |
+                """, unsafe_allow_html=True)
 
-            params = {}
-            if num_samples < 1000:
+            # Hàm chọn tham số tối ưu
+            def get_optimal_params(num_samples, model_choice):
                 if model_choice == "Decision Tree":
-                    params["criterion"] = "gini"
-                    params["max_depth"] = 5
-                else:
-                    params["C"] = 0.1
-                    params["kernel"] = "rbf"
-            elif 1000 <= num_samples <= 5000:
-                if model_choice == "Decision Tree":
-                    params["criterion"] = "gini"
-                    params["max_depth"] = 10
-                else:
-                    params["C"] = 1.0
-                    params["kernel"] = "rbf"
-            elif 5000 < num_samples <= 50000:
-                if model_choice == "Decision Tree":
-                    params["criterion"] = "gini"
-                    params["max_depth"] = 20
-                else:
-                    params["C"] = 5.0
-                    params["kernel"] = "rbf"
-            else:
-                if model_choice == "Decision Tree":
-                    params["criterion"] = "gini"
-                    params["max_depth"] = 30
-                else:
-                    params["C"] = 10.0
-                    params["kernel"] = "rbf"
+                    if num_samples < 1000:
+                        return {"criterion": "gini", "max_depth": 5}
+                    elif 1000 <= num_samples <= 5000:
+                        return {"criterion": "gini", "max_depth": 10}
+                    elif 5000 < num_samples <= 50000:
+                        return {"criterion": "gini", "max_depth": 20}
+                    else:
+                        return {"criterion": "gini", "max_depth": 30}
+                else:  # SVM
+                    if num_samples < 1000:
+                        return {"C": 0.1, "kernel": "rbf"}
+                    elif 1000 <= num_samples <= 5000:
+                        return {"C": 1.0, "kernel": "rbf"}
+                    elif 5000 < num_samples <= 50000:
+                        return {"C": 5.0, "kernel": "rbf"}
+                    else:
+                        return {"C": 10.0, "kernel": "rbf"}
 
-            st.markdown("#### Tham số mô hình (đã đặt tự động, có thể điều chỉnh)")
+            # Lưu tham số tối ưu vào session_state nếu chưa có
+            if f"optimal_params_{model_choice}" not in st.session_state:
+                st.session_state[f"optimal_params_{model_choice}"] = get_optimal_params(num_samples, model_choice)
+
+            # Lấy tham số hiện tại hoặc từ optimal_params
+            params = st.session_state.get(f"training_params_{model_choice}", st.session_state[f"optimal_params_{model_choice}"].copy())
+
+            # Hiển thị tham số tối ưu mặc định
             if model_choice == "Decision Tree":
-                params["criterion"] = st.selectbox("Criterion", ["gini", "entropy"], index=["gini", "entropy"].index(params["criterion"]))
-                params["max_depth"] = st.number_input("Max Depth", min_value=1, max_value=100, value=params["max_depth"])
+                st.info(f"**Tham số tối ưu tự động**: Criterion = {params['criterion']}, Max Depth = {params['max_depth']}")
             else:
-                params["C"] = st.number_input("C", min_value=0.01, max_value=100.0, value=params["C"])
-                params["kernel"] = st.selectbox("Kernel", ["linear", "rbf", "poly", "sigmoid"], index=["linear", "rbf", "poly", "sigmoid"].index(params["kernel"]))
+                st.info(f"**Tham số tối ưu tự động**: C = {params['C']}, Kernel = {params['kernel']}")
 
-            if st.button("Thực hiện Huấn luyện"):
+            # Cột để chỉnh tham số
+            col1, col2 = st.columns(2)
+
+            with col1:
+                with st.expander("🧠 Cấu trúc mô hình", expanded=True):
+                    if model_choice == "Decision Tree":
+                        params["criterion"] = st.selectbox("Criterion", ["gini", "entropy"],
+                                                           index=["gini", "entropy"].index(params["criterion"]),
+                                                           help="Tiêu chí chia nhánh: 'gini' đo độ tinh khiết, 'entropy' đo độ hỗn loạn.")
+                        params["max_depth"] = st.number_input("Max Depth", min_value=1, max_value=100, value=params["max_depth"],
+                                                              help="Độ sâu tối đa của cây để tránh overfitting.")
+                    else:
+                        params["C"] = st.number_input("C", min_value=0.01, max_value=100.0, value=params["C"],
+                                                      help="Tham số điều chỉnh giữa lề lớn và lỗi phân loại.")
+                        params["kernel"] = st.selectbox("Kernel", ["linear", "rbf", "poly", "sigmoid"],
+                                                        index=["linear", "rbf", "poly", "sigmoid"].index(params["kernel"]),
+                                                        help="Hàm kernel để ánh xạ dữ liệu.")
+
+            with col2:
+                with st.expander("📉 Tối ưu hóa", expanded=True):
+                    if model_choice == "Decision Tree":
+                        st.write("Không có tham số tối ưu hóa bổ sung cho Decision Tree.")
+                    else:
+                        st.write("SVM sử dụng các tham số C và Kernel để tối ưu hóa siêu phẳng.")
+
+            # Lưu tham số đã chỉnh
+            st.session_state[f"training_params_{model_choice}"] = params
+
+            # Nút huấn luyện
+            if st.button("🚀 Thực hiện Huấn luyện", key="train_button", type="primary"):
                 with st.spinner("Đang huấn luyện mô hình..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     start_time = time.time()
-                   
+                    for i in range(0, 91, 10):
+                        progress_bar.progress(i)
+                        status_text.text(f"Tiến độ: {i}%")
+                        time.sleep(0.1)
+
                     X_train = st.session_state['split_data']["X_train"]
                     y_train = st.session_state['split_data']["y_train"]
                     X_valid = st.session_state['split_data']["X_valid"]
@@ -624,132 +652,104 @@ def run_mnist_classification_app():
 
                     run_name = f"{model_choice}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     with mlflow.start_run(run_name=run_name) as run:
-                        for i in range(0, 11, 2):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang khởi tạo mô hình {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                       
+                        mlflow.log_params(params)
+
                         if model_choice == "Decision Tree":
                             pipeline = Pipeline([
                                 ('imputer', SimpleImputer(strategy='mean')),
                                 ('classifier', DecisionTreeClassifier(**params))
                             ])
-                            pipeline.fit(X_train, y_train)
-                            model = pipeline
                         else:
                             pipeline = Pipeline([
                                 ('imputer', SimpleImputer(strategy='mean')),
                                 ('classifier', SVC(probability=True, **params))
                             ])
-                            pipeline.fit(X_train, y_train)
-                            model = pipeline
 
-                        for i in range(10, 51, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang huấn luyện {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
+                        pipeline.fit(X_train, y_train)
 
-                        mlflow.log_params(params)
-                        y_valid_pred = model.predict(X_valid)
-                        accuracy_val = accuracy_score(y_valid, y_valid_pred)
-                        mlflow.log_metric("accuracy_val", accuracy_val)
+                        y_valid_pred = pipeline.predict(X_valid)
+                        y_test_pred = pipeline.predict(X_test)
+                        acc_valid = accuracy_score(y_valid, y_valid_pred)
+                        acc_test = accuracy_score(y_test, y_test_pred)
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
-
-                        for i in range(50, 76, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang đánh giá validation {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-
-                        y_test_pred = model.predict(X_test)
-                        accuracy_test = accuracy_score(y_test, y_test_pred)
-                        mlflow.log_metric("accuracy_test", accuracy_test)
                         cm_test = confusion_matrix(y_test, y_test_pred)
-                        training_time = time.time() - start_time
-                        mlflow.log_metric("training_time_seconds", training_time)
-                        mlflow.sklearn.log_model(model, "model")
 
-                        for i in range(75, 101, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Hoàn tất {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
+                        mlflow.log_metric("accuracy_val", acc_valid)
+                        mlflow.log_metric("accuracy_test", acc_test)
+                        mlflow.sklearn.log_model(pipeline, "model")
 
-                        run_id = run.info.run_id
-                        st.session_state['model'] = model
+                        st.session_state['model'] = pipeline
                         st.session_state['latest_run'] = {
                             'run_name': run_name,
-                            'run_id': run_id
+                            'run_id': run.info.run_id
                         }
-
                         st.session_state['training_results'] = {
-                            'training_time': training_time,
-                            'accuracy_val': accuracy_val,
-                            'accuracy_test': accuracy_test,
+                            'accuracy_val': acc_valid,
+                            'accuracy_test': acc_test,
                             'cm_valid': cm_valid,
                             'cm_test': cm_test,
-                            'model_choice': model_choice,
-                            'params': params,
-                            'num_samples': len(X_train),
                             'run_name': run_name,
-                            'run_id': run_id
+                            'run_id': run.info.run_id,
+                            'params': params,
+                            'training_time': time.time() - start_time,
+                            'model_choice': model_choice,
+                            'num_samples': num_samples
                         }
 
-                        status_text.empty()
-                        progress_bar.empty()
+                    progress_bar.progress(100)
+                    status_text.text("Hoàn tất: 100%")
+                    st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
 
-            # Chỉ hiển thị kết quả nếu mô hình hiện tại khớp với kết quả đã lưu
-            if 'training_results' in st.session_state and st.session_state['training_results']['model_choice'] == model_choice:
-                st.success(f"Huấn luyện hoàn tất. Thời gian thực hiện: {st.session_state['training_results']['training_time']:.2f} giây.")
-                st.write(f"Accuracy Validation: {st.session_state['training_results']['accuracy_val']:.4f}")
-                st.write(f"Accuracy Test: {st.session_state['training_results']['accuracy_test']:.4f}")
+            # Hiển thị kết quả nếu có và khớp với mô hình hiện tại
+            if ('training_results' in st.session_state and 
+                st.session_state['training_results']['model_choice'] == model_choice):
+                results = st.session_state['training_results']
+                st.subheader("📊 Kết quả huấn luyện")
+                col_result1, col_result2 = st.columns(2)
+                with col_result1:
+                    st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
+                with col_result2:
+                    st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
-                fig, ax = plt.subplots()
-                sns.heatmap(st.session_state['training_results']['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Confusion Matrix - Validation")
-                st.pyplot(fig)
+                st.subheader("📈 Ma trận nhầm lẫn")
+                col_cm1, col_cm2 = st.columns(2)
+                with col_cm1:
+                    fig, ax = plt.subplots(figsize=(5, 4))
+                    sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                    ax.set_title("Validation")
+                    st.pyplot(fig)
+                with col_cm2:
+                    fig, ax = plt.subplots(figsize=(5, 4))
+                    sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                    ax.set_title("Test")
+                    st.pyplot(fig)
 
-                fig, ax = plt.subplots()
-                sns.heatmap(st.session_state['training_results']['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Confusion Matrix - Test")
-                st.pyplot(fig)
-
-                st.subheader("Thông tin Kết quả")
-                with st.expander("Xem chi tiết kết quả", expanded=True):
-                    run_name = st.session_state['training_results']['run_name']
-                    run_id = st.session_state['training_results']['run_id']
-                    model_choice_result = st.session_state['training_results']['model_choice']
-                    params = st.session_state['training_results']['params']
-                    training_time = st.session_state['training_results']['training_time']
-                    accuracy_val = st.session_state['training_results']['accuracy_val']
-                    accuracy_test = st.session_state['training_results']['accuracy_test']
-                    X_train = st.session_state['split_data']["X_train"]
-
-                    st.markdown("#### Thông tin lần chạy:", unsafe_allow_html=True)
-                    st.write(f"- **Tên lần chạy (Run Name)**: {run_name}")
-                    st.write(f"- **ID lần chạy (Run ID)**: {run_id}")
-
-                    st.markdown("#### Cài đặt bạn đã chọn:", unsafe_allow_html=True)
-                    st.write(f"- **Mô hình**: {model_choice_result}")
-                    st.write(f"- **Tham số**:")
-                    for key, value in params.items():
-                        st.write(f"  - {key}: {value}")
-                    st.write(f"- **Thời gian chạy**: {training_time:.2f} giây")
-                    st.write(f"- **Số mẫu huấn luyện**: {len(X_train)}")
-
-                    st.markdown("#### Kết quả đạt được:", unsafe_allow_html=True)
-                    st.markdown(f"""
-                    - **Độ chính xác Validation**: {accuracy_val*100:.2f}%  
-                    - **Độ chính xác Test**: {accuracy_test*100:.2f}%  
-                    """, unsafe_allow_html=True)
+                st.subheader("ℹ️ Chi tiết")
+                with st.expander("Xem chi tiết", expanded=False):
+                    st.markdown("**Thông tin lần chạy**:")
+                    st.write(f"- Tên: {results['run_name']}")
+                    st.write(f"- ID: {results['run_id']}")
+                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")
+                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
+                    st.markdown("**Tham số đã chọn**:")
+                    if model_choice == "Decision Tree":
+                        st.write(f"- Criterion: {results['params']['criterion']}")
+                        st.write(f"- Max Depth: {results['params']['max_depth']}")
+                    else:
+                        st.write(f"- C: {results['params']['C']}")
+                        st.write(f"- Kernel: {results['params']['kernel']}")
+                    st.markdown("**Thông tin dữ liệu**:")
+                    st.write(f"- Số mẫu huấn luyện: {results['num_samples']}")
             else:
-                st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện' để xem kết quả.")
+                st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện'.")
 
-    # Tab 6: Demo dự đoán (Đã áp dụng công thức Confidence)
+    # Tab 6: Demo dự đoán
     with tab_demo:
         st.header("Demo Dự đoán")
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước.")
         else:
-            # Hiển thị thông tin mô hình hiện tại
             model_choice = st.session_state['training_results']['model_choice']
             st.write(f"Mô hình hiện tại: **{model_choice}**")
 
@@ -784,7 +784,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(sample)[0]
                             proba = model.predict_proba(sample)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = max(proba) * 100
                             y_true = y_test.iloc[idx]
                             
                             for i in range(50, 101, 5):
@@ -820,7 +820,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = max(proba) * 100
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -854,14 +854,7 @@ def run_mnist_classification_app():
                                 status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
                             
-                            image_data = canvas_result.image_data
-                            if image_data is None or image_data.size == 0:
-                                st.warning("Không có dữ liệu từ canvas. Vui lòng vẽ một số!")
-                                progress_bar.empty()
-                                status_text.empty()
-                                return
-                            
-                            img = Image.fromarray((image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
+                            img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
@@ -869,7 +862,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = max(proba) * 100
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
