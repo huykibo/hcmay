@@ -691,15 +691,11 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước khi sử dụng Demo.")
         else:
-            # CSS tùy chỉnh để cải thiện giao diện
+            # CSS tùy chỉnh để cải thiện giao diện (bỏ khung trắng)
             st.markdown("""
                 <style>
                     .prediction-box {
-                        background-color: #f0f2f6;
-                        padding: 15px;
-                        border-radius: 10px;
                         margin-top: 10px;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
                     }
                     .mode-title {
                         font-size: 1.2em;
@@ -754,7 +750,7 @@ def run_mnist_neural_network_app():
                         proba = model.predict_proba(sample_processed)[0]
                         max_proba = np.max(proba) * 100
 
-                        # Hiển thị kết quả trong box chuyên nghiệp
+                        # Hiển thị kết quả (không có khung trắng)
                         st.markdown(f"""
                             <div class="prediction-box">
                                 <strong>Dự đoán:</strong> {prediction}<br>
@@ -798,7 +794,7 @@ def run_mnist_neural_network_app():
                                         proba = model.predict_proba(img_processed)[0]
                                         max_proba = np.max(proba) * 100
 
-                                        # Hiển thị kết quả
+                                        # Hiển thị kết quả (không có khung trắng)
                                         st.markdown(f"""
                                             <div class="prediction-box">
                                                 <strong>Dự đoán:</strong> {prediction}<br>
@@ -816,65 +812,56 @@ def run_mnist_neural_network_app():
                         except Exception as e:
                             st.error(f"Lỗi khi xử lý ảnh {i+1}: {e}")
 
-            # Chế độ 3: Vẽ số
+            # Chế độ 3: Vẽ số (sử dụng lại cách vẽ từ mã cũ)
             elif mode == "Vẽ số":
                 st.markdown('<p class="mode-title">Dự đoán từ Hình vẽ</p>', unsafe_allow_html=True)
-                st.markdown("**Hướng dẫn:** Vẽ một chữ số từ 0-9 trên canvas (280x280 px).")
+                st.write("Vẽ chữ số từ 0-9:")
 
-                # Canvas vẽ
-                canvas_result = st_canvas(
-                    fill_color="black", 
-                    stroke_width=20, 
-                    stroke_color="white", 
-                    background_color="black", 
-                    width=280, 
-                    height=280, 
-                    drawing_mode="freedraw", 
-                    key=f"canvas_{st.session_state.get('canvas_key', 0)}",
-                    help="Dùng chuột để vẽ. Nhấn 'Xóa' để làm mới."
-                )
-
-                col_btn1, col_btn2 = st.columns([1, 1])
-                with col_btn1:
-                    predict_btn = st.button("🔍 Dự đoán số đã vẽ", key="predict_draw")
-                with col_btn2:
-                    clear_btn = st.button("🗑️ Xóa Canvas", key="clear_draw")
-
-                if clear_btn:
-                    st.session_state['canvas_key'] = st.session_state.get('canvas_key', 0) + 1
-                    st.rerun()
-
-                if predict_btn:
-                    if canvas_result.image_data is not None and np.any(canvas_result.image_data):
-                        with st.spinner("Đang xử lý hình vẽ..."):
-                            # Chuyển đổi và xử lý hình vẽ
-                            img = Image.fromarray((canvas_result.image_data[:, :, 0]).astype(np.uint8)).convert('L').resize((28, 28))
-                            img_array = np.array(img).flatten().reshape(1, -1)
-                            img_processed = preprocess_input(img_array, is_normalized)
-                            prediction = model.predict(img_processed)[0]
-                            proba = model.predict_proba(img_processed)[0]
-                            max_proba = np.max(proba) * 100
-
-                            # Hiển thị kết quả
-                            col_result, col_img = st.columns([2, 1])
-                            with col_result:
+                # Canvas vẽ (từ mã cũ)
+                canvas_result = st_canvas(fill_color="black", stroke_width=20, stroke_color="white", 
+                                          background_color="black", width=280, height=280, drawing_mode="freedraw", key="canvas")
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("Dự đoán số đã vẽ"):
+                        if canvas_result.image_data is not None and np.any(canvas_result.image_data):
+                            with st.spinner("Đang xử lý..."):
+                                for i in [20, 40, 60, 80, 100]:
+                                    time.sleep(0.05)
+                                img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
+                                img_array = np.array(img).flatten().reshape(1, -1)
+                                img_array, fixed = validate_and_fix_pixels(img_array, "hình vẽ")
+                                if fixed:
+                                    st.success("Đã chuẩn hóa hình vẽ về [0, 255]!")
+                                if not is_normalized:
+                                    img_array = preprocess_input(img_array, is_normalized)
+                                prediction = model.predict(img_array)[0]
+                                proba = model.predict_proba(img_array)[0]
+                                max_proba = np.max(proba) * 100
+                                
+                                # Hiển thị kết quả (không có khung trắng)
                                 st.markdown(f"""
                                     <div class="prediction-box">
                                         <strong>Dự đoán:</strong> {prediction}<br>
                                         <strong>Xác suất:</strong> {max_proba:.2f}%
                                     </div>
                                 """, unsafe_allow_html=True)
-                                # Biểu đồ xác suất
+                                
+                                # Hiển thị hình vẽ đã xử lý
+                                st.image(img, caption="Hình vẽ của bạn")
+
+                                # Biểu đồ xác suất (giữ lại từ mã mới để trực quan)
                                 fig, ax = plt.subplots(figsize=(6, 3))
                                 sns.barplot(x=np.arange(10), y=proba, palette="Blues_d", ax=ax)
                                 ax.set_title("Xác suất dự đoán")
                                 ax.set_xlabel("Chữ số (0-9)")
                                 ax.set_ylabel("Xác suất")
                                 st.pyplot(fig)
-                            with col_img:
-                                st.image(img, caption="Hình vẽ đã xử lý", width=150)
-                    else:
-                        st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
+                        else:
+                            st.warning("Vui lòng vẽ trước!")
+                with col2:
+                    if st.button("Xóa Canvas"):
+                        st.session_state['canvas_key'] = st.session_state.get('canvas_key', 0) + 1
+                        st.rerun()
 
     with tab_log_info:
         st.header("Theo dõi Kết quả")
