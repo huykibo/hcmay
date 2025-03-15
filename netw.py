@@ -334,17 +334,22 @@ def run_mnist_neural_network_app():
                 """, unsafe_allow_html=True)
 
             if "data_processed" in st.session_state:
-                X_processed, y_processed = st.session_state["data_processed"]
-                st.subheader("📷 Dữ liệu đã xử lý")
-                st.markdown("""
-                Dưới đây là $10$ mẫu đầu tiên sau khi chuẩn hóa:
-                """, unsafe_allow_html=True)
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
+                try:
+                    X_processed, y_processed = st.session_state["data_processed"]
+                    st.subheader("📷 Dữ liệu đã xử lý")
+                    st.markdown("""
+                    Dưới đây là $10$ mẫu đầu tiên sau khi chuẩn hóa:
+                    """, unsafe_allow_html=True)
+                    fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                    for i, ax in enumerate(axes.flat):
+                        ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                        ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
+                        ax.axis("off")
+                    st.pyplot(fig)
+                except (ValueError, TypeError) as e:
+                    st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}")
+            else:
+                st.info("Dữ liệu chưa được chuẩn hóa. Vui lòng nhấn 'Chuẩn hóa (Normalization)' để tiếp tục.")
 
     # Tab 4: Chia dữ liệu
     with tab_split:
