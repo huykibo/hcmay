@@ -359,41 +359,44 @@ def run_mnist_neural_network_app():
         """, unsafe_allow_html=True)
 
         if 'data' not in st.session_state:
-            st.info("Vui lòng tải và chốt số lượng mẫu trước.")
+            st.info("Vui lòng tải và chốt số lượng mẫu trong tab 'Tải dữ liệu' trước.")
         else:
             data_source = st.session_state.get("data_processed", st.session_state['data'])
-            X, y = data_source
-            total_samples = len(X)
-            st.write(f"Tổng số mẫu: ${total_samples}$")
+            try:
+                X, y = data_source
+                total_samples = len(X)
+                st.write(f"Tổng số mẫu: ${total_samples}$")
 
-            test_pct = st.slider("Tỷ lệ tập Test (%)", 0, 100, 20)
-            valid_pct = st.slider("Tỷ lệ tập Validation (%) từ phần còn lại", 0, 100, 20)
-            
-            if test_pct + valid_pct > 100:
-                st.warning("Tổng tỷ lệ Test và Validation vượt quá $100\\%$!")
-            
-            test_size = int(total_samples * test_pct / 100)
-            if test_size > 0:
-                X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size / total_samples, random_state=42)
-            else:
-                X_temp, y_temp = X, y
-                X_test, y_test = pd.DataFrame(), pd.Series()
+                test_pct = st.slider("Tỷ lệ tập Test (%)", 0, 100, 20)
+                valid_pct = st.slider("Tỷ lệ tập Validation (%) từ phần còn lại", 0, 100, 20)
+                
+                if test_pct + valid_pct > 100:
+                    st.warning("Tổng tỷ lệ Test và Validation vượt quá $100\\%$!")
+                
+                test_size = int(total_samples * test_pct / 100)
+                if test_size > 0:
+                    X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size / total_samples, random_state=42)
+                else:
+                    X_temp, y_temp = X, y
+                    X_test, y_test = pd.DataFrame(), pd.Series()
 
-            valid_size = int(len(X_temp) * valid_pct / 100)
-            if valid_size > 0 and len(X_temp) > valid_size:
-                X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size / len(X_temp), random_state=42)
-            else:
-                X_train, y_train = X_temp, y_temp
-                X_valid, y_valid = pd.DataFrame(), pd.Series()
+                valid_size = int(len(X_temp) * valid_pct / 100)
+                if valid_size > 0 and len(X_temp) > valid_size:
+                    X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size / len(X_temp), random_state=42)
+                else:
+                    X_train, y_train = X_temp, y_temp
+                    X_valid, y_valid = pd.DataFrame(), pd.Series()
 
-            st.write(f"Train: ${len(X_train)}$ mẫu, Validation: ${len(X_valid)}$ mẫu, Test: ${len(X_test)}$ mẫu")
-            if st.button("Xác nhận chia dữ liệu"):
-                st.session_state['split_data'] = {
-                    "X_train": X_train, "y_train": y_train,
-                    "X_valid": X_valid, "y_valid": y_valid,
-                    "X_test": X_test, "y_test": y_test
-                }
-                st.success("Dữ liệu đã được chia!")
+                st.write(f"Train: ${len(X_train)}$ mẫu, Validation: ${len(X_valid)}$ mẫu, Test: ${len(X_test)}$ mẫu")
+                if st.button("Xác nhận chia dữ liệu"):
+                    st.session_state['split_data'] = {
+                        "X_train": X_train, "y_train": y_train,
+                        "X_valid": X_valid, "y_valid": y_valid,
+                        "X_test": X_test, "y_test": y_test
+                    }
+                    st.success("Dữ liệu đã được chia!")
+            except (ValueError, TypeError) as e:
+                st.error(f"Lỗi khi truy cập dữ liệu: {e}. Vui lòng kiểm tra dữ liệu trong tab 'Tải dữ liệu' hoặc 'Xử lý dữ liệu'.")
 
     # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
