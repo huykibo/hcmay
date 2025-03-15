@@ -697,6 +697,8 @@ def run_mnist_neural_network_app():
             st.info("Vui lòng huấn luyện mô hình trước.")
         else:
             mode = st.radio("Chọn phương thức:", ["Dữ liệu Test", "Upload ảnh", "Vẽ số"])
+            progress_bar = st.progress(0)
+            status_text = st.empty()
 
             def preprocess_input(data):
                 return data / 255.0
@@ -709,80 +711,115 @@ def run_mnist_neural_network_app():
                 idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
                 if st.button("Dự đoán", key="predict_test_button"):
                     with st.spinner("Đang dự đoán..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in range(0, 91, 10):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%...")
-                            time.sleep(0.05)
+                        for j in range(0, 51, 5):
+                            progress_bar.progress(j)
+                            status_text.text(f"Đang xử lý {j}%{j % 4 * '.'}")
+                            time.sleep(0.1)
+                        
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         if not is_normalized:
                             sample = preprocess_input(sample)
-                        pred = st.session_state['model'].predict(sample)[0]
+                        model = st.session_state['model']
+                        prediction = model.predict(sample)[0]
+                        proba = model.predict_proba(sample)[0]
+                        confidence = max(proba) * 100
                         true_label = y_test.iloc[idx]
-                        st.success(f"Dự đoán: {pred} | Thực tế: {true_label}")
+                        
+                        for j in range(50, 101, 5):
+                            progress_bar.progress(j)
+                            status_text.text(f"Đang dự đoán {j}%{j % 4 * '.'}")
+                            time.sleep(0.1)
+                        
+                        st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Thực tế: **{true_label}**")
                         fig, ax = plt.subplots()
                         ax.imshow(sample.reshape(28, 28), cmap='gray')
                         ax.axis('off')
                         st.pyplot(fig)
-                        progress_bar.progress(100)
-                        status_text.text("Đã xử lý 100%!")
-                        time.sleep(0.5)
-                        status_text.empty()
+                        
+                        time.sleep(1)
                         progress_bar.empty()
+                        status_text.empty()
 
             elif mode == "Upload ảnh":
                 uploaded_images = st.file_uploader("Upload ảnh (28x28, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
                 if uploaded_images:
-                    for i, img_file in enumerate(uploaded_images):
-                        with st.spinner(f"Đang xử lý ảnh {i+1}..."):
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            for j in range(0, 91, 10):
+                    for i, uploaded_image in enumerate(uploaded_images):
+                        with st.spinner(f"Đang xử lý ảnh {i+1}/{len(uploaded_images)}..."):
+                            for j in range(0, 51, 5):
                                 progress_bar.progress(j)
-                                status_text.text(f"Đang xử lý {j}%...")
-                                time.sleep(0.05)
-                            img = Image.open(img_file).convert('L').resize((28, 28))
+                                status_text.text(f"Đang tải ảnh {i+1} - {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            img = Image.open(uploaded_image).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
-                            pred = st.session_state['model'].predict(img_array)[0]
-                            st.success(f"Dự đoán ảnh {i+1}: {pred}")
-                            st.image(img, caption=f"Ảnh {i+1}", use_container_width=True)
-                            progress_bar.progress(100)
-                            status_text.text("Đã xử lý 100%!")
-                            time.sleep(0.5)
-                            status_text.empty()
+                            model = st.session_state['model']
+                            prediction = model.predict(img_array)[0]
+                            proba = model.predict_proba(img_array)[0]
+                            confidence = max(proba) * 100
+                            
+                            for j in range(50, 101, 5):
+                                progress_bar.progress(j)
+                                status_text.text(f"Đang dự đoán ảnh {i+1} - {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
+                            st.image(img, caption=f"Ảnh {i+1} được upload", use_container_width=True)
+                            
+                            time.sleep(1)
                             progress_bar.empty()
+                            status_text.empty()
 
             elif mode == "Vẽ số":
-                st.write("Vẽ số từ 0-9 (28x28 pixel):")
+                st.write("Vẽ một chữ số từ 0-9 trên canvas bên dưới (28x28 pixel):")
                 canvas_result = st_canvas(
-                    fill_color="black", stroke_width=20, stroke_color="white",
-                    background_color="black", width=280, height=280, drawing_mode="freedraw", key="canvas"
+                    fill_color="black",
+                    stroke_width=20,
+                    stroke_color="white",
+                    background_color="black",
+                    width=280,
+                    height=280,
+                    drawing_mode="freedraw",
+                    key="canvas"
                 )
-                if st.button("Dự đoán", key="predict_draw_button"):
+                if st.button("Dự đoán số đã vẽ", key="predict_draw_button"):
                     if canvas_result.image_data is not None:
-                        with st.spinner("Đang xử lý..."):
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
-                            for i in range(0, 91, 10):
+                        with st.spinner("Đang xử lý vẽ..."):
+                            for i in range(0, 51, 5):
                                 progress_bar.progress(i)
-                                status_text.text(f"Đang xử lý {i}%...")
-                                time.sleep(0.05)
-                            img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
+                                status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            image_data = canvas_result.image_data
+                            if image_data is None or image_data.size == 0:
+                                st.warning("Không có dữ liệu từ canvas. Vui lòng vẽ một số!")
+                                progress_bar.empty()
+                                status_text.empty()
+                                return
+                            
+                            img = Image.fromarray((image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
                             img_array = np.array(img).flatten().reshape(1, -1)
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
-                            pred = st.session_state['model'].predict(img_array)[0]
-                            st.success(f"Dự đoán: {pred}")
-                            progress_bar.progress(100)
-                            status_text.text("Đã xử lý 100%!")
-                            time.sleep(0.5)
-                            status_text.empty()
+                            model = st.session_state['model']
+                            prediction = model.predict(img_array)[0]
+                            proba = model.predict_proba(img_array)[0]
+                            confidence = max(proba) * 100
+                            
+                            for i in range(50, 101, 5):
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
+                            st.image(img, caption="Bản vẽ của bạn", use_container_width=True)
+                            
+                            time.sleep(1)
                             progress_bar.empty()
+                            status_text.empty()
                     else:
-                        st.warning("Vui lòng vẽ trước!")
+                        st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
     with tab_log_info:
         st.header("Theo dõi Kết quả")
