@@ -532,7 +532,7 @@ def run_mnist_classification_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá
+    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật để bỏ phần tối ưu hóa)
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá Mô hình")
 
@@ -751,16 +751,6 @@ def run_mnist_classification_app():
             def preprocess_input(data):
                 return data / 255.0
 
-            def calculate_confidence(proba):
-                # Sắp xếp xác suất giảm dần
-                sorted_proba = np.sort(proba)[::-1]
-                max_proba = sorted_proba[0]  # Xác suất lớn nhất
-                second_max_proba = sorted_proba[1]  # Xác suất lớn thứ hai
-                if max_proba == 0:  # Tránh chia cho 0
-                    return 0.0
-                confidence = (max_proba - second_max_proba) / max_proba * 100
-                return confidence
-
             is_normalized = "data_processed" in st.session_state
 
             if mode == "Dữ liệu từ Test":
@@ -784,7 +774,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(sample)[0]
                             proba = model.predict_proba(sample)[0]
-                            confidence = calculate_confidence(proba)
+                            confidence = max(proba) * 100
                             y_true = y_test.iloc[idx]
                             
                             for i in range(50, 101, 5):
@@ -820,7 +810,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = calculate_confidence(proba)
+                            confidence = max(proba) * 100
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -862,7 +852,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = calculate_confidence(proba)
+                            confidence = max(proba) * 100
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
