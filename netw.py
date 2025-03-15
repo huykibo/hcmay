@@ -682,6 +682,8 @@ def run_mnist_neural_network_app():
                     st.write(f"- Tên: {results['run_name']}")
                     st.write(f"- ID: {results['run_id']}")
                     st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")  # Thêm lần 1
+                    st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")  # Thêm lần 2
                     st.markdown("**Tham số đã chọn**:")
                     st.write(f"- Số lớp ẩn: {len(results['params']['hidden_size'] if isinstance(results['params']['hidden_size'], tuple) else [results['params']['hidden_size']])}")
                     st.write(f"- Số nơ-ron mỗi lớp: {results['params']['hidden_size']}")
@@ -813,7 +815,6 @@ def run_mnist_neural_network_app():
                                 time.sleep(0.1)
                             
                             st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
-                            st.image(img, caption="Bản vẽ của bạn", use_container_width=True)
                             
                             time.sleep(1)
                             progress_bar.empty()
