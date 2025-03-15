@@ -148,7 +148,7 @@ def run_mnist_classification_app():
             """)
             try:
                 tree_step_2 = Image.open("illustrations/tree_step_2.png")
-                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu             đã được tạo.")
+                st.image(tree_step_2, caption="Bước 2: Chia nhánh đầu tiên", width=500)
             except FileNotFoundError:
                 st.error("Không tìm thấy file `illustrations/tree_step_2.png`. Vui lòng đảm bảo file đã được tạo.")
             except Exception as e:
@@ -532,7 +532,7 @@ def run_mnist_classification_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật giống run_mnist_neural_network_app)
+    # Tab 5: Huấn luyện/Đánh Giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá Mô hình")
 
@@ -604,30 +604,20 @@ def run_mnist_classification_app():
             else:
                 st.info(f"**Tham số tối ưu tự động**: C = {params['C']}, Kernel = {params['kernel']}")
 
-            # Cột để chỉnh tham số
-            col1, col2 = st.columns(2)
-
-            with col1:
-                with st.expander("🧠 Cấu trúc mô hình", expanded=True):
-                    if model_choice == "Decision Tree":
-                        params["criterion"] = st.selectbox("Criterion", ["gini", "entropy"],
-                                                           index=["gini", "entropy"].index(params["criterion"]),
-                                                           help="Tiêu chí chia nhánh: 'gini' đo độ tinh khiết, 'entropy' đo độ hỗn loạn.")
-                        params["max_depth"] = st.number_input("Max Depth", min_value=1, max_value=100, value=params["max_depth"],
-                                                              help="Độ sâu tối đa của cây để tránh overfitting.")
-                    else:
-                        params["C"] = st.number_input("C", min_value=0.01, max_value=100.0, value=params["C"],
-                                                      help="Tham số điều chỉnh giữa lề lớn và lỗi phân loại.")
-                        params["kernel"] = st.selectbox("Kernel", ["linear", "rbf", "poly", "sigmoid"],
-                                                        index=["linear", "rbf", "poly", "sigmoid"].index(params["kernel"]),
-                                                        help="Hàm kernel để ánh xạ dữ liệu.")
-
-            with col2:
-                with st.expander("📉 Tối ưu hóa", expanded=True):
-                    if model_choice == "Decision Tree":
-                        st.write("Không có tham số tối ưu hóa bổ sung cho Decision Tree.")
-                    else:
-                        st.write("SVM sử dụng các tham số C và Kernel để tối ưu hóa siêu phẳng.")
+            # Cấu hình tham số trong một cột duy nhất
+            with st.expander("🧠 Cấu trúc mô hình", expanded=True):
+                if model_choice == "Decision Tree":
+                    params["criterion"] = st.selectbox("Criterion", ["gini", "entropy"],
+                                                       index=["gini", "entropy"].index(params["criterion"]),
+                                                       help="Tiêu chí chia nhánh: 'gini' đo độ tinh khiết, 'entropy' đo độ hỗn loạn.")
+                    params["max_depth"] = st.number_input("Max Depth", min_value=1, max_value=100, value=params["max_depth"],
+                                                          help="Độ sâu tối đa của cây để tránh overfitting.")
+                else:
+                    params["C"] = st.number_input("C", min_value=0.01, max_value=100.0, value=params["C"],
+                                                  help="Tham số điều chỉnh giữa lề lớn và lỗi phân loại.")
+                    params["kernel"] = st.selectbox("Kernel", ["linear", "rbf", "poly", "sigmoid"],
+                                                    index=["linear", "rbf", "poly", "sigmoid"].index(params["kernel"]),
+                                                    help="Hàm kernel để ánh xạ dữ liệu.")
 
             # Lưu tham số đã chỉnh
             st.session_state[f"training_params_{model_choice}"] = params
@@ -761,6 +751,16 @@ def run_mnist_classification_app():
             def preprocess_input(data):
                 return data / 255.0
 
+            def calculate_confidence(proba):
+                # Sắp xếp xác suất giảm dần
+                sorted_proba = np.sort(proba)[::-1]
+                max_proba = sorted_proba[0]  # Xác suất lớn nhất
+                second_max_proba = sorted_proba[1]  # Xác suất lớn thứ hai
+                if max_proba == 0:  # Tránh chia cho 0
+                    return 0.0
+                confidence = (max_proba - second_max_proba) / max_proba * 100
+                return confidence
+
             is_normalized = "data_processed" in st.session_state
 
             if mode == "Dữ liệu từ Test":
@@ -784,7 +784,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(sample)[0]
                             proba = model.predict_proba(sample)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)
                             y_true = y_test.iloc[idx]
                             
                             for i in range(50, 101, 5):
@@ -820,7 +820,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -862,7 +862,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
