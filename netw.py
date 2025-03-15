@@ -259,90 +259,135 @@ def run_mnist_neural_network_app():
             - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 92\\%$.  
             - **Ý nghĩa**: Với Neural Network, Accuracy đo khả năng mô hình phân loại đúng các chữ số dựa trên đặc trưng pixel học được.  
             """, unsafe_allow_html=True)
-
-    # Tab 2: Tải dữ liệu
+# Tab 2: Tải dữ liệu
     with tab_load:
         st.header("Tải Dữ liệu")
-        if st.button("Tải dữ liệu MNIST từ OpenML", key="load_data_button"):
-            with st.spinner("Đang tải dữ liệu..."):
+        if st.button("Tải dữ liệu MNIST từ OpenML"):
+            with st.spinner("Đang tải dữ liệu từ OpenML..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 try:
                     mnist = openml.datasets.get_dataset(554)
                     progress_bar.progress(20)
-                    status_text.text("Đã tải 20%...")
+                    status_text.text("Đã tải 20% - Đang lấy dữ liệu...")
+
                     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
                     progress_bar.progress(50)
-                    status_text.text("Đã tải 50%...")
+                    status_text.text("Đã tải 50% - Đang xử lý dữ liệu...")
+
                     st.session_state['full_data'] = (X, y)
+                    progress_bar.progress(90)
+                    status_text.text(f"Đã tải 90% - Hoàn tất {X.shape[0]} mẫu...")
+
+                    with mlflow.start_run(run_name="Data_Load"):
+                        mlflow.log_param("total_samples", X.shape[0])
+
                     progress_bar.progress(100)
-                    status_text.text("Hoàn tất!")
+                    status_text.text("Đã tải 100% - Hoàn tất!")
                     time.sleep(1)
                     status_text.empty()
                     progress_bar.empty()
-                    st.success(f"Tải thành công! Kích thước: {X.shape}")
+                    st.success("Tải dữ liệu thành công!")
+                    st.write("Kích thước dữ liệu gốc:", X.shape)
                 except Exception as e:
-                    st.error(f"Lỗi tải dữ liệu: {e}")
+                    st.error(f"Không thể tải dữ liệu: {e}")
 
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
-            num_samples = st.slider("Chọn số mẫu:", 10, len(X_full), min(1000, len(X_full)))
-            if st.button("Chốt số mẫu", key="confirm_samples_button"):
+            num_samples = st.slider("Chọn số lượng mẫu:", 
+                                    min_value=10, max_value=len(X_full), value=min(1000, len(X_full)), step=1)
+            if st.button("Chốt số lượng mẫu"):
                 with st.spinner(f"Đang lấy {num_samples} mẫu..."):
-                    X_sampled = X_full.sample(n=num_samples, random_state=42)
-                    y_sampled = y_full[X_sampled.index]
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+
+                    df = pd.concat([X_full, y_full.rename("label")], axis=1)
+                    progress_bar.progress(30)
+                    status_text.text("Đã xử lý 30% - Đang nối dữ liệu...")
+
+                    sampled_df = df.sample(n=num_samples, random_state=42)
+                    progress_bar.progress(70)
+                    status_text.text("Đã xử lý 70% - Đang lấy mẫu...")
+
+                    X_sampled = sampled_df.drop(columns=["label"])
+                    y_sampled = sampled_df["label"]
                     st.session_state['data'] = (X_sampled, y_sampled)
+                    progress_bar.progress(90)
+                    status_text.text("Đã xử lý 90% - Đang lưu dữ liệu...")
+
+                    with mlflow.start_run(run_name="Data_Sample"):
+                        mlflow.log_param("num_samples", num_samples)
+
+                    progress_bar.progress(100)
+                    status_text.text("Đã xử lý 100% - Hoàn tất!")
+                    time.sleep(1)
+                    status_text.empty()
+                    progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lý dữ liệu
+    # Tab 3: Xử lí dữ liệu (Đã xóa Standardization)
     with tab_preprocess:
-        st.header("Xử lý Dữ liệu")
+        st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
-            st.info("Vui lòng tải dữ liệu trước.")
+            st.info("Vui lòng tải và chốt số lượng mẫu trước.")
         else:
             X, y = st.session_state['data']
+            if "data_original" not in st.session_state:
+                st.session_state["data_original"] = (X.copy(), y.copy())
+
+            # Xóa data_processed nếu nó tồn tại nhưng không hợp lệ
+            if "data_processed" in st.session_state:
+                data_processed = st.session_state["data_processed"]
+                if not (isinstance(data_processed, tuple) and len(data_processed) == 2):
+                    st.session_state.pop("data_processed", None)
+
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
                 ax.imshow(X.iloc[i].values.reshape(28, 28), cmap='gray')
-                ax.set_title(f"Nhãn: {y.iloc[i]}")
+                ax.set_title(f"Label: {y.iloc[i]}")
                 ax.axis("off")
             st.pyplot(fig)
 
             col1, col2 = st.columns([3, 1])
             with col1:
-                if st.button("Normalization", key="normalize_button"):
+                if st.button("Normalization", key="normalize_btn"):
                     X_norm = X / 255.0
-                    st.session_state['data_processed'] = (X_norm, y)
-                    st.success("Đã chuẩn hóa dữ liệu!")
+                    st.session_state["data_processed"] = (X_norm, y)
+                    st.success("Đã chuẩn hoá dữ liệu!")
                     st.rerun()
             with col2:
                 st.markdown("""
                     <div class="tooltip">
                         ?
                         <span class="tooltiptext">
-                            Đưa giá trị pixel về [0, 1] bằng cách chia cho 255.<br>
-                            Công dụng: Tăng hiệu quả huấn luyện Neural Network.
+                            Đưa dữ liệu về khoảng [0, 1] bằng cách chia cho 255.<br>
+                            Công dụng: Đảm bảo thang đo đồng nhất, hữu ích cho SVM.
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
 
-            # Thêm kiểm tra để đảm bảo 'data_processed' tồn tại trước khi truy cập
-            if 'data_processed' in st.session_state:
-                st.subheader("Dữ liệu đã xử lý")
-                try:
-                    X_processed, y_processed = st.session_state['data_processed']
-                    fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                    for i, ax in enumerate(axes.flat):
-                        ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                        ax.set_title(f"Nhãn: {y_processed.iloc[i]}")
-                        ax.axis("off")
-                    st.pyplot(fig)
-                except Exception as e:
-                    st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}")
+            # Chỉ hiển thị dữ liệu đã xử lý nếu data_processed tồn tại và hợp lệ
+            if "data_processed" in st.session_state:
+                data_processed = st.session_state["data_processed"]
+                if isinstance(data_processed, tuple) and len(data_processed) == 2:
+                    try:
+                        X_processed, y_processed = data_processed
+                        st.subheader("Dữ liệu đã xử lý")
+                        fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                        for i, ax in enumerate(axes.flat):
+                            ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
+                            ax.set_title(f"Label: {y_processed.iloc[i]}")
+                            ax.axis("off")
+                        st.pyplot(fig)
+                    except (ValueError, TypeError, AttributeError) as e:
+                        st.error(f"Lỗi khi hiển thị dữ liệu đã xử lý: {e}. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                        st.session_state.pop("data_processed", None)
+                else:
+                    st.error("Dữ liệu đã xử lý không đúng định dạng. Vui lòng thử chuẩn hóa lại dữ liệu.")
+                    st.session_state.pop("data_processed", None)
             else:
-                st.info("Dữ liệu chưa được chuẩn hóa. Vui lòng nhấn 'Normalization' để xử lý dữ liệu.")
-
+                st.info("Dữ liệu chưa được xử lý. Vui lòng nhấn 'Normalization' để xử lý.")
     # Tab 4: Chia dữ liệu
     with tab_split:
         st.header("Chia Tập Dữ liệu")
