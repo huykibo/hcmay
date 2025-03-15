@@ -24,7 +24,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(st.secrets["mlflow"]["MLFLOW_TRACKING_URI"])
         mlflow.set_experiment("Neural Network ")
-    except KeyError as e:
+    except KeyError as e:   
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng cấu hình secrets trong Streamlit.")
         st.stop()
 
@@ -293,7 +293,7 @@ def run_mnist_neural_network_app():
                     progress_bar.empty()
                     st.success(f"Đã chốt {num_samples} mẫu!")
 
-    # Tab 3: Xử lí dữ liệu (Đã cập nhật để xử lý lỗi)
+    # Tab 3: Xử lí dữ liệu
     with tab_preprocess:
         st.header("Xử lí Dữ liệu")
         if 'data' not in st.session_state:
@@ -318,7 +318,6 @@ def run_mnist_neural_network_app():
                     st.success("Đã chuẩn hoá dữ liệu!")
                     st.rerun()
 
-            # Kiểm tra và hiển thị dữ liệu đã xử lý
             if "data_processed" in st.session_state:
                 data_processed = st.session_state["data_processed"]
                 if isinstance(data_processed, tuple) and len(data_processed) == 2:
@@ -380,7 +379,7 @@ def run_mnist_neural_network_app():
                 }
                 st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá
+    # Tab 5: Huấn luyện/Đánh Giá (Cập nhật để tự động chọn tham số tối ưu)
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá")
         if 'split_data' not in st.session_state:
@@ -400,6 +399,7 @@ def run_mnist_neural_network_app():
             | >50000       | (256, 128)        | 0.0001        | 500      |
             """)
 
+            # Tự động chọn tham số tối ưu dựa trên số lượng mẫu
             params = {}
             if num_samples < 1000:
                 params["hidden_layer_sizes"] = (64,)
@@ -418,11 +418,30 @@ def run_mnist_neural_network_app():
                 params["learning_rate_init"] = 0.0001
                 params["max_iter"] = 500
 
-            st.markdown("#### Tham số mô hình (đã đặt tự động, có thể điều chỉnh)")
-            hidden_layers = st.number_input("Số nơ-ron lớp ẩn (nhập 1 số hoặc nhiều số cách nhau bởi dấu phẩy)", value=params["hidden_layer_sizes"][0], min_value=1)
-            params["hidden_layer_sizes"] = tuple(map(int, str(hidden_layers).split(',')))
-            params["learning_rate_init"] = st.number_input("Learning Rate", min_value=0.0001, max_value=1.0, value=params["learning_rate_init"])
-            params["max_iter"] = st.number_input("Max Iterations", min_value=10, max_value=1000, value=params["max_iter"])
+            st.markdown("#### Tham số mô hình (tự động chọn tối ưu, có thể điều chỉnh)")
+            # Hiển thị tham số tự động chọn và cho phép chỉnh sửa
+            hidden_layers_input = st.text_input(
+                "Số nơ-ron lớp ẩn (nhiều số cách nhau bởi dấu phẩy)",
+                value=", ".join(map(str, params["hidden_layer_sizes"])),
+                help="Ví dụ: '64' hoặc '256, 128' cho nhiều lớp ẩn."
+            )
+            params["hidden_layer_sizes"] = tuple(map(int, hidden_layers_input.split(',')))
+
+            params["learning_rate_init"] = st.number_input(
+                "Learning Rate",
+                min_value=0.0001, max_value=1.0,
+                value=params["learning_rate_init"],
+                format="%.4f",
+                help="Tốc độ học, càng nhỏ càng học chậm nhưng ổn định."
+            )
+            params["max_iter"] = st.number_input(
+                "Max Iterations",
+                min_value=10, max_value=1000,
+                value=params["max_iter"],
+                help="Số lần lặp tối đa để huấn luyện."
+            )
+
+            st.info(f"Tham số đã được tự động chọn tối ưu cho {num_samples} mẫu. Bạn có thể điều chỉnh nếu muốn.")
 
             if st.button("Thực hiện Huấn luyện"):
                 with st.spinner("Đang huấn luyện mô hình..."):
