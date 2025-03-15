@@ -18,8 +18,7 @@ from datetime import datetime
 import time
 import requests
 
-# Hàm tải dữ liệu MNIST với @st.cache_data
-@st.cache_data(show_warning=False)
+# Hàm tải dữ liệu MNIST không có @st.cache_data
 def fetch_mnist_data():
     mnist = openml.datasets.get_dataset(554)
     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
@@ -372,7 +371,7 @@ def run_mnist_neural_network_app():
                     status_text.text(f"Đang tải {i}%...")
                     time.sleep(0.1)
                 try:
-                    X, y = fetch_mnist_data()  # Sử dụng hàm đã cache
+                    X, y = fetch_mnist_data()  # Sử dụng hàm không cache
                     st.session_state['full_data'] = (X, y)
                     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
                         mlflow.log_param("total_samples", X.shape[0])
