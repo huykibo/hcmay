@@ -724,7 +724,7 @@ def run_mnist_neural_network_app():
                         model = st.session_state['model']
                         prediction = model.predict(sample)[0]
                         proba = model.predict_proba(sample)[0]
-                        confidence = max(proba) * 100
+                        confidence = max(proba) * 100  # Confidence = max P(y=c|x)
                         true_label = y_test.iloc[idx]
                         
                         for j in range(50, 101, 5):
@@ -759,7 +759,7 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -807,26 +807,14 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-
-                            # Sửa lại cách tính độ tin cậy
-                            sorted_proba = np.sort(proba)[::-1]  # Sắp xếp xác suất giảm dần
-                            max_prob = sorted_proba[0]  # Xác suất cao nhất
-                            second_max_prob = sorted_proba[1]  # Xác suất cao thứ hai
-                            confidence = max_prob * 100  # Độ tin cậy cơ bản
-
-                            # Điều chỉnh độ tin cậy dựa trên khoảng cách giữa xác suất cao nhất và cao thứ hai
-                            margin = max_prob - second_max_prob
-                            # Nếu margin nhỏ (mô hình không chắc chắn), giảm độ tin cậy
-                            # Nếu margin lớn (mô hình rất chắc chắn), giữ độ tin cậy cao
-                            confidence_adjusted = confidence * (margin / max_prob)
-                            confidence_adjusted = max(10, min(100, confidence_adjusted))  # Giới hạn độ tin cậy từ 10% đến 100%
+                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
 
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
                                 status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
                                 time.sleep(0.1)
 
-                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence_adjusted:.2f}%**")
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%**")
 
                             time.sleep(1)
                             progress_bar.empty()

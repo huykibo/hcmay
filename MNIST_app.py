@@ -743,12 +743,16 @@ def run_mnist_classification_app():
             else:
                 st.info("Chưa có kết quả huấn luyện cho mô hình này. Vui lòng nhấn 'Thực hiện Huấn luyện' để xem kết quả.")
 
-    # Tab 6: Demo dự đoán
+    # Tab 6: Demo dự đoán (Đã áp dụng công thức Confidence)
     with tab_demo:
         st.header("Demo Dự đoán")
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước.")
         else:
+            # Hiển thị thông tin mô hình hiện tại
+            model_choice = st.session_state['training_results']['model_choice']
+            st.write(f"Mô hình hiện tại: **{model_choice}**")
+
             mode = st.radio("Chọn phương thức dự đoán:", ["Dữ liệu từ Test", "Upload ảnh mới", "Vẽ số"])
             
             progress_bar = st.progress(0)
@@ -762,37 +766,41 @@ def run_mnist_classification_app():
             if mode == "Dữ liệu từ Test":
                 X_test = st.session_state['split_data']["X_test"]
                 y_test = st.session_state['split_data']["y_test"]
-                idx = st.slider("Chọn mẫu từ Test", 0, len(X_test)-1, 0)
-                if st.button("Dự đoán"):
-                    with st.spinner("Đang dự đoán..."):
-                        for i in range(0, 51, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        
-                        sample = X_test.iloc[idx].values.reshape(1, -1)
-                        if not is_normalized:
-                            sample = preprocess_input(sample)
-                        
-                        prediction = st.session_state['model'].predict(sample)[0]
-                        proba = st.session_state['model'].predict_proba(sample)[0]
-                        confidence = max(proba) * 100
-                        y_true = y_test.iloc[idx]
-                        
-                        for i in range(50, 101, 5):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang dự đoán {i}%{i % 4 * '.'}")
-                            time.sleep(0.1)
-                        
-                        st.success(f"Dự đoán: **{prediction}** | Confidence: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
-                        fig, ax = plt.subplots()
-                        ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
-                        ax.axis("off")
-                        st.pyplot(fig)
-                        
-                        time.sleep(1)
-                        progress_bar.empty()
-                        status_text.empty()
+                if len(X_test) == 0:
+                    st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
+                else:
+                    idx = st.slider("Chọn mẫu từ Test", 0, len(X_test)-1, 0)
+                    if st.button("Dự đoán"):
+                        with st.spinner("Đang dự đoán..."):
+                            for i in range(0, 51, 5):
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang xử lý {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            sample = X_test.iloc[idx].values.reshape(1, -1)
+                            if not is_normalized:
+                                sample = preprocess_input(sample)
+                            
+                            model = st.session_state['model']
+                            prediction = model.predict(sample)[0]
+                            proba = model.predict_proba(sample)[0]
+                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            y_true = y_test.iloc[idx]
+                            
+                            for i in range(50, 101, 5):
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang hoàn tất {i}%{i % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Giá trị thực: **{y_true}**")
+                            fig, ax = plt.subplots()
+                            ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
+                            ax.axis("off")
+                            st.pyplot(fig)
+                            
+                            time.sleep(1)
+                            progress_bar.empty()
+                            status_text.empty()
 
             elif mode == "Upload ảnh mới":
                 uploaded_images = st.file_uploader("Upload ảnh (28x28, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
@@ -809,9 +817,10 @@ def run_mnist_classification_app():
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
                             
-                            prediction = st.session_state['model'].predict(img_array)[0]
-                            proba = st.session_state['model'].predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            model = st.session_state['model']
+                            prediction = model.predict(img_array)[0]
+                            proba = model.predict_proba(img_array)[0]
+                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -857,9 +866,10 @@ def run_mnist_classification_app():
                             if not is_normalized:
                                 img_array = preprocess_input(img_array)
                             
-                            prediction = st.session_state['model'].predict(img_array)[0]
-                            proba = st.session_state['model'].predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            model = st.session_state['model']
+                            prediction = model.predict(img_array)[0]
+                            proba = model.predict_proba(img_array)[0]
+                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
