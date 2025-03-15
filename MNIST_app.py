@@ -532,7 +532,7 @@ def run_mnist_classification_app():
                     }
                     st.success("Dữ liệu đã được chia!")
 
-    # Tab 5: Huấn luyện/Đánh Giá (Đã cập nhật để bỏ phần tối ưu hóa)
+    # Tab 5: Huấn luyện/Đánh Giá
     with tab_train_eval:
         st.header("Huấn luyện và Đánh Giá Mô hình")
 
@@ -751,6 +751,12 @@ def run_mnist_classification_app():
             def preprocess_input(data):
                 return data / 255.0
 
+            # Hàm tính Confidence Margin
+            def calculate_confidence(proba):
+                sorted_proba = np.sort(proba)[::-1]  # Sắp xếp giảm dần
+                confidence = (sorted_proba[0] - sorted_proba[1]) * 100  # Confidence Margin
+                return confidence
+
             is_normalized = "data_processed" in st.session_state
 
             if mode == "Dữ liệu từ Test":
@@ -774,7 +780,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(sample)[0]
                             proba = model.predict_proba(sample)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)  # Sử dụng Confidence Margin
                             y_true = y_test.iloc[idx]
                             
                             for i in range(50, 101, 5):
@@ -810,7 +816,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)  # Sử dụng Confidence Margin
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -852,7 +858,7 @@ def run_mnist_classification_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100
+                            confidence = calculate_confidence(proba)  # Sử dụng Confidence Margin
                             
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
