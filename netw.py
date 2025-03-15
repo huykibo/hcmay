@@ -705,42 +705,55 @@ def run_mnist_neural_network_app():
             def preprocess_input(data):
                 return data / 255.0
 
+            def calculate_confidence(proba):
+                # Sắp xếp xác suất giảm dần
+                sorted_proba = np.sort(proba)[::-1]
+                max_proba = sorted_proba[0]  # Xác suất lớn nhất
+                second_max_proba = sorted_proba[1]  # Xác suất lớn thứ hai
+                if max_proba == 0:  # Tránh chia cho 0
+                    return 0.0
+                confidence = (max_proba - second_max_proba) / max_proba * 100
+                return confidence
+
             is_normalized = 'data_processed' in st.session_state
 
             if mode == "Dữ liệu Test":
                 X_test = st.session_state['split_data']["X_test"]
                 y_test = st.session_state['split_data']["y_test"]
-                idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
-                if st.button("Dự đoán", key="predict_test_button"):
-                    with st.spinner("Đang dự đoán..."):
-                        for j in range(0, 51, 5):
-                            progress_bar.progress(j)
-                            status_text.text(f"Đang xử lý {j}%{j % 4 * '.'}")
-                            time.sleep(0.1)
-                        
-                        sample = X_test.iloc[idx].values.reshape(1, -1)
-                        if not is_normalized:
-                            sample = preprocess_input(sample)
-                        model = st.session_state['model']
-                        prediction = model.predict(sample)[0]
-                        proba = model.predict_proba(sample)[0]
-                        confidence = max(proba) * 100  # Confidence = max P(y=c|x)
-                        true_label = y_test.iloc[idx]
-                        
-                        for j in range(50, 101, 5):
-                            progress_bar.progress(j)
-                            status_text.text(f"Đang dự đoán {j}%{j % 4 * '.'}")
-                            time.sleep(0.1)
-                        
-                        st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Thực tế: **{true_label}**")
-                        fig, ax = plt.subplots()
-                        ax.imshow(sample.reshape(28, 28), cmap='gray')
-                        ax.axis('off')
-                        st.pyplot(fig)
-                        
-                        time.sleep(1)
-                        progress_bar.empty()
-                        status_text.empty()
+                if len(X_test) == 0:
+                    st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
+                else:
+                    idx = st.slider("Chọn mẫu Test", 0, len(X_test)-1, 0)
+                    if st.button("Dự đoán", key="predict_test_button"):
+                        with st.spinner("Đang dự đoán..."):
+                            for j in range(0, 51, 5):
+                                progress_bar.progress(j)
+                                status_text.text(f"Đang xử lý {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            sample = X_test.iloc[idx].values.reshape(1, -1)
+                            if not is_normalized:
+                                sample = preprocess_input(sample)
+                            model = st.session_state['model']
+                            prediction = model.predict(sample)[0]
+                            proba = model.predict_proba(sample)[0]
+                            confidence = calculate_confidence(proba)
+                            true_label = y_test.iloc[idx]
+                            
+                            for j in range(50, 101, 5):
+                                progress_bar.progress(j)
+                                status_text.text(f"Đang dự đoán {j}%{j % 4 * '.'}")
+                                time.sleep(0.1)
+                            
+                            st.success(f"Dự đoán: **{prediction}** | Độ tin cậy: **{confidence:.2f}%** | Thực tế: **{true_label}**")
+                            fig, ax = plt.subplots()
+                            ax.imshow(sample.reshape(28, 28), cmap='gray')
+                            ax.axis('off')
+                            st.pyplot(fig)
+                            
+                            time.sleep(1)
+                            progress_bar.empty()
+                            status_text.empty()
 
             elif mode == "Upload ảnh":
                 uploaded_images = st.file_uploader("Upload ảnh (28x28, grayscale)", type=["png", "jpg"], accept_multiple_files=True)
@@ -759,7 +772,7 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = calculate_confidence(proba)
                             
                             for j in range(50, 101, 5):
                                 progress_bar.progress(j)
@@ -807,7 +820,7 @@ def run_mnist_neural_network_app():
                             model = st.session_state['model']
                             prediction = model.predict(img_array)[0]
                             proba = model.predict_proba(img_array)[0]
-                            confidence = max(proba) * 100  # Confidence = max P(y=c|x)
+                            confidence = calculate_confidence(proba)
 
                             for i in range(50, 101, 5):
                                 progress_bar.progress(i)
