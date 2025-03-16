@@ -1012,7 +1012,7 @@ def run_mnist_neural_network_app():
                             st.markdown(f"""
                                 <div class="prediction-box">
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
-                                    <strong>Xác suất:</strong> {confidence:.2f}%
+                                    <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                 </div>
                             """, unsafe_allow_html=True)
                             st.success("Dự đoán hoàn tất!")
@@ -1048,7 +1048,7 @@ def run_mnist_neural_network_app():
                             st.markdown(f"""
                                 <div class="prediction-box">
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
-                                    <strong>Xác suất:</strong> {confidence:.2f}%<br>
+                                    <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
                                     <strong>Nhãn thực tế:</strong> {y_test[idx]}
                                 </div>
                             """, unsafe_allow_html=True)
@@ -1091,7 +1091,7 @@ def run_mnist_neural_network_app():
                                 st.markdown(f"""
                                     <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
-                                        <strong>Xác suất:</strong> {confidence:.2f}%
+                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                     </div>
                                 """, unsafe_allow_html=True)
                                 st.success("Dự đoán hoàn tất!")

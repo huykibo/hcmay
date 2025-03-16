@@ -899,7 +899,7 @@ def run_mnist_classification_app():
                     st.markdown("**Tham số đã chọn:**")
                     st.json(results['params'])
 
-    # Tab 6: Demo dự đoán
+   # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
@@ -925,33 +925,29 @@ def run_mnist_classification_app():
 
             if input_method == "Tải ảnh lên":
                 st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
-                uploaded_images = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg"], accept_multiple_files=True)
-                if uploaded_images:
-                    for i, uploaded_image in enumerate(uploaded_images):
-                        try:
-                            img = Image.open(uploaded_image).convert('L').resize((28, 28))
-                            img_array = np.array(img).flatten().reshape(1, -1)
-                            col_img, col_btn = st.columns([1, 2])
-                            with col_img:
-                                st.image(img, caption=f"Ảnh {i+1}", width=150)
-                            with col_btn:
-                                if st.button(f"Dự đoán ảnh {i+1}", key=f"predict_upload_{i}"):
-                                    with st.spinner(f"Đang xử lý ảnh {i+1}..."):
-                                        img_processed = preprocess_input(img_array, is_normalized)
-                                        prediction = model.predict(img_processed)[0]
-                                        proba = model.predict_proba(img_processed)[0]
-                                        max_proba = np.max(proba) * 100
-                                        st.markdown(f"""
-                                            <div class="prediction-box">
-                                                <strong>Dự đoán:</strong> {prediction}<br>
-                                                <strong>Độ tin cậy:</strong> {max_proba:.2f}%
-                                            </div>
-                                        """, unsafe_allow_html=True)
-                                        st.success(f"Dự đoán ảnh {i+1} hoàn tất!")
-                                        del img, img_array, img_processed
-                                        gc.collect()
-                        except Exception as e:
-                            st.error(f"Lỗi khi xử lý ảnh {i+1}: {e}")
+                uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
+                if uploaded_file is not None:
+                    image = Image.open(uploaded_file).convert('L')
+                    image = image.resize((28, 28))
+                    st.image(image, caption="Hình ảnh đầu vào", width=100)
+
+                    if st.button("Dự đoán", key="predict_upload_button"):
+                        with st.spinner("Đang xử lý ảnh..."):
+                            image_array = np.array(image, dtype=np.float32)
+                            image_array = image_array.reshape(1, 784)
+                            image_processed = preprocess_input(image_array, is_normalized)
+                            prediction_proba = model.predict_proba(image_processed)[0]
+                            predicted_class = np.argmax(prediction_proba)
+                            confidence = prediction_proba[predicted_class] * 100
+                            st.markdown(f"""
+                                <div class="prediction-box">
+                                    <strong>Dự đoán:</strong> {predicted_class}<br>
+                                    <strong>Độ tin cậy:</strong> {confidence:.2f}%
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.success("Dự đoán hoàn tất!")
+                            del image, image_array, image_processed, prediction_proba
+                            gc.collect()
 
             elif input_method == "Dữ liệu Test":
                 st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
@@ -976,23 +972,23 @@ def run_mnist_classification_app():
                         with st.spinner("Đang dự đoán..."):
                             sample = X_test[idx].reshape(1, -1)
                             sample_processed = preprocess_input(sample, is_normalized)
-                            prediction = model.predict(sample_processed)[0]
-                            proba = model.predict_proba(sample_processed)[0]
-                            max_proba = np.max(proba) * 100
+                            prediction_proba = model.predict_proba(sample_processed)[0]
+                            predicted_class = np.argmax(prediction_proba)
+                            confidence = prediction_proba[predicted_class] * 100
                             st.markdown(f"""
                                 <div class="prediction-box">
-                                    <strong>Dự đoán:</strong> {prediction}<br>
-                                    <strong>Độ tin cậy:</strong> {max_proba:.2f}%<br>
+                                    <strong>Dự đoán:</strong> {predicted_class}<br>
+                                    <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
                                     <strong>Nhãn thực tế:</strong> {y_test[idx]}
                                 </div>
                             """, unsafe_allow_html=True)
                             st.success("Dự đoán hoàn tất!")
-                            del sample, sample_processed
+                            del sample, sample_processed, prediction_proba
                             gc.collect()
 
             elif input_method == "Vẽ trực tiếp":
                 st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                st.write("Vẽ chữ số từ 0-9 :")
+                st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
                 if 'canvas_key' not in st.session_state:
                     st.session_state['canvas_key'] = 0
@@ -1009,18 +1005,19 @@ def run_mnist_classification_app():
                 )
 
                 if canvas_result.image_data is not None:
-                    image = Image.fromarray(canvas_result.image_data[:, :, 3].astype('uint8'), 'L')
+                    image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
                     image_resized = image.resize((28, 28))
+
                     col_pred, col_clear = st.columns([2, 1])
                     with col_pred:
                         if st.button("Dự đoán", key="predict_button"):
                             with st.spinner("Đang xử lý hình vẽ..."):
-                                image_array = np.array(image_resized, dtype=np.float32).flatten().reshape(1, -1)
+                                image_array = np.array(image_resized, dtype=np.float32)
+                                image_array = image_array.reshape(1, 784)
                                 image_processed = preprocess_input(image_array, is_normalized)
-                                prediction = model.predict(image_processed)[0]
-                                proba = model.predict_proba(image_processed)[0]
-                                predicted_class = int(prediction)
-                                confidence = proba[predicted_class] * 100
+                                prediction_proba = model.predict_proba(image_processed)[0]
+                                predicted_class = np.argmax(prediction_proba)
+                                confidence = prediction_proba[predicted_class] * 100
                                 st.markdown(f"""
                                     <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
@@ -1028,14 +1025,13 @@ def run_mnist_classification_app():
                                     </div>
                                 """, unsafe_allow_html=True)
                                 st.success("Dự đoán hoàn tất!")
-                                del image, image_resized, image_array, image_processed
+                                del image, image_resized, image_array, image_processed, prediction_proba
                                 gc.collect()
 
                     with col_clear:
                         if st.button("Xóa bản vẽ", key="clear_button"):
                             st.session_state['canvas_key'] += 1
                             st.rerun()
-
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
