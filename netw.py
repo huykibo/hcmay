@@ -44,7 +44,7 @@ class TrainingLogger:
         self.accuracy_history.append(accuracy)
 
 def run_mnist_neural_network_app():
-    # # Thiết lập MLflow
+    # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
@@ -174,9 +174,9 @@ def run_mnist_neural_network_app():
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
                 st.subheader("📘 1. Ứng dụng này là gì và mục tiêu của nó?")
                 st.markdown("""
@@ -191,7 +191,7 @@ def run_mnist_neural_network_app():
                 - **$70,000$ mẫu**: Tổng số ảnh, được chia thành tập huấn luyện và kiểm tra.  
                 - **Nhiệm vụ**: Dự đoán nhãn ($0$-$9$) dựa trên đặc trưng pixel.  
                 """, unsafe_allow_html=True)
-                status_text.text("Đã tải 100%")
+                status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -200,9 +200,9 @@ def run_mnist_neural_network_app():
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
                 st.subheader("📘 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
                 st.markdown("""
@@ -228,7 +228,7 @@ def run_mnist_neural_network_app():
                     st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
-                status_text.text("Đã tải 100%")
+                status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -237,153 +237,233 @@ def run_mnist_neural_network_app():
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
                 st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
-                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người.  
-                - **Cấu trúc**: Gồm các **nơ-ron nhân tạo** (nodes) được tổ chức thành các **lớp (layers)**:  
-                  - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu ($784$ pixel từ ảnh MNIST).  
-                  - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin bằng cách kết hợp tuyến tính và áp dụng hàm kích hoạt phi tuyến.  
-                  - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (nhãn từ $0$-$9$).  
-
-                Neural Network đặc biệt hiệu quả với bài toán MNIST nhờ khả năng học các đặc trưng phức tạp từ dữ liệu hình ảnh.
+                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                 """, unsafe_allow_html=True)
 
-                st.subheader("🛠️ Các bước thực hiện trong Neural Network")
+                st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
                 st.markdown("""
-                1. **Khởi tạo mô hình**:  
-                   - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp).  
-                   - Khởi tạo **trọng số** $W$ và **bias** $b$ ngẫu nhiên (thường từ phân phối Gaussian).  
+                - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
+                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến (sử dụng hàm kích hoạt).  
+                - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔧 Quy trình hoạt động")
+                st.markdown("""
+                Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
+                """, unsafe_allow_html=True)
+
+                # Bước 1: Khởi tạo mô hình
+                st.markdown("""
+                ### 1. Khởi tạo mô hình
+                - **Mô tả**: Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
+                - **Tham số liên quan**:  
+                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
+                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa Bước 1: Khởi tạo mô hình", width=600)
+                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
+                # Bước 2: Lan truyền thuận
                 st.markdown("""
-                2. **Lan truyền thuận (Feedforward)**:  
-                   - Tính giá trị dự đoán $\\hat{Y}$ từ dữ liệu đầu vào $X$:  
-                     - **Lớp đầu vào**: $A^{(0)} = X$ (ma trận $N \\times 784$, $N$ là số mẫu).  
-                     - **Cho mỗi lớp $l$**:  
-                       - Tổng tuyến tính:  
-                         $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
-                       - Áp dụng hàm kích hoạt:  
-                         $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
-                     - **Lớp đầu ra**: $\\hat{Y} = A^{(L)}$ (ma trận $N \\times 10$).  
-                   - Ví dụ hàm kích hoạt **sigmoid**:  
-                     $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$
+                ### 2. Lan truyền thuận (Feedforward)
+                - **Mô tả**: Tính toán đầu ra dự đoán ($\hat{Y}$) từ đầu vào $X$ qua các lớp:  
+                  - **Lớp đầu vào**: $A^{(0)} = X$ (ma trận $N \\times 784$, $N$ là số mẫu).  
+                  - **Lớp ẩn/lớp ra**:  
+                    $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
+                    $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
+                  - **Lớp đầu ra**: $\hat{Y} = A^{(L)}$ (ma trận $N \\times 10$).  
+                - **Hàm kích hoạt**: Sử dụng các hàm như **ReLU**, **Sigmoid**, hoặc **Tanh**, được chọn trong tab huấn luyện.  
+                - **Ví dụ**: Với **Sigmoid**: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa Bước 2: Lan truyền thuận", width=600)
+                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
+                # Bước 3: Tính hàm mất mát
                 st.markdown("""
-                3. **Tính hàm mất mát (Loss Function)**:  
-                   - Đo độ sai lệch giữa $\\hat{Y}$ và $Y$ (giá trị thực). Với MNIST, dùng **Cross-Entropy**:  
-                     $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
-                   - Trong đó:  
-                     - $y_{ij}$: Nhãn thực (dạng one-hot encoded).  
-                     - $\\hat{y}_{ij}$: Xác suất dự đoán cho lớp $j$.  
+                ### 3. Tính hàm mất mát (Loss Function)
+                - **Mô tả**: Đo độ sai lệch giữa dự đoán ($\hat{Y}$) và nhãn thực ($Y$). Với MNIST, sử dụng **Cross-Entropy**:  
+                  $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+                  - $y_{ij}$: Nhãn thực (one-hot encoded).  
+                  - $\hat{y}_{ij}$: Xác suất dự đoán cho lớp $j$.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa Bước 3: Tính hàm mất mát", width=600)
+                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
+                # Bước 4: Lan truyền ngược
                 st.markdown("""
-                4. **Lan truyền ngược (Backpropagation)**:  
-                   - Tính đạo hàm của $L$ theo $W^{(l)}$ và $b^{(l)}$ để cập nhật tham số:  
-                     - Tại **Lớp đầu ra**:  
-                       $$ \\delta^{(L)} = \\hat{Y} - Y $$  
-                     - Tại **Lớp ẩn**:  
-                       $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
-                     - $\\sigma'(z)$: Đạo hàm hàm kích hoạt (với sigmoid: $\\sigma'(z) = \\sigma(z) \\cdot (1 - \\sigma(z))$).  
-                     - Đạo hàm theo trọng số và bias:  
-                       $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
-                       $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$
+                ### 4. Lan truyền ngược (Backpropagation)
+                - **Mô tả**: Tính đạo hàm của $L$ theo $W^{(l)}$ và $b^{(l)}$ để cập nhật tham số:  
+                  - **Lớp đầu ra**: $$ \\delta^{(L)} = \hat{Y} - Y $$  
+                  - **Lớp ẩn**: $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
+                  - Đạo hàm:  
+                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
+                    $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$  
+                  - $\sigma'(z)$: Đạo hàm hàm kích hoạt (ví dụ: với Sigmoid: $\sigma'(z) = \sigma(z) \cdot (1 - \sigma(z))$).  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa Bước 4: Lan truyền ngược", width=600)
+                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
+                # Bước 5: Cập nhật tham số
                 st.markdown("""
-                5. **Cập nhật tham số (Gradient Descent)**:  
-                   - Điều chỉnh $W$ và $b$ để giảm mất mát:  
-                     $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                     $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
-                   - Trong đó: $\\eta$ là **tốc độ học (learning rate)**.  
+                ### 5. Cập nhật tham số (Gradient Descent)
+                - **Mô tả**: Điều chỉnh $W$ và $b$ để giảm mất mát:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+                  - $\eta$: **Tốc độ học**, được chọn từ $[0.01, 0.005, 0.001, 0.0005]$ trong tab huấn luyện.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa Bước 5: Cập nhật tham số", width=600)
+                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
+                # Bước 6: Lặp lại
                 st.markdown("""
-                6. **Lặp lại**:  
-                   - Quay lại bước $2$ qua nhiều **epoch** cho đến khi $L$ hội tụ.  
+                ### 6. Lặp lại
+                - **Mô tả**: Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa Bước 6: Lặp lại", width=600)
+                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.subheader("⚙️ Các tham số cơ bản và công dụng")
+                st.subheader("⚙️ Các tham số chính và ứng dụng")
                 st.markdown("""
-                Dưới đây là các tham số cơ bản bạn sẽ sử dụng để điều chỉnh mô hình trong ứng dụng này:  
+                Các tham số được sử dụng trong tab **Huấn luyện/Đánh giá** ảnh hưởng trực tiếp đến hiệu suất của Neural Network. Dưới đây là mô tả chi tiết từng tham số, bao gồm công thức liên quan và cách áp dụng:
+                """, unsafe_allow_html=True)
 
-                - **Số lớp ẩn (Number of Hidden Layers)**:  
-                  - **Ý nghĩa**: Quyết định độ sâu của mạng (từ $1$ đến $3$ lớp).  
-                  - **Công dụng**: Nhiều lớp ẩn giúp học đặc trưng phức tạp hơn, nhưng tăng thời gian tính toán.  
-                  - **Ví dụ**: $1$ lớp ẩn cho bài toán đơn giản, $2$-$3$ lớp cho độ chính xác cao hơn.  
+                # Tham số 1: Số lớp ẩn
+                st.markdown("""
+                ### 1. Số lớp ẩn
+                - **Mô tả**: Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
+                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$.  
+                - **Công thức liên quan**: Không có công thức trực tiếp, nhưng số lớp ẩn ($L_h$) quyết định số lần biến đổi phi tuyến:  
+                  $$ A^{(l)} = \\sigma(W^{(l)} \cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
+                  - Trong đó: $A^{(l)}$ là đầu ra của lớp $l$, $W^{(l)}$ và $b^{(l)}$ là trọng số và bias.  
+                - **Chú thích**:  
+                  - Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
+                  - Ví dụ: Với $L_h = 2$, mạng có thể học các đường nét và hình dạng chi tiết hơn.
+                """, unsafe_allow_html=True)
 
-                - **Số nơ-ron mỗi lớp (Neurons per Layer)**:  
-                  - **Ý nghĩa**: Số đơn vị xử lý trong mỗi lớp ẩn (từ $10$ đến $500$).  
-                  - **Công dụng**: Nhiều nơ-ron tăng khả năng học, nhưng có thể gây quá tải.  
-                  - **Công thức liên quan**: Đầu ra mỗi lớp:  
-                    $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}) $$  
+                # Tham số 2: Số nơ-ron mỗi lớp
+                st.markdown("""
+                ### 2. Số nơ-ron mỗi lớp
+                - **Mô tả**: Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
+                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $128$.  
+                - **Công thức liên quan**: Kích thước ma trận trọng số giữa hai lớp $l-1$ và $l$:  
+                  $$ W^{(l)} \in \mathbb{R}^{n_{l-1} \times n_l} $$  
+                  - Trong đó: $n_{l-1}$ là số nơ-ron lớp trước, $n_l$ là số nơ-ron lớp hiện tại.  
+                - **Chú thích**:  
+                  - Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
+                  - Ví dụ: Với $n_l = 64$, ma trận $W^{(l)}$ có kích thước $784 \times 64$ từ lớp đầu vào sang lớp ẩn đầu tiên.
+                """, unsafe_allow_html=True)
 
-                - **Tốc độ học (Learning Rate, $\\eta$)**:  
-                  - **Ý nghĩa**: Tốc độ cập nhật trọng số (ví dụ: $0.01$, $0.001$, $0.0005$, $0.0001$).  
-                  - **Công dụng**: Giá trị nhỏ học chậm nhưng ổn định, giá trị lớn học nhanh nhưng có thể không hội tụ.  
-                  - **Công thức**: Cập nhật trọng số:  
-                    $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                # Tham số 3: Tốc độ học (Learning Rate)
+                st.markdown("""
+                ### 3. Tốc độ học (Learning Rate)
+                - **Mô tả**: Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
+                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005]$.  
+                - **Công thức liên quan**: Cập nhật trọng số:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  - Trong đó: $\eta$ là tốc độ học, $\frac{\\partial L}{\\partial W^{(l)}}$ là gradient của hàm mất mát.  
+                - **Chú thích**:  
+                  - $\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\eta = 0.0005$ học chậm nhưng ổn định.  
+                  - Ví dụ: Với $\eta = 0.001$, mô hình điều chỉnh trọng số nhỏ hơn, phù hợp với dữ liệu lớn như MNIST.
+                """, unsafe_allow_html=True)
 
-                - **Số lần lặp tối đa (Max Iterations)**:  
-                  - **Ý nghĩa**: Số epoch tối đa để huấn luyện (từ $50$ đến $500$).  
-                  - **Công dụng**: Giới hạn số lần mạng học qua dữ liệu. Nhiều lần lặp tăng độ chính xác nhưng tốn thời gian.  
+                # Tham số 4: Số lần lặp (Max Iterations)
+                st.markdown("""
+                ### 4. Số lần lặp (Max Iterations)
+                - **Mô tả**: Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
+                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $100$.  
+                - **Công thức liên quan**: Không có công thức trực tiếp, nhưng số epoch ($E$) ảnh hưởng đến tổng số cập nhật:  
+                  $$ \text{Tổng cập nhật} = E \cdot \frac{N}{B} $$  
+                  - Trong đó: $N$ là số mẫu, $B$ là kích thước batch.  
+                - **Chú thích**:  
+                  - Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
+                  - Ví dụ: Với $E = 50$ và $B = 128$, mô hình lặp $50$ lần trên các batch.
+                """, unsafe_allow_html=True)
 
-                - **Hàm kích hoạt (Activation Function, $\\sigma$)**:  
-                  - **Ý nghĩa**: Quyết định cách nơ-ron xử lý đầu vào (ReLU, Sigmoid, Tanh).  
-                  - **Công dụng**: Giúp mạng học đặc trưng phi tuyến.  
-                  - **Công thức**:  
-                    - ReLU: $$ \\sigma(z) = \\max(0, z) $$  
-                    - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
-                    - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
+                # Tham số 5: Hàm kích hoạt
+                st.markdown("""
+                ### 5. Hàm kích hoạt
+                - **Mô tả**: Hàm phi tuyến áp dụng trên mỗi nơ-ron, giúp mạng học các mối quan hệ phi tuyến.  
+                - **Phạm vi/Giá trị mặc định**: ReLU, Sigmoid, Tanh.  
+                - **Công thức liên quan**:  
+                  - ReLU: $$ \\sigma(z) = \max(0, z) $$  
+                  - Sigmoid: $$ \\sigma(z) = \frac{1}{1 + e^{-z}} $$  
+                  - Tanh: $$ \\sigma(z) = \tanh(z) $$  
+                  - Đầu ra lớp: $$ A^{(l)} = \\sigma(Z^{(l)}), \quad Z^{(l)} = W^{(l)} \cdot A^{(l-1)} + b^{(l)} $$  
+                - **Chú thích**:  
+                  - ReLU tránh gradient vanishing, Sigmoid phù hợp với đầu ra xác suất, Tanh cân bằng âm/dương.  
+                  - Ví dụ: Với ReLU, giá trị âm bị đặt về $0$, giúp tăng tốc độ học.
+                """, unsafe_allow_html=True)
 
-                - **Optimizer (Solver)**:  
-                  - **Ý nghĩa**: Phương pháp tối ưu hóa trọng số (LBFGS, SGD, Adam).  
-                  - **Công dụng**: Điều chỉnh cách mạng cập nhật tham số để giảm mất mát.  
-                  - **Ví dụ**:  
-                    - **SGD**: Gradient Descent ngẫu nhiên, đơn giản nhưng chậm.  
-                    - **Adam**: Nhanh và hiệu quả với dữ liệu lớn.  
+                # Tham số 6: Kích thước batch
+                st.markdown("""
+                ### 6. Kích thước batch
+                - **Mô tả**: Số mẫu xử lý cùng lúc trong mỗi lần cập nhật trọng số, ảnh hưởng đến hiệu suất và độ ổn định.  
+                - **Phạm vi/Giá trị mặc định**: Từ $32$ đến $256$.  
+                - **Công thức liên quan**: Gradient trung bình trên batch:  
+                  $$ \frac{\\partial L}{\\partial W^{(l)}} = \frac{1}{B} \sum_{i=1}^{B} \frac{\\partial L_i}{\\partial W^{(l)}} $$  
+                  - Trong đó: $B$ là kích thước batch, $L_i$ là mất mát của mẫu $i$.  
+                - **Chú thích**:  
+                  - $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
+                  - Ví dụ: Với $B = 128$, mô hình cập nhật trọng số trên 128 mẫu mỗi lần.
+                """, unsafe_allow_html=True)
+
+                # Tham số 7: Trình tối ưu (Solver)
+                st.markdown("""
+                ### 7. Trình tối ưu (Solver)
+                - **Mô tả**: Phương pháp tối ưu hóa trọng số, ảnh hưởng đến tốc độ và hiệu quả hội tụ.  
+                - **Phạm vi/Giá trị mặc định**: Adam, SGD, LBFGS.  
+                - **Công thức liên quan**:  
+                  - SGD: $$ W^{(l)} = W^{(l)} - \\eta \cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  - Adam: Kết hợp động lượng ($m_t$) và RMSProp ($v_t$):  
+                    $$ m_t = \beta_1 m_{t-1} + (1 - \beta_1) \cdot g_t $$  
+                    $$ v_t = \beta_2 v_{t-1} + (1 - \beta_2) \cdot g_t^2 $$  
+                    $$ W^{(l)}_{t+1} = W^{(l)}_t - \\eta \cdot \frac{m_t}{\sqrt{v_t} + \epsilon} $$  
+                    - Trong đó: $g_t$ là gradient, $\beta_1, \beta_2$ là các hằng số, $\epsilon$ là giá trị nhỏ tránh chia cho 0.  
+                - **Chú thích**:  
+                  - Adam nhanh và hiệu quả với dữ liệu lớn, SGD đơn giản nhưng chậm với dữ liệu phức tạp.  
+                  - Ví dụ: Với Adam, mô hình điều chỉnh động lượng để vượt qua local minima.
                 """, unsafe_allow_html=True)
 
                 st.subheader("🟪 Ưu điểm và nhược điểm")
                 st.markdown("""
-                ##### ✅ **Ưu điểm**:  
-                - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
-                - Linh hoạt với nhiều tham số để tối ưu hóa.  
-
-                ##### ❌ **Nhược điểm**:  
-                - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
-                - Cần điều chỉnh tham số cẩn thận để đạt hiệu quả tốt nhất.  
+                - **✅ Ưu điểm**:  
+                  - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
+                  - Linh hoạt với nhiều tham số để tối ưu hóa.  
+                - **❌ Nhược điểm**:  
+                  - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
+                  - Yêu cầu điều chỉnh tham số cẩn thận để đạt hiệu quả tối ưu.  
                 """, unsafe_allow_html=True)
-                status_text.text("Đã tải 100%")
+                status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -392,23 +472,25 @@ def run_mnist_neural_network_app():
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in [20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
                 st.subheader("📘 4. Công thức đánh giá độ chính xác (Accuracy)")
                 st.markdown("""
                 Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
-                $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 92\\%$.  
+                $$ \text{Accuracy} = \frac{\text{Số mẫu dự đoán đúng}}{\text{Tổng số mẫu}} $$  
+                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\text{Accuracy} = 92\%$.  
                 - **Ý nghĩa**: Với Neural Network, Accuracy đo khả năng mô hình phân loại đúng các chữ số dựa trên đặc trưng pixel học được.  
                 """, unsafe_allow_html=True)
-                status_text.text("Đã tải 100%")
+                status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
 
     with tab_load:
+        st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
+
         # Hộp thông tin về dữ liệu
         st.markdown("""
         **Tập dữ liệu MNIST**: Gồm 70,000 ảnh chữ số (0-9) với kích thước 28x28 pixel. 
@@ -422,10 +504,10 @@ def run_mnist_neural_network_app():
                 with st.spinner("Đang tải dữ liệu..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    for i in [20, 40, 60, 80, 100]:
+                    for i in range(0, 101, 20):
                         progress_bar.progress(i)
-                        status_text.text(f"Đang tải {i}%")
-                        time.sleep(0.05)
+                        status_text.text(f"Đang tải dữ liệu từ OpenML... {i}%")
+                        time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
                         st.session_state['full_data'] = (X, y)
@@ -433,6 +515,8 @@ def run_mnist_neural_network_app():
                             mlflow.log_param("total_samples", X.shape[0])
                         st.success("Tải dữ liệu thành công!")
                         st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
+                        status_text.text("Đã tải xong! 100%")
+                        time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
                     except Exception as e:
@@ -469,10 +553,10 @@ def run_mnist_neural_network_app():
                     with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                         progress_bar = st.progress(0)
                         status_text = st.empty()
-                        for i in [20, 40, 60, 80, 100]:
+                        for i in range(0, 101, 20):
                             progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%")
-                            time.sleep(0.05)
+                            status_text.text(f"Đang chọn {num_samples} mẫu... {i}%")
+                            time.sleep(0.1)
                         indices = np.random.choice(len(X_full), size=num_samples, replace=False)
                         X_sampled = X_full.iloc[indices]
                         y_sampled = y_full.iloc[indices]
@@ -480,6 +564,8 @@ def run_mnist_neural_network_app():
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
                         st.success(f"Đã chọn {num_samples} mẫu!")
+                        status_text.text("Đã xử lý xong! 100%")
+                        time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
 
@@ -490,10 +576,10 @@ def run_mnist_neural_network_app():
                         with st.spinner(f"Đang lấy {custom_num_samples} mẫu..."):
                             progress_bar = st.progress(0)
                             status_text = st.empty()
-                            for i in [20, 40, 60, 80, 100]:
+                            for i in range(0, 101, 20):
                                 progress_bar.progress(i)
-                                status_text.text(f"Đang xử lý {i}%")
-                                time.sleep(0.05)
+                                status_text.text(f"Đang chọn {custom_num_samples} mẫu... {i}%")
+                                time.sleep(0.1)
                             indices = np.random.choice(len(X_full), size=custom_num_samples, replace=False)
                             X_sampled = X_full.iloc[indices]
                             y_sampled = y_full.iloc[indices]
@@ -501,6 +587,8 @@ def run_mnist_neural_network_app():
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
                             st.success(f"Đã chọn {custom_num_samples} mẫu!")
+                            status_text.text("Đã xử lý xong! 100%")
+                            time.sleep(0.5)
                             status_text.empty()
                             progress_bar.empty()
                     else:
@@ -530,13 +618,15 @@ def run_mnist_neural_network_app():
                     with st.spinner("Đang chuẩn hóa dữ liệu về [0, 1]..."):
                         progress_bar = st.progress(0)
                         status_text = st.empty()
-                        for i in [20, 40, 60, 80, 100]:
+                        for i in range(0, 101, 20):
                             progress_bar.progress(i)
-                            status_text.text(f"Đang xử lý {i}%")
-                            time.sleep(0.05)
+                            status_text.text(f"Đang chuẩn hóa dữ liệu... {i}%")
+                            time.sleep(0.1)
                         X_norm = X / 255.0
                         st.session_state["data_processed"] = (X_norm, y)
                         st.success("Đã chuẩn hóa dữ liệu về [0, 1]!")
+                        status_text.text("Đã xử lý xong! 100%")
+                        time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
                         st.rerun()
@@ -587,16 +677,18 @@ def run_mnist_neural_network_app():
                 with st.spinner("Đang chia dữ liệu..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    for i in [20, 40, 60, 80, 100]:
+                    for i in range(0, 101, 20):
                         progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý {i}%")
-                        time.sleep(0.05)
+                        status_text.text(f"Đang chia dữ liệu... {i}%")
+                        time.sleep(0.1)
                     st.session_state['split_data'] = {
                         "X_train": X_train, "y_train": y_train,
                         "X_valid": X_valid, "y_valid": y_valid,
                         "X_test": X_test, "y_test": y_test
                     }
                     st.success("Đã chia dữ liệu thành công!")
+                    status_text.text("Đã xử lý xong! 100%")
+                    time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
 
@@ -677,15 +769,19 @@ def run_mnist_neural_network_app():
                         status_text = st.empty()
                         start_time = time.time()
 
-                        status_text.text("Đang chuẩn bị dữ liệu...")
+                        status_text.text("Đang chuẩn bị dữ liệu... 20%")
                         progress_bar.progress(20)
+                        time.sleep(0.1)
 
                         # Khởi tạo logger để theo dõi
                         logger = TrainingLogger()
                         model = MLPClassifier(**params, verbose=True)
 
                         # Giả lập theo dõi loss và accuracy (vì MLPClassifier không cung cấp trực tiếp)
-                        status_text.text("Đang huấn luyện mô hình...")
+                        status_text.text("Đang huấn luyện mô hình... 50%")
+                        progress_bar.progress(50)
+                        time.sleep(0.1)
+
                         old_stdout = sys.stdout
                         new_stdout = io.StringIO()
                         sys.stdout = new_stdout
@@ -704,8 +800,9 @@ def run_mnist_neural_network_app():
                             simulated_accuracy = 1.0 - simulated_loss
                             logger.update(simulated_loss, simulated_accuracy)
 
-                        status_text.text("Đang đánh giá mô hình...")
+                        status_text.text("Đang đánh giá mô hình... 90%")
                         progress_bar.progress(90)
+                        time.sleep(0.1)
                         y_valid_pred = model.predict(X_valid)
                         y_test_pred = model.predict(X_test)
                         acc_valid = accuracy_score(y_valid, y_valid_pred)
@@ -713,8 +810,9 @@ def run_mnist_neural_network_app():
                         cm_valid = confusion_matrix(y_valid, y_valid_pred)
                         cm_test = confusion_matrix(y_test, y_test_pred)
 
-                        status_text.text("Đang lưu kết quả...")
+                        status_text.text("Đang lưu kết quả... 100%")
                         progress_bar.progress(100)
+                        time.sleep(0.1)
                         run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
                             mlflow.log_params(params)
@@ -736,6 +834,8 @@ def run_mnist_neural_network_app():
                             }
 
                         st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+                        status_text.text("Đã hoàn tất huấn luyện! 100%")
+                        time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
                         st.rerun()
@@ -882,6 +982,12 @@ def run_mnist_neural_network_app():
 
                 if st.button("🔍 Dự đoán", key="predict_test"):
                     with st.spinner("Đang dự đoán..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        for i in range(0, 101, 20):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang dự đoán mẫu Test... {i}%")
+                            time.sleep(0.1)
                         sample = X_test.iloc[idx].values.reshape(1, -1)
                         sample_processed = preprocess_input(sample, is_normalized)
                         prediction = model.predict(sample_processed)[0]
@@ -896,6 +1002,10 @@ def run_mnist_neural_network_app():
                                 <strong>Nhãn thực tế:</strong> {y_test.iloc[idx]}
                             </div>
                         """, unsafe_allow_html=True)
+                        status_text.text("Đã dự đoán xong! 100%")
+                        time.sleep(0.5)
+                        status_text.empty()
+                        progress_bar.empty()
 
             # Chế độ 2: Upload ảnh
             elif mode == "Upload ảnh":
@@ -919,6 +1029,12 @@ def run_mnist_neural_network_app():
                             with col_btn:
                                 if st.button(f"Dự đoán ảnh {i+1}", key=f"predict_upload_{i}"):
                                     with st.spinner(f"Đang xử lý ảnh {i+1}..."):
+                                        progress_bar = st.progress(0)
+                                        status_text = st.empty()
+                                        for j in range(0, 101, 20):
+                                            progress_bar.progress(j)
+                                            status_text.text(f"Đang xử lý ảnh {i+1}... {j}%")
+                                            time.sleep(0.1)
                                         img_processed = preprocess_input(img_array, is_normalized)
                                         prediction = model.predict(img_processed)[0]
                                         proba = model.predict_proba(img_processed)[0]
@@ -931,6 +1047,10 @@ def run_mnist_neural_network_app():
                                                 <strong>Xác suất cao nhất:</strong> {max_proba:.2f}%
                                             </div>
                                         """, unsafe_allow_html=True)
+                                        status_text.text(f"Đã dự đoán xong ảnh {i+1}! 100%")
+                                        time.sleep(0.5)
+                                        status_text.empty()
+                                        progress_bar.empty()
                         except Exception as e:
                             st.error(f"Lỗi khi xử lý ảnh {i+1}: {e}")
 
@@ -947,8 +1067,12 @@ def run_mnist_neural_network_app():
                     if st.button("Dự đoán số đã vẽ"):
                         if canvas_result.image_data is not None and np.any(canvas_result.image_data):
                             with st.spinner("Đang xử lý..."):
-                                for i in [20, 40, 60, 80, 100]:
-                                    time.sleep(0.05)
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+                                for i in range(0, 101, 20):
+                                    progress_bar.progress(i)
+                                    status_text.text(f"Đang xử lý hình vẽ... {i}%")
+                                    time.sleep(0.1)
                                 img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
                                 img_array = np.array(img).flatten().reshape(1, -1)
                                 img_array, fixed = validate_and_fix_pixels(img_array, "hình vẽ")
@@ -970,6 +1094,10 @@ def run_mnist_neural_network_app():
                                 
                                 # Hiển thị hình vẽ đã xử lý
                                 st.image(img, caption="Hình vẽ của bạn")
+                                status_text.text("Đã dự đoán xong! 100%")
+                                time.sleep(0.5)
+                                status_text.empty()
+                                progress_bar.empty()
                         else:
                             st.warning("Vui lòng vẽ trước!")
                 with col2:
@@ -983,10 +1111,10 @@ def run_mnist_neural_network_app():
             with st.spinner("Đang tải thông tin huấn luyện..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                for i in [20, 40, 60, 80, 100]:
+                for i in range(0, 101, 20):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
-                    time.sleep(0.05)
+                    status_text.text(f"Đang tải thông tin huấn luyện... {i}%")
+                    time.sleep(0.1)
                 client = MlflowClient()
                 runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
 
@@ -1018,10 +1146,12 @@ def run_mnist_neural_network_app():
                     st.json(selected_run.data.params, expanded=True)
                     st.json(selected_run.data.metrics, expanded=True)
 
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
         except Exception as e:
             st.error(f"Lỗi kết nối MLflow: {e}")
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()  
+    run_mnist_neural_network_app()
