@@ -942,7 +942,7 @@ def run_mnist_classification_app():
                             predicted_class = np.argmax(prediction_proba)
                             confidence = prediction_proba[predicted_class] * 100
                             st.markdown(f"""
-                                <div class="prediction-box">
+                                <div>
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
                                     <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                 </div>

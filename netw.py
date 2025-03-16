@@ -18,6 +18,7 @@ import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc
+from scipy.ndimage import center_of_mass
 
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
@@ -57,6 +58,20 @@ def get_optimal_params(num_samples):
             "solver": "adam",
             "batch_size": 256
         }
+
+# Hàm tiền xử lý ảnh: căn giữa và làm rõ nét vẽ
+def preprocess_image(image):
+    image = np.array(image, dtype=np.float32)
+    # Binarize: làm rõ nét trắng trên nền đen
+    image = np.where(image > 127, 255, 0)
+    # Căn giữa số
+    cy, cx = center_of_mass(image > image.mean())
+    if not np.isnan(cx) and not np.isnan(cy):
+        shift_x = 14 - int(cx)
+        shift_y = 14 - int(cy)
+        image = np.roll(image, shift_x, axis=1)
+        image = np.roll(image, shift_y, axis=0)
+    return image
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
@@ -987,6 +1002,14 @@ def run_mnist_neural_network_app():
             model = st.session_state['model']
             st.write("**Mô hình hiện tại**: Neural Network")
 
+            # Đảm bảo dữ liệu MNIST đầy đủ được tải để hiển thị ví dụ số 2
+            if 'full_data' not in st.session_state:
+                (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+                X_full = np.concatenate([X_train, X_test], axis=0)
+                y_full = np.concatenate([y_train, y_test], axis=0)
+                st.session_state['full_data'] = (X_full, y_full)
+            X_full, y_full = st.session_state['full_data']
+
             input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
             is_normalized = 'data_processed' in st.session_state
 
@@ -1001,18 +1024,18 @@ def run_mnist_neural_network_app():
                 if uploaded_file is not None:
                     image = Image.open(uploaded_file).convert('L')
                     image = image.resize((28, 28))
-                    st.image(image, caption="Hình ảnh đầu vào", width=100)
+                    image_array = preprocess_image(image)  # Áp dụng tiền xử lý
+                    st.image(image_array, caption="Ảnh 28x28 sau khi xử lý", width=100)
 
                     if st.button("Dự đoán", key="predict_upload_button"):
                         with st.spinner("Đang xử lý ảnh..."):
-                            image_array = np.array(image, dtype=np.float32)
                             image_array = image_array.reshape(1, 784)
                             image_processed = preprocess_input(image_array, is_normalized)
                             prediction = model.predict(image_processed, verbose=0)
                             predicted_class = np.argmax(prediction[0])
                             confidence = prediction[0][predicted_class] * 100
                             st.markdown(f"""
-                                <div class="prediction-box">
+                                <div>
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
                                     <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                 </div>
@@ -1061,6 +1084,10 @@ def run_mnist_neural_network_app():
             elif input_method == "Vẽ trực tiếp":
                 st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
                 st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
+                st.markdown("**Hướng dẫn**: Vẽ số màu trắng trên nền đen, kích thước tương tự 28x28 pixel. Ví dụ số 2 trong MNIST:")
+                # Hiển thị ví dụ số 2 từ MNIST
+                mnist_example = X_full[y_full == 2][0].reshape(28, 28)
+                st.image(mnist_example, caption="Ví dụ số 2 trong MNIST", width=100)
 
                 if 'canvas_key' not in st.session_state:
                     st.session_state['canvas_key'] = 0
@@ -1079,12 +1106,13 @@ def run_mnist_neural_network_app():
                 if canvas_result.image_data is not None:
                     image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
                     image_resized = image.resize((28, 28))
+                    image_array = preprocess_image(image_resized)  # Áp dụng tiền xử lý
+                    st.image(image_array, caption="Ảnh 28x28 sau khi xử lý", width=100)
 
                     col_pred, col_clear = st.columns([2, 1])
                     with col_pred:
                         if st.button("Dự đoán", key="predict_button"):
                             with st.spinner("Đang xử lý hình vẽ..."):
-                                image_array = np.array(image_resized, dtype=np.float32)
                                 image_array = image_array.reshape(1, 784)
                                 image_processed = preprocess_input(image_array, is_normalized)
                                 prediction = model.predict(image_processed, verbose=0)
