@@ -123,6 +123,13 @@ def run_mnist_neural_network_app():
                 border-left: 4px solid #3498db;
                 margin-bottom: 15px;
             }
+            .action-container {
+                background-color: #ffffff;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -393,32 +400,36 @@ def run_mnist_neural_network_app():
         st.markdown("""
             <div class="info-box">
                 <strong>Tập dữ liệu MNIST</strong>: Gồm 70,000 ảnh chữ số (0-9) với kích thước 28x28 pixel. 
-                Bạn có thể chọn số lượng mẫu để tải và sử dụng tùy theo nhu cầu huấn luyện.
+                Bạn có thể tải toàn bộ dữ liệu và chọn số lượng mẫu phù hợp để huấn luyện.
             </div>
         """, unsafe_allow_html=True)
 
-        # Nút tải dữ liệu
-        if st.button("Tải dữ liệu MNIST từ OpenML", type="primary", help="Tải toàn bộ tập dữ liệu MNIST"):
-            with st.spinner("Đang tải dữ liệu..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in [20, 40, 60, 80, 100]:
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải {i}%")
-                    time.sleep(0.05)
-                try:
-                    X, y = fetch_mnist_data()
-                    st.session_state['full_data'] = (X, y)
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
-                        mlflow.log_param("total_samples", X.shape[0])
-                    st.success("Tải dữ liệu thành công!")
-                    st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
-                    status_text.empty()
-                    progress_bar.empty()
-                except Exception as e:
-                    st.error(f"Không thể tải dữ liệu: {e}")
-                    status_text.empty()
-                    progress_bar.empty()
+        # Container cho hành động tải dữ liệu
+        with st.container():
+            st.markdown('<div class="action-container">', unsafe_allow_html=True)
+            st.subheader("Tải dữ liệu")
+            if st.button("Tải dữ liệu MNIST từ OpenML", type="primary", help="Tải toàn bộ tập dữ liệu MNIST từ OpenML"):
+                with st.spinner("Đang tải dữ liệu..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    for i in [20, 40, 60, 80, 100]:
+                        progress_bar.progress(i)
+                        status_text.text(f"Đang tải {i}%")
+                        time.sleep(0.05)
+                    try:
+                        X, y = fetch_mnist_data()
+                        st.session_state['full_data'] = (X, y)
+                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
+                            mlflow.log_param("total_samples", X.shape[0])
+                        st.success("Tải dữ liệu thành công!")
+                        st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
+                        status_text.empty()
+                        progress_bar.empty()
+                    except Exception as e:
+                        st.error(f"Không thể tải dữ liệu: {e}")
+                        status_text.empty()
+                        progress_bar.empty()
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # Chọn số lượng mẫu nếu dữ liệu đã tải
         if 'full_data' in st.session_state:
