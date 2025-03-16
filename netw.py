@@ -1076,6 +1076,8 @@ def run_mnist_neural_network_app():
 
                 if canvas_result.image_data is not None:
                     image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
+                    image_resized = image.resize((28, 28))
+
                     col_pred, col_clear = st.columns([2, 1])
                     with col_pred:
                         if st.button("Dự đoán", key="predict_button"):
