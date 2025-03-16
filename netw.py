@@ -408,23 +408,50 @@ def run_mnist_neural_network_app():
             selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()))
             num_samples = sample_options[selected_option]
 
-            if st.button("Chốt số lượng mẫu"):
-                with st.spinner(f"Đang lấy {num_samples} mẫu..."):
-                    progress_bar = st.progress(0)
-                    status_text = st.empty()
-                    for i in [20, 40, 60, 80, 100]:
-                        progress_bar.progress(i)
-                        status_text.text(f"Đang xử lý {i}%")
-                        time.sleep(0.05)
-                    indices = np.random.choice(len(X_full), size=num_samples, replace=False)
-                    X_sampled = X_full.iloc[indices]
-                    y_sampled = y_full.iloc[indices]
-                    st.session_state['data'] = (X_sampled, y_sampled)
-                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
-                        mlflow.log_param("num_samples", num_samples)
-                    st.success(f"Đã chốt {num_samples} mẫu!")
-                    status_text.empty()
-                    progress_bar.empty()
+            # Phần mới: Cho phép người dùng nhập số lượng tùy ý
+            st.subheader("Hoặc nhập số lượng tùy ý")
+            custom_num_samples = st.number_input("Nhập số lượng mẫu (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Chốt số lượng mẫu (tùy chọn có sẵn)"):
+                    with st.spinner(f"Đang lấy {num_samples} mẫu..."):
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        for i in [20, 40, 60, 80, 100]:
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang xử lý {i}%")
+                            time.sleep(0.05)
+                        indices = np.random.choice(len(X_full), size=num_samples, replace=False)
+                        X_sampled = X_full.iloc[indices]
+                        y_sampled = y_full.iloc[indices]
+                        st.session_state['data'] = (X_sampled, y_sampled)
+                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
+                            mlflow.log_param("num_samples", num_samples)
+                        st.success(f"Đã chốt {num_samples} mẫu!")
+                        status_text.empty()
+                        progress_bar.empty()
+            with col2:
+                if st.button("Chốt số lượng mẫu (tùy ý)"):
+                    if custom_num_samples <= 70000:
+                        with st.spinner(f"Đang lấy {custom_num_samples} mẫu..."):
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+                            for i in [20, 40, 60, 80, 100]:
+                                progress_bar.progress(i)
+                                status_text.text(f"Đang xử lý {i}%")
+                                time.sleep(0.05)
+                            indices = np.random.choice(len(X_full), size=custom_num_samples, replace=False)
+                            X_sampled = X_full.iloc[indices]
+                            y_sampled = y_full.iloc[indices]
+                            st.session_state['data'] = (X_sampled, y_sampled)
+                            with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
+                                mlflow.log_param("num_samples", custom_num_samples)
+                            st.success(f"Đã chốt {custom_num_samples} mẫu!")
+                            status_text.empty()
+                            progress_bar.empty()
+                    else:
+                        st.error("Số lượng mẫu vượt quá 70,000. Vui lòng nhập số nhỏ hơn hoặc bằng 70,000!")
 
     with tab_preprocess:
         st.header("Xử lý Dữ liệu")
