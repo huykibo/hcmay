@@ -571,7 +571,7 @@ def run_mnist_classification_app():
                 sample_options = {
                     "100 mẫu (Huấn luyện rất nhanh)": 100,
                     "1,000 mẫu (Huấn luyện nhanh)": 1000,
-                    "10,000 mẫu (Huấn luyện trung bình)": 10000,
+                    "10,000 mẫu (Huấn luyện khá nhanh)": 10000,
                     "50,000 mẫu (Huấn luyện chậm)": 50000
                 }
                 selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()), help="Chọn số lượng mẫu có sẵn")
@@ -992,7 +992,7 @@ def run_mnist_classification_app():
 
             elif input_method == "Vẽ trực tiếp":
                 st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
+                st.write("Vẽ chữ số từ 0-9 :")
 
                 if 'canvas_key' not in st.session_state:
                     st.session_state['canvas_key'] = 0
@@ -1010,9 +1010,6 @@ def run_mnist_classification_app():
 
                 if canvas_result.image_data is not None:
                     image = Image.fromarray(canvas_result.image_data[:, :, 3].astype('uint8'), 'L')
-                    image_resized = image.resize((28, 28))
-                    st.image(image_resized, caption="Hình ảnh bạn vẽ (resize 28x28)", width=100)
-
                     col_pred, col_clear = st.columns([2, 1])
                     with col_pred:
                         if st.button("Dự đoán", key="predict_button"):
@@ -1024,7 +1021,7 @@ def run_mnist_classification_app():
                                 predicted_class = int(prediction)
                                 confidence = proba[predicted_class] * 100
                                 st.markdown(f"""
-                                    <div class="prediction-box">
+                                    <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
                                         <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                     </div>
