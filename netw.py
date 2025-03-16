@@ -40,6 +40,45 @@ def validate_and_fix_pixels(X, name="dữ liệu"):
 def load_model(model):
     return model
 
+# Hàm chọn tham số tối ưu dựa trên số mẫu (định nghĩa ở mức toàn cục)
+def get_optimal_params(num_samples):
+    if num_samples <= 100:
+        return {
+            "hidden_layer_sizes": (32,),
+            "learning_rate": 0.01,
+            "epochs": 15,
+            "activation": "relu",
+            "solver": "sgd",
+            "batch_size": 64
+        }
+    elif num_samples <= 1000:
+        return {
+            "hidden_layer_sizes": (64,),
+            "learning_rate": 0.005,
+            "epochs": 30,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 128
+        }
+    elif num_samples <= 10000:
+        return {
+            "hidden_layer_sizes": (100, 50),
+            "learning_rate": 0.001,
+            "epochs": 50,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 256
+        }
+    else:
+        return {
+            "hidden_layer_sizes": (128, 64),
+            "learning_rate": 0.001,
+            "epochs": 75,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 512
+        }
+
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
@@ -531,7 +570,7 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu (Đã cập nhật để tự động chọn tham số tối ưu)
+    # Tab 2: Tải dữ liệu
     with tab_load:
         st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -601,7 +640,6 @@ def run_mnist_neural_network_app():
                         X_sampled = X_full[indices]
                         y_sampled = y_full[indices]
                         st.session_state['data'] = (X_sampled, y_sampled)
-                        # Tự động cập nhật tham số tối ưu dựa trên num_samples
                         st.session_state['optimal_params'] = get_optimal_params(num_samples)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
@@ -626,7 +664,6 @@ def run_mnist_neural_network_app():
                             X_sampled = X_full[indices]
                             y_sampled = y_full[indices]
                             st.session_state['data'] = (X_sampled, y_sampled)
-                            # Tự động cập nhật tham số tối ưu dựa trên custom_num_samples
                             st.session_state['optimal_params'] = get_optimal_params(custom_num_samples)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
@@ -732,7 +769,7 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá (Đã cập nhật để sử dụng tham số tối ưu tự động)
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
@@ -776,44 +813,6 @@ def run_mnist_neural_network_app():
             if X_train.shape[0] != y_train.shape[0]:
                 st.error("Số mẫu của X_train và y_train không khớp!")
                 st.stop()
-
-            def get_optimal_params(num_samples):
-                if num_samples <= 100:
-                    return {
-                        "hidden_layer_sizes": (32,),
-                        "learning_rate": 0.01,
-                        "epochs": 15,
-                        "activation": "relu",
-                        "solver": "sgd",
-                        "batch_size": 64
-                    }
-                elif num_samples <= 1000:
-                    return {
-                        "hidden_layer_sizes": (64,),
-                        "learning_rate": 0.005,
-                        "epochs": 30,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 128
-                    }
-                elif num_samples <= 10000:
-                    return {
-                        "hidden_layer_sizes": (100, 50),
-                        "learning_rate": 0.001,
-                        "epochs": 50,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 256
-                    }
-                else:
-                    return {
-                        "hidden_layer_sizes": (128, 64),
-                        "learning_rate": 0.001,
-                        "epochs": 75,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 512
-                    }
 
             # Đảm bảo optimal_params đã được khởi tạo
             if "optimal_params" not in st.session_state:
@@ -1081,7 +1080,7 @@ def run_mnist_neural_network_app():
                         "Dừng sớm": early_stopping
                     })
 
-    # Tab 6: Demo dự đoán (Đã cập nhật)
+    # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
