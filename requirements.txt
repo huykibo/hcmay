@@ -11,3 +11,4 @@ tensorflow
 opencv-python
 streamlit-drawable-canvas
 requests
+plotly
