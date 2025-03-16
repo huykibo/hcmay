@@ -572,7 +572,7 @@ def run_mnist_neural_network_app():
             - **70,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
             """, unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
+            col1, col_center, col2 = st.columns([2, 1, 2])
             with col1:
                 sample_options = {
                     "1000 mẫu (Thử nghiệm nhanh)": 1000,
@@ -595,6 +595,9 @@ def run_mnist_neural_network_app():
                         st.success(f"Đã chọn {num_samples} mẫu!")
                         del X_full, y_full, X_sampled, y_sampled
                         gc.collect()
+
+            with col_center:
+                st.markdown("<h3 style='text-align: center; margin-top: 30px;'>hoặc</h3>", unsafe_allow_html=True)
 
             with col2:
                 custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
