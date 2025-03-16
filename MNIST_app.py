@@ -566,7 +566,7 @@ def run_mnist_classification_app():
             - **50,000 mẫu**: Huấn luyện chậm, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
             """, unsafe_allow_html=True)
 
-            col1, col2 = st.columns(2)
+            col1, col_center, col2 = st.columns([2, 1, 2])
             with col1:
                 sample_options = {
                     "100 mẫu (Huấn luyện rất nhanh)": 100,
@@ -589,6 +589,8 @@ def run_mnist_classification_app():
                         del X_full, y_full, X_sampled, y_sampled
                         gc.collect()
 
+            with col_center:
+                st.markdown("<h3 style='text-align: center; margin-top: 30px; color: #555;'>hoặc</h3>", unsafe_allow_html=True)
             with col2:
                 custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
                 if st.button("Xác nhận số lượng (tùy ý)", type="primary"):

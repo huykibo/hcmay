@@ -533,7 +533,6 @@ def run_mnist_neural_network_app():
     with tab_load:
         st.markdown('<div class="section-title">Tải Dữ liệu</div>', unsafe_allow_html=True)
         st.markdown("""
-        **Tập dữ liệu MNIST**: Được tải từ thư viện TensorFlow. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
         """, unsafe_allow_html=True)
 
         if 'full_data' not in st.session_state:
