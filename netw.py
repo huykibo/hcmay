@@ -26,7 +26,7 @@ from sklearn.datasets import make_classification
 from mlflow.tracking import MlflowClient
 from netw import run_mnist_neural_network_app
 
-def run_NeuralNetwork_app():
+def run_mnist_neural_network_app():
     @st.cache_data
     def get_sampled_pixels(images, sample_size=100_000):
         return np.random.choice(images.flatten(), sample_size, replace=False)
@@ -784,4 +784,4 @@ def run_NeuralNetwork_app():
             st.error(f"Không thể kết nối với MLflow: {e}")
 
 if __name__ == "__main__":
-    run_NeuralNetwork_app()
+    run_mnist_neural_network_app()
