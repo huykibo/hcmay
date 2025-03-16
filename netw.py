@@ -539,20 +539,27 @@ def run_mnist_neural_network_app():
         if 'full_data' not in st.session_state:
             if st.button("Tải dữ liệu MNIST từ TensorFlow", type="primary"):
                 with st.spinner("Đang tải dữ liệu MNIST từ TensorFlow..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
                     try:
-                        # Tải dữ liệu MNIST từ TensorFlow
                         (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
-                        # Kết hợp tập huấn luyện và tập kiểm tra thành một tập dữ liệu đầy đủ
+                        for i in range(0, 101, 20):
+                            progress_bar.progress(i)
+                            status_text.text(f"Đang tải dữ liệu... {i}%")
+                            time.sleep(0.1)
                         X = np.concatenate([X_train, X_test], axis=0)
                         y = np.concatenate([y_train, y_test], axis=0)
-                        # Reshape dữ liệu thành dạng (số mẫu, 784) và chuyển kiểu dữ liệu
                         X = X.reshape(-1, 784).astype(np.float64)
                         y = y.astype(np.int32)
-                        # Lưu dữ liệu vào session_state
                         st.session_state['full_data'] = (X, y)
+                        progress_bar.progress(100)
+                        status_text.text("Đã tải xong! 100%")
                         st.success("Đã tải dữ liệu thành công!")
                         st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
-                        st.rerun()  # Làm mới giao diện để hiển thị phần chọn số lượng mẫu
+                        time.sleep(0.5)
+                        status_text.empty()
+                        progress_bar.empty()
+                        st.rerun()
                     except Exception as e:
                         st.error(f"Lỗi khi tải dữ liệu: {e}")
         else:
@@ -727,7 +734,6 @@ def run_mnist_neural_network_app():
 
             st.subheader("⚙️ Cấu hình Tham số Mô hình")
             st.markdown("""
-            **Bảng tham số tối ưu (được tự động chọn dựa trên số mẫu):**
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
             | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               |
@@ -818,10 +824,14 @@ def run_mnist_neural_network_app():
                                           loss='sparse_categorical_crossentropy',
                                           metrics=['accuracy'])
 
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+
                             class ProgressCallback(callbacks.Callback):
                                 def on_epoch_end(self, epoch, logs=None):
                                     progress = (epoch + 1) / params["epochs"] * 100
-                                    st.write(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}")
+                                    progress_bar.progress(int(progress))
+                                    status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
 
                             callbacks_list = [ProgressCallback()]
                             if early_stopping:
