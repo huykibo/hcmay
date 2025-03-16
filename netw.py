@@ -18,7 +18,6 @@ import io
 import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
-import cv2  # Thêm để xử lý ảnh trong Demo
 
 # Hàm tải dữ liệu MNIST
 def fetch_mnist_data():
@@ -41,81 +40,6 @@ def validate_and_fix_pixels(X, name="dữ liệu"):
 def load_model(model):
     return model
 
-# Hàm xử lý ảnh upload
-def preprocess_uploaded_image(image):
-    try:
-        # Chuyển sang thang độ xám
-        gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
-        # Đảo ngược màu (nếu nền trắng, chữ đen -> giống MNIST)
-        gray = 255 - gray
-        # Resize về 28x28
-        resized = cv2.resize(gray, (28, 28), interpolation=cv2.INTER_AREA)
-        # Chuẩn hóa về [0, 1]
-        normalized = resized / 255.0
-        # Flatten thành vector 784 chiều
-        flattened = normalized.flatten()
-        return flattened
-    except Exception as e:
-        st.error(f"Lỗi xử lý ảnh: {e}")
-        return None
-
-# Hàm xử lý ảnh từ canvas
-def preprocess_canvas_image(canvas_image):
-    try:
-        # Lấy dữ liệu ảnh từ canvas (RGBA)
-        img_data = canvas_image[:, :, 3]  # Kênh alpha (độ sáng của nét vẽ)
-        # Đảo ngược màu (nền đen, chữ trắng -> giống MNIST)
-        img_data = 255 - img_data
-        # Resize về 28x28
-        resized = cv2.resize(img_data, (28, 28), interpolation=cv2.INTER_AREA)
-        # Chuẩn hóa về [0, 1]
-        normalized = resized / 255.0
-        # Flatten thành vector 784 chiều
-        flattened = normalized.flatten()
-        return flattened
-    except Exception as e:
-        st.error(f"Lỗi xử lý ảnh canvas: {e}")
-        return None
-
-# Hàm chọn tham số tối ưu dựa trên số lượng mẫu (định nghĩa ở phạm vi toàn cục)
-def get_optimal_params(num_samples):
-    if num_samples <= 100:
-        return {
-            "hidden_layer_sizes": (32,),
-            "learning_rate": 0.01,
-            "epochs": 15,
-            "activation": "relu",
-            "solver": "sgd",
-            "batch_size": 64
-        }
-    elif num_samples <= 1000:
-        return {
-            "hidden_layer_sizes": (64,),
-            "learning_rate": 0.005,
-            "epochs": 30,
-            "activation": "relu",
-            "solver": "adam",
-            "batch_size": 128
-        }
-    elif num_samples <= 10000:
-        return {
-            "hidden_layer_sizes": (100, 50),
-            "learning_rate": 0.001,
-            "epochs": 50,
-            "activation": "relu",
-            "solver": "adam",
-            "batch_size": 256
-        }
-    else:
-        return {
-            "hidden_layer_sizes": (128, 64),
-            "learning_rate": 0.001,
-            "epochs": 75,
-            "activation": "relu",
-            "solver": "adam",
-            "batch_size": 512
-        }
-
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
@@ -124,7 +48,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(mlflow_tracking_uri)
     except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm tra file secrets.toml.")
+        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets.")
         st.stop()
 
     try:
@@ -203,6 +127,19 @@ def run_mnist_neural_network_app():
                 border-radius: 5px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 margin-bottom: 20px;
+            }
+            .stTabs [role="tabpanel"] {
+                min-height: auto !important;
+                height: auto !important;
+            }
+            .stTabs [data-testid="stVerticalBlock"] {
+                min-height: auto !important;
+                height: auto !important;
+                padding-bottom: 0px !important;
+            }
+            .stTabs [data-testid="stVerticalBlock"] > div {
+                min-height: auto !important;
+                height: auto !important;
             }
             .prediction-box {
                 margin-top: 10px;
@@ -302,7 +239,7 @@ def run_mnist_neural_network_app():
                     mnist_image = Image.open("mnist.png")
                     st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy file `mnist.png`. Vui lòng thêm file vào thư mục dự án.")
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
@@ -347,7 +284,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 1. Vui lòng thêm file vào thư mục `plnw`.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -371,7 +308,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 2.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -390,7 +327,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 3.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -417,7 +354,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 4.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -435,7 +372,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 5.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -447,7 +384,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 6.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -594,7 +531,7 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu
+    # Tab 2: Tải dữ liệu (Đã cập nhật để tự động chọn tham số tối ưu)
     with tab_load:
         st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -614,9 +551,6 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
-                        X, fixed = validate_and_fix_pixels(X, "dữ liệu gốc")
-                        if fixed:
-                            st.warning("Dữ liệu đã được chuẩn hóa về [0, 255].")
                         X = np.array(X, dtype=np.float64)
                         y = np.array(y, dtype=np.int32)
                         st.session_state['full_data'] = (X, y)
@@ -667,6 +601,7 @@ def run_mnist_neural_network_app():
                         X_sampled = X_full[indices]
                         y_sampled = y_full[indices]
                         st.session_state['data'] = (X_sampled, y_sampled)
+                        # Tự động cập nhật tham số tối ưu dựa trên num_samples
                         st.session_state['optimal_params'] = get_optimal_params(num_samples)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
@@ -691,6 +626,7 @@ def run_mnist_neural_network_app():
                             X_sampled = X_full[indices]
                             y_sampled = y_full[indices]
                             st.session_state['data'] = (X_sampled, y_sampled)
+                            # Tự động cập nhật tham số tối ưu dựa trên custom_num_samples
                             st.session_state['optimal_params'] = get_optimal_params(custom_num_samples)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
@@ -716,10 +652,9 @@ def run_mnist_neural_network_app():
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
-                if i < len(X):
-                    ax.imshow(X[i].reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y[i]}")
-                    ax.axis("off")
+                ax.imshow(X[i].reshape(28, 28), cmap='gray')
+                ax.set_title(f"Label: {y[i]}")
+                ax.axis("off")
             st.pyplot(fig)
 
             col1, col2 = st.columns([3, 1])
@@ -797,7 +732,7 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá
+    # Tab 5: Huấn luyện/Đánh giá (Đã cập nhật để sử dụng tham số tối ưu tự động)
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
@@ -821,7 +756,7 @@ def run_mnist_neural_network_app():
             if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
                 st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
                 X_train = np.nan_to_num(X_train, nan=0.0)
-                y_train = np.nan_to_num(y_train, nan=0)
+                y_train = np.nan_to_num(y_train, nan=0.0)
                 st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
             if np.any(np.isnan(X_valid)):
                 X_valid = np.nan_to_num(X_valid, nan=0.0)
@@ -841,6 +776,44 @@ def run_mnist_neural_network_app():
             if X_train.shape[0] != y_train.shape[0]:
                 st.error("Số mẫu của X_train và y_train không khớp!")
                 st.stop()
+
+            def get_optimal_params(num_samples):
+                if num_samples <= 100:
+                    return {
+                        "hidden_layer_sizes": (32,),
+                        "learning_rate": 0.01,
+                        "epochs": 15,
+                        "activation": "relu",
+                        "solver": "sgd",
+                        "batch_size": 64
+                    }
+                elif num_samples <= 1000:
+                    return {
+                        "hidden_layer_sizes": (64,),
+                        "learning_rate": 0.005,
+                        "epochs": 30,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 128
+                    }
+                elif num_samples <= 10000:
+                    return {
+                        "hidden_layer_sizes": (100, 50),
+                        "learning_rate": 0.001,
+                        "epochs": 50,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 256
+                    }
+                else:
+                    return {
+                        "hidden_layer_sizes": (128, 64),
+                        "learning_rate": 0.001,
+                        "epochs": 75,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 512
+                    }
 
             # Đảm bảo optimal_params đã được khởi tạo
             if "optimal_params" not in st.session_state:
@@ -942,7 +915,7 @@ def run_mnist_neural_network_app():
                             # Callback để theo dõi tiến trình
                             class ProgressCallback(callbacks.Callback):
                                 def on_epoch_end(self, epoch, logs=None):
-                                    progress = min((epoch + 1) / params["epochs"] * 80 + 20, 100)  # Từ 20% đến 100%
+                                    progress = (epoch + 1) / params["epochs"] * 100
                                     progress_bar.progress(int(progress))
                                     status_text.text(f"Đang huấn luyện... {int(progress)}%")
 
@@ -1060,9 +1033,9 @@ def run_mnist_neural_network_app():
                     st.pyplot(fig)
                     st.markdown("""
                     **Giải thích biểu đồ Loss:**
-                    - **Train Loss:** Sai số trên tập huấn luyện, giảm dần qua các epoch.
-                    - **Val Loss:** Sai số trên tập validation, đánh giá khả năng tổng quát hóa.
-                    - Nếu Val Loss tăng trong khi Train Loss giảm, mô hình có thể bị overfitting.
+                    - **Train Loss (Mất mát huấn luyện):** Đại diện cho sai số giữa dự đoán và nhãn thực tế trên tập huấn luyện. Giá trị giảm dần qua các epoch cho thấy mô hình đang học tốt hơn.
+                    - **Val Loss (Mất mát validation):** Đo lường sai số trên tập validation (nếu có), giúp đánh giá khả năng tổng quát hóa. Nếu Val Loss ổn định hoặc giảm chậm, mô hình không bị overfitting.
+                    - Hai đường này nên có xu hướng tương tự; nếu Val Loss tăng trong khi Train Loss giảm, đó là dấu hiệu của overfitting.
                     """)
                     st.markdown("---")
 
@@ -1082,9 +1055,9 @@ def run_mnist_neural_network_app():
                     st.pyplot(fig)
                     st.markdown("""
                     **Giải thích biểu đồ Accuracy:**
-                    - **Train Accuracy:** Tỷ lệ đúng trên tập huấn luyện, tăng qua các epoch.
-                    - **Val Accuracy:** Tỷ lệ đúng trên tập validation, phản ánh khả năng tổng quát hóa.
-                    - Sự khác biệt lớn giữa hai đường có thể chỉ ra overfitting.
+                    - **Train Accuracy (Độ chính xác huấn luyện):** Tỷ lệ dự đoán đúng trên tập huấn luyện, thường tăng qua các epoch khi mô hình học.
+                    - **Val Accuracy (Độ chính xác validation):** Tỷ lệ dự đoán đúng trên tập validation (nếu có), phản ánh khả năng tổng quát hóa. Giá trị cao và ổn định cho thấy mô hình hoạt động tốt trên dữ liệu mới.
+                    - Sự khác biệt giữa Train Accuracy và Val Accuracy không quá lớn là dấu hiệu của một mô hình cân bằng.
                     """)
 
                 st.subheader("ℹ️ Thông tin Chi tiết")
@@ -1108,105 +1081,137 @@ def run_mnist_neural_network_app():
                         "Dừng sớm": early_stopping
                     })
 
-    # Tab 6: Demo dự đoán
+    # Tab 6: Demo dự đoán (Đã cập nhật)
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
+        st.header("Dự đoán số viết tay")
+        st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
 
-        if 'model' not in st.session_state:
-            st.info("Vui lòng huấn luyện mô hình trước khi sử dụng Demo.")
+        if 'split_data' not in st.session_state or 'model' not in st.session_state:
+            st.warning("⚠️ Vui lòng huấn luyện mô hình trước trong tab 'Huấn luyện/Đánh giá'!")
         else:
-            model = st.session_state['model']
-            st.markdown("""
-            Hãy thử dự đoán chữ số bằng cách **tải ảnh lên** hoặc **vẽ tay**!  
-            - **Upload ảnh**: Chọn file ảnh chứa chữ số viết tay (nền trắng, chữ đen).  
-            - **Vẽ tay**: Sử dụng bảng vẽ để viết chữ số.  
-            """, unsafe_allow_html=True)
+            model = load_model(st.session_state['model'])
+            st.write("**Mô hình hiện tại**: Neural Network")
 
-            # Tabs con cho Upload và Vẽ
-            demo_tabs = st.tabs(["📷 Upload Ảnh", "✏️ Vẽ Tay"])
-            tab_upload, tab_draw = demo_tabs
+            input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
 
-            # Tab Upload Ảnh
-            with tab_upload:
-                st.markdown('<div class="mode-title">Dự đoán từ Ảnh Upload</div>', unsafe_allow_html=True)
-                uploaded_file = st.file_uploader("Chọn ảnh chữ số (JPG, PNG)...", type=["jpg", "png", "jpeg"],
-                                                help="Tải lên ảnh chứa chữ số viết tay, nền trắng, chữ đen.")
-                
+            # Kiểm tra xem dữ liệu đã được chuẩn hóa chưa
+            is_normalized = 'data_processed' in st.session_state
+
+            def preprocess_input(data, is_normalized):
+                data, fixed = validate_and_fix_pixels(data)
+                if fixed:
+                    st.success("Đã chuẩn hóa dữ liệu về [0, 255]!")
+                if not is_normalized:
+                    data = data / 255.0
+                return data
+
+            if input_method == "Tải ảnh lên":
+                st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
+                uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
                 if uploaded_file is not None:
-                    # Hiển thị ảnh gốc
-                    image = Image.open(uploaded_file)
-                    st.image(image, caption="Ảnh đã tải lên", width=200)
+                    image = Image.open(uploaded_file).convert('L')
+                    image = image.resize((28, 28))
+                    st.image(image, caption="Hình ảnh đầu vào", width=100)
 
-                    # Xử lý ảnh và dự đoán
-                    processed_image = preprocess_uploaded_image(image)
-                    if processed_image is not None:
-                        # Hiển thị ảnh đã xử lý (28x28)
-                        st.image(processed_image.reshape(28, 28), caption="Ảnh sau xử lý (28x28)", width=100, clamp=True)
-                        
-                        # Dự đoán
+                    if st.button("Dự đoán", key="predict_upload_button"):
+                        with st.spinner("Đang xử lý ảnh..."):
+                            image_array = np.array(image, dtype=np.float32) / 255.0
+                            image_array = image_array.reshape(1, 784)
+                            image_processed = preprocess_input(image_array, is_normalized)
+                            prediction = model.predict(image_processed, verbose=0)
+                            predicted_class = np.argmax(prediction[0])
+                            confidence = prediction[0][predicted_class] * 100
+                            st.markdown(f"""
+                                <div class="prediction-box">
+                                    <strong>Dự đoán:</strong> {predicted_class}<br>
+                                    <strong>Xác suất:</strong> {confidence:.2f}%
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.success("Dự đoán hoàn tất!")
+
+            elif input_method == "Dữ liệu Test":
+                st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
+                X_test = st.session_state['split_data']["X_test"]
+                y_test = st.session_state['split_data']["y_test"]
+                if len(X_test) == 0:
+                    st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
+                else:
+                    col_select, col_display = st.columns([3, 2])
+                    with col_select:
+                        idx = st.slider("Chọn mẫu Test", 0, len(X_test) - 1, 0)
+                    with col_display:
+                        st.write("**Ảnh mẫu Test:**")
+                        fig, ax = plt.subplots(figsize=(2, 2))
+                        ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
+                        ax.axis('off')
+                        st.pyplot(fig)
+                        st.write(f"**Nhãn thực tế:** {y_test[idx]}")
+
+                    if st.button("🔍 Dự đoán", key="predict_test"):
                         with st.spinner("Đang dự đoán..."):
-                            prediction = model.predict(processed_image.reshape(1, 784), verbose=0)
-                            predicted_digit = np.argmax(prediction)
-                            probabilities = prediction[0]
-                            
-                            # Hiển thị kết quả
-                            st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                            st.write(f"**Dự đoán**: {predicted_digit}")
-                            st.write("**Xác suất từng lớp**:")
-                            prob_df = pd.DataFrame({
-                                "Chữ số": range(10),
-                                "Xác suất": [f"{p*100:.2f}%" for p in probabilities]
-                            })
-                            st.dataframe(prob_df, height=200)
-                            st.markdown('</div>', unsafe_allow_html=True)
+                            sample = X_test[idx].reshape(1, -1)
+                            sample_processed = preprocess_input(sample, is_normalized)
+                            prediction = model.predict(sample_processed, verbose=0)
+                            predicted_class = np.argmax(prediction[0])
+                            xac_suat = prediction[0][predicted_class] * 100
+                            st.markdown(f"""
+                                <div class="prediction-box">
+                                    <strong>Dự đoán:</strong> {predicted_class}<br>
+                                    <strong>Xác suất:</strong> {xac_suat:.2f}%<br>
+                                    <strong>Nhãn thực tế:</strong> {y_test[idx]}
+                                </div>
+                            """, unsafe_allow_html=True)
+                            st.success("Dự đoán hoàn tất!")
 
-            # Tab Vẽ Tay
-            with tab_draw:
-                st.markdown('<div class="mode-title">Dự đoán từ Vẽ Tay</div>', unsafe_allow_html=True)
-                st.markdown("""
-                - Vẽ chữ số trên bảng dưới đây (nền đen, nét trắng).  
-                - Nhấn "Dự đoán" để xem kết quả.  
-                """, unsafe_allow_html=True)
+            elif input_method == "Vẽ trực tiếp":
+                st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
+                st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
-                # Canvas để vẽ
+                if 'canvas_key' not in st.session_state:
+                    st.session_state['canvas_key'] = 0
+
                 canvas_result = st_canvas(
-                    fill_color="rgba(0, 0, 0, 1)",  # Nền đen
+                    fill_color="rgba(255, 165, 0, 0.3)",
                     stroke_width=20,
-                    stroke_color="#FFFFFF",  # Nét trắng
+                    stroke_color="#FFFFFF",
                     background_color="#000000",
                     height=280,
                     width=280,
                     drawing_mode="freedraw",
-                    key="canvas",
-                    display_toolbar=True,
+                    key=f"canvas_{st.session_state['canvas_key']}"
                 )
 
-                if st.button("Dự đoán từ bản vẽ", type="primary"):
-                    if canvas_result.image_data is not None:
-                        # Xử lý ảnh từ canvas
-                        processed_image = preprocess_canvas_image(canvas_result.image_data)
-                        if processed_image is not None:
-                            # Hiển thị ảnh đã xử lý (28x28)
-                            st.image(processed_image.reshape(28, 28), caption="Ảnh sau xử lý (28x28)", width=100, clamp=True)
-                            
-                            # Dự đoán
-                            with st.spinner("Đang dự đoán..."):
-                                prediction = model.predict(processed_image.reshape(1, 784), verbose=0)
-                                predicted_digit = np.argmax(prediction)
-                                probabilities = prediction[0]
-                                
-                                # Hiển thị kết quả
-                                st.markdown('<div class="prediction-box">', unsafe_allow_html=True)
-                                st.write(f"**Dự đoán**: {predicted_digit}")
-                                st.write("**Xác suất từng lớp**:")
-                                prob_df = pd.DataFrame({
-                                    "Chữ số": range(10),
-                                    "Xác suất": [f"{p*100:.2f}%" for p in probabilities]
-                                })
-                                st.dataframe(prob_df, height=200)
-                                st.markdown('</div>', unsafe_allow_html=True)
-                    else:
-                        st.warning("Vui lòng vẽ chữ số trước khi dự đoán!")
+                if canvas_result.image_data is not None:
+                    image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
+                    image_resized = image.resize((28, 28))
+                    st.image(image_resized, caption="Hình ảnh bạn vẽ (resize 28x28)", width=100)
+
+                    col_pred, col_clear = st.columns([2, 1])
+                    with col_pred:
+                        if st.button("Dự đoán", key="predict_button"):
+                            with st.spinner("Đang xử lý hình vẽ..."):
+                                image_array = np.array(image_resized, dtype=np.float32) / 255.0
+                                image_array = image_array.reshape(1, 784)
+                                image_processed = preprocess_input(image_array, is_normalized)
+                                prediction = model.predict(image_processed, verbose=0)
+                                predicted_class = np.argmax(prediction[0])
+                                xac_suat = prediction[0][predicted_class] * 100
+                                st.markdown(f"""
+                                    <div class="prediction-box">
+                                        <strong>Dự đoán:</strong> {predicted_class}<br>
+                                        <strong>Xác suất:</strong> {xac_suat:.2f}%
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                st.success("Dự đoán hoàn tất!")
+
+                    with col_clear:
+                        if st.button("Xóa và vẽ lại", key="clear_button"):
+                            st.session_state['canvas_key'] += 1
+                            st.success("Đã làm mới canvas! Vui lòng vẽ lại.")
+                            st.rerun()
+                else:
+                    st.info("Vui lòng vẽ một chữ số để dự đoán!")
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
