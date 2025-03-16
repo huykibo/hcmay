@@ -1,5 +1,5 @@
-mlflow
 streamlit
+mlflow
 openml
 pandas
 numpy
@@ -8,7 +8,6 @@ matplotlib
 seaborn
 pillow
 tensorflow
-keras
-streamlit-drawable-canvas
-plotly
 opencv-python
+streamlit-drawable-canvas
+requests
