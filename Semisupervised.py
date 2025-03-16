@@ -403,39 +403,83 @@ def run_mnist_labelding_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📘 4. Pseudo Labeling – Gán nhãn giả")
+                st.subheader("📘 4. Pseudo Labeling – Gán Nhãn Giả")
+
                 st.markdown("""
-                **Pseudo Labeling** (Gán nhãn giả) là một kỹ thuật trong học bán giám sát (semi-supervised learning), giúp tận dụng dữ liệu chưa có nhãn để cải thiện hiệu suất của mô hình Neural Network, đặc biệt khi dữ liệu có nhãn hạn chế.
+                **Pseudo Labeling** (Gán nhãn giả) là một kỹ thuật trong học bán giám sát (semi-supervised learning), giúp tận dụng dữ liệu chưa có nhãn để cải thiện hiệu suất của mô hình Neural Network. Đây là một phương pháp hiệu quả khi số lượng dữ liệu có nhãn hạn chế, như trong bài toán MNIST với 70,000 mẫu, trong đó chỉ một phần nhỏ có thể được gán nhãn thủ công.
                 """, unsafe_allow_html=True)
 
-                st.subheader("🌐 Cách hoạt động của Pseudo Labeling")
+                st.subheader("🌐 Cách Hoạt động của Pseudo Labeling")
                 st.markdown("""
-                Quá trình Pseudo Labeling diễn ra qua các bước sau:
-                1. **Huấn luyện ban đầu**: Dùng một tập dữ liệu có nhãn nhỏ (ví dụ: 1% mẫu từ mỗi lớp) để huấn luyện một mạng nơ-ron ban đầu.
-                2. **Dự đoán nhãn giả**: Sử dụng mạng đã huấn luyện để dự đoán nhãn cho tập dữ liệu chưa có nhãn (unlabeled data), tạo ra các nhãn giả (pseudo-labels).
-                3. **Huấn luyện lại**: Kết hợp tập dữ liệu có nhãn ban đầu với tập dữ liệu vừa được gán nhãn giả (nếu độ tin cậy cao, ví dụ > 0.95), rồi huấn luyện lại mạng nơ-ron.
-                4. **Lặp lại**: Tiếp tục các bước 2 và 3 cho đến khi tất cả dữ liệu chưa nhãn được gán hoặc đạt số vòng lặp tối đa.
+                Pseudo Labeling hoạt động theo một quy trình tuần hoàn, tận dụng cả dữ liệu có nhãn và chưa có nhãn để cải thiện mô hình qua các bước lặp. Dưới đây là quy trình chi tiết, được minh họa rõ ràng trong hình ảnh:
 
-                Dưới đây là minh họa trực quan:
+                1. **Huấn luyện Ban Đầu (Bước 1)**  
+                   Sử dụng một tập dữ liệu có nhãn nhỏ (ví dụ: 1% mẫu từ mỗi lớp trong tập huấn luyện MNIST) để huấn luyện một mạng nơ-ron ban đầu.  
+                   - **Mục tiêu**: Tạo một mô hình cơ bản có khả năng dự đoán sơ bộ.  
+                   - **Trong hình ảnh**: Bước 1 được biểu diễn bằng việc sử dụng dữ liệu có nhãn (các điểm màu xanh dương) để huấn luyện một **Initial Neural Network**.
+
+                2. **Dự Đoán Nhãn Giả (Bước 2)**  
+                   Sử dụng mạng nơ-ron đã huấn luyện ở bước 1 để dự đoán nhãn cho dữ liệu chưa có nhãn (unlabeled data). Các nhãn dự đoán này được gọi là **pseudo-labels** (nhãn giả).  
+                   - **Chi tiết**:  
+                     - Dữ liệu chưa có nhãn (các điểm màu xám) được đưa vào mạng nơ-ron ban đầu.  
+                     - Mô hình dự đoán nhãn cho các điểm dữ liệu này, tạo ra tập nhãn giả.  
+                   - **Trong hình ảnh**: Bước 2 thể hiện dữ liệu chưa có nhãn (các điểm màu xám) được đưa vào **Initial Neural Network** để dự đoán nhãn giả (pseudo-labels).
+
+                3. **Huấn Luyện Lại với Nhãn Giả (Bước 3)**  
+                   Kết hợp dữ liệu có nhãn ban đầu (các điểm màu xanh dương) với dữ liệu vừa được gán nhãn giả (các điểm màu cam) để huấn luyện lại một mạng nơ-ron mới.  
+                   - **Lưu ý**:  
+                     - Chỉ các nhãn giả có độ tin cậy cao (ví dụ: xác suất dự đoán > 0.95) thường được sử dụng để tránh lan truyền sai sót.  
+                     - Quá trình này giúp mở rộng tập dữ liệu huấn luyện, cải thiện khả năng tổng quát hóa của mô hình.  
+                   - **Trong hình ảnh**: Bước 3 được minh họa bằng việc sử dụng cả dữ liệu có nhãn (xanh dương) và dữ liệu với nhãn giả (cam) để huấn luyện một **New Neural Network after round of pseudo-labeling**.
+
+                4. **Lặp Lại (Tùy Chọn)**  
+                   Lặp lại các bước 2 và 3 qua nhiều vòng để tiếp tục gán nhãn giả cho dữ liệu chưa nhãn còn lại, hoặc cho đến khi đạt số vòng lặp tối đa (trong ứng dụng này, tham số `max_iterations` được thiết lập mặc định là 5).  
+                   - **Mục tiêu**: Tăng cường hiệu suất mô hình bằng cách tận dụng tối đa dữ liệu chưa có nhãn.
+
+                **Minh họa trực quan**:  
+                Hình ảnh dưới đây tóm tắt quy trình Pseudo Labeling một cách trực quan:  
+                - **Bước 1**: Dữ liệu có nhãn (xanh dương) được dùng để huấn luyện mạng ban đầu.  
+                - **Bước 2**: Mạng ban đầu dự đoán nhãn giả cho dữ liệu chưa có nhãn (xám).  
+                - **Bước 3**: Dữ liệu có nhãn và nhãn giả (cam) được kết hợp để huấn luyện lại mạng nơ-ron mới.  
+
                 """, unsafe_allow_html=True)
                 try:
-                    labeling_image = Image.open("labeling.png")
-                    st.image(labeling_image, caption="Minh họa quy trình Pseudo Labeling", width=600)
+                    labeling_image = Image.open("labelding.webp")
+                    st.image(labeling_image, caption="Hình 1: Minh họa quy trình Pseudo Labeling với 3 bước chính.", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy file `labeling.png`. Vui lòng kiểm tra đường dẫn.")
+                    st.error("Không tìm thấy file `labelding.webp`. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.subheader("🔧 Thực tiễn áp dụng")
+                st.subheader("🔧 Thực Tiễn Áp Dụng")
                 st.markdown("""
                 - **Ưu điểm**:  
-                  - Giảm sự phụ thuộc vào dữ liệu có nhãn, tiết kiệm chi phí gán nhãn thủ công.  
-                  - Cải thiện hiệu suất mô hình khi có lượng lớn dữ liệu chưa nhãn (ví dụ: MNIST với 70,000 mẫu).  
+                  - **Tiết kiệm chi phí gán nhãn**: Giảm sự phụ thuộc vào dữ liệu có nhãn, tận dụng lượng lớn dữ liệu chưa nhãn (như trong MNIST với 70,000 mẫu).  
+                  - **Cải thiện hiệu suất**: Tăng cường khả năng tổng quát hóa của mô hình khi dữ liệu có nhãn hạn chế.  
+                  - **Linh hoạt**: Dễ dàng tích hợp vào các bài toán học máy, như nhận diện hình ảnh (MNIST), phân loại văn bản, hoặc các ứng dụng trong y học và tự động hóa.
+
                 - **Nhược điểm**:  
-                  - Dễ bị ảnh hưởng bởi nhãn giả không chính xác, dẫn đến lan truyền sai sót (error propagation).  
-                  - Yêu cầu ngưỡng tin cậy hợp lý để tránh overfitting trên nhãn giả.  
-                - **Ứng dụng thực tế**:  
-                  - Nhận diện hình ảnh (như MNIST), phân loại văn bản, hoặc các bài toán học bán giám sát khác trong y học, tự động hóa.  
+                  - **Lan truyền sai sót**: Nếu nhãn giả không chính xác, sai sót có thể lan truyền qua các vòng lặp, làm giảm hiệu suất mô hình.  
+                  - **Yêu cầu ngưỡng tin cậy**: Cần chọn ngưỡng xác suất hợp lý (trong ứng dụng này, tham số `pseudo_threshold` mặc định là 0.95) để đảm bảo chất lượng nhãn giả.  
+                  - **Tốn tài nguyên tính toán**: Quá trình lặp lại nhiều vòng có thể làm tăng thời gian huấn luyện (được ghi nhận trong `training_time` trên MLflow).
+
+                - **Ứng dụng Thực Tế**:  
+                  - **Nhận diện hình ảnh**: Như bài toán phân loại chữ số MNIST trong ứng dụng này, nơi dữ liệu chưa nhãn chiếm phần lớn.  
+                  - **Phân loại văn bản**: Gán nhãn cho các tài liệu chưa được phân loại dựa trên một tập nhỏ dữ liệu có nhãn.  
+                  - **Y học**: Sử dụng dữ liệu y tế chưa nhãn (hình ảnh X-quang, MRI) để cải thiện mô hình chẩn đoán bệnh với lượng dữ liệu có nhãn hạn chế.
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔍 Tích Hợp trong Ứng Dụng Này")
+                st.markdown("""
+                Trong ứng dụng phân loại chữ số MNIST, Pseudo Labeling được triển khai trong tab **Huấn luyện/Đánh giá** với các tham số sau:  
+                - **Ngưỡng gán nhãn giả (`pseudo_threshold`)**: Người dùng có thể điều chỉnh từ 0.5 đến 1.0 (mặc định: 0.95) để quyết định mức độ tin cậy của nhãn giả.  
+                - **Số vòng lặp tối đa (`max_iterations`)**: Số lần lặp tối đa để gán nhãn giả (mặc định: 5).  
+                - **Quy trình**:  
+                  1. Lấy 1% mẫu từ mỗi lớp (0-9) trong tập huấn luyện làm dữ liệu có nhãn ban đầu.  
+                  2. Huấn luyện mô hình ban đầu, dự đoán nhãn giả cho dữ liệu còn lại, và lặp lại quá trình theo các bước đã mô tả.  
+                  3. Kết quả được ghi nhận trên MLflow, bao gồm số mẫu được gán nhãn (`pseudo_labeled_samples`) và độ chính xác trên tập validation/test.
+
+                Pseudo Labeling giúp cải thiện độ chính xác của mô hình Neural Network, đặc biệt khi dữ liệu có nhãn bị giới hạn, và được minh họa trực quan qua hình ảnh trên, phù hợp với quy trình triển khai trong mã nguồn.
                 """, unsafe_allow_html=True)
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
