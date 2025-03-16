@@ -1207,7 +1207,7 @@ def run_mnist_neural_network_app():
                 else:
                     run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
                     selected_run_name = st.selectbox("Chọn run:", list(run_options.values()))
-                    selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][ Patricks0]
+                    selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
                     selected_run = client.get_run(selected_run_id)
 
                     st.subheader("Đổi tên Run")
