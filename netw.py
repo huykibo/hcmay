@@ -24,6 +24,7 @@ from tensorflow.keras import layers, models, callbacks
 from streamlit_drawable_canvas import st_canvas
 from sklearn.datasets import make_classification
 from mlflow.tracking import MlflowClient
+from netw import run_mnist_neural_network_app
 
 def run_NeuralNetwork_app():
     @st.cache_data
