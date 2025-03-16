@@ -58,119 +58,7 @@ def get_optimal_params(num_samples):
             "batch_size": 256
         }
 
-def run_pseudo_labeling(X_train, y_train, X_test, y_test, params, threshold=0.95, max_iterations=5):
-    """Thực hiện thuật toán Pseudo Labeling với Neural Network."""
-    np.random.seed(42)
-    initial_percent = 0.01  # 1% dữ liệu ban đầu
-    
-    # Lấy 1% dữ liệu cho mỗi class
-    X_labeled = []
-    y_labeled = []
-    X_unlabeled = []
-    y_unlabeled = []  # Để kiểm tra sau
-    
-    for digit in range(10):
-        digit_indices = np.where(y_train == digit)[0]
-        n_samples = len(digit_indices)
-        n_initial = max(1, int(n_samples * initial_percent))
-        
-        initial_indices = np.random.choice(digit_indices, n_initial, replace=False)
-        remaining_indices = np.setdiff1d(digit_indices, initial_indices)
-        
-        X_labeled.append(X_train[initial_indices])
-        y_labeled.append(y_train[initial_indices])
-        X_unlabeled.append(X_train[remaining_indices])
-        y_unlabeled.append(y_train[remaining_indices])
-    
-    X_labeled = np.concatenate(X_labeled)
-    y_labeled = np.concatenate(y_labeled)
-    X_unlabeled = np.concatenate(X_unlabeled)
-    y_unlabeled = np.concatenate(y_unlabeled)
-    
-    st.write(f"**Kích thước tập labeled ban đầu**: {len(X_labeled)} mẫu")
-    st.write(f"**Kích thước tập unlabeled**: {len(X_unlabeled)} mẫu")
-    
-    # Khởi tạo model
-    def create_model(params):
-        model = models.Sequential()
-        model.add(layers.Input(shape=(784,)))
-        for neurons in params["hidden_layer_sizes"]:
-            model.add(layers.Dense(neurons, activation=params["activation"]))
-        model.add(layers.Dense(10, activation='softmax'))
-        
-        optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-        model.compile(optimizer=optimizer,
-                     loss='sparse_categorical_crossentropy',
-                     metrics=['accuracy'])
-        return model
-    
-    iteration = 0
-    history = []
-    
-    while iteration < max_iterations and len(X_unlabeled) > 0:
-        st.write(f"\n### Vòng lặp {iteration + 1}/{max_iterations}")
-        
-        # Bước 1: Huấn luyện model với dữ liệu có nhãn
-        model = create_model(params)
-        with st.spinner(f"**Bước 1**: Đang huấn luyện trên {len(X_labeled)} mẫu..."):
-            model.fit(X_labeled, y_labeled, 
-                     epochs=params["epochs"], 
-                     batch_size=params["batch_size"], 
-                     verbose=0)
-        
-        # Bước 2: Dự đoán nhãn giả cho tập unlabeled
-        with st.spinner("**Bước 2**: Đang dự đoán nhãn giả..."):
-            predictions = model.predict(X_unlabeled, verbose=0)
-            confidence_scores = np.max(predictions, axis=1)
-            pseudo_labels = np.argmax(predictions, axis=1)
-        
-        # Bước 3: Gán nhãn giả với ngưỡng
-        confident_mask = confidence_scores >= threshold
-        X_confident = X_unlabeled[confident_mask]
-        y_confident = pseudo_labels[confident_mask]
-        
-        st.write(f"**Số mẫu được gán nhãn giả**: {len(X_confident)} (ngưỡng: {threshold})")
-        
-        # Cập nhật tập dữ liệu
-        X_labeled = np.concatenate([X_labeled, X_confident])
-        y_labeled = np.concatenate([y_labeled, y_confident])
-        X_unlabeled = X_unlabeled[~confident_mask]
-        y_unlabeled = y_unlabeled[~confident_mask]
-        
-        # Đánh giá trên tập test
-        test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-        test_acc = accuracy_score(y_test, test_pred)
-        st.write(f"**Độ chính xác trên tập test**: {test_acc*100:.2f}%")
-        
-        history.append({
-            'iteration': iteration + 1,
-            'n_labeled': len(X_labeled),
-            'n_unlabeled': len(X_unlabeled),
-            'test_accuracy': test_acc
-        })
-        
-        # Ghi log với MLflow
-        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=f"Pseudo_Labeling_Iter_{iteration+1}"):
-            mlflow.log_param("iteration", iteration + 1)
-            mlflow.log_param("threshold", threshold)
-            mlflow.log_metric("n_labeled", len(X_labeled))
-            mlflow.log_metric("test_accuracy", test_acc)
-        
-        iteration += 1
-        tf.keras.backend.clear_session()
-        gc.collect()
-    
-    # Huấn luyện cuối cùng
-    final_model = create_model(params)
-    with st.spinner("**Huấn luyện cuối cùng** với toàn bộ dữ liệu..."):
-        final_model.fit(X_labeled, y_labeled, 
-                       epochs=params["epochs"], 
-                       batch_size=params["batch_size"], 
-                       verbose=0)
-    
-    return final_model, history
-
-def run_mnist_neural_network_app():
+def run_mnist_labelding_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
@@ -190,19 +78,15 @@ def run_mnist_neural_network_app():
         st.error(f"Không thể kết nối MLflow: {e}.")
         st.stop()
 
-    EXPERIMENT_ID = "6"  # Cập nhật Experiment ID
-    EXPERIMENT_NAME = "MNIST_Pseudo_Labeling"
+    EXPERIMENT_ID = "5"
     try:
         client = MlflowClient()
         experiment = client.get_experiment(EXPERIMENT_ID)
         if experiment is None:
-            client.create_experiment(EXPERIMENT_ID, name=EXPERIMENT_NAME)
-            experiment = client.get_experiment(EXPERIMENT_ID)
-        else:
-            if experiment.name != EXPERIMENT_NAME:
-                client.set_experiment_tag(EXPERIMENT_ID, "name", EXPERIMENT_NAME)
+            st.error(f"Experiment ID {EXPERIMENT_ID} không tồn tại.")
+            st.stop()
     except Exception as e:
-        st.error(f"Lỗi truy xuất hoặc tạo Experiment ID {EXPERIMENT_ID}: {e}.")
+        st.error(f"Lỗi truy xuất Experiment ID {EXPERIMENT_ID}: {e}.")
         st.stop()
 
     st.title("Phân loại Chữ số MNIST với Neural Network")
@@ -210,30 +94,62 @@ def run_mnist_neural_network_app():
     # CSS tùy chỉnh
     st.markdown("""
         <style>
+            .tooltip {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+                color: #1f77b4;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 400px;
+                background-color: #f9f9f9;
+                color: #333;
+                text-align: left;
+                border-radius: 6px;
+                padding: 10px;
+                position: absolute;
+                z-index: 1;
+                right: 105%;
+                top: 50%;
+                transform: translateY(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                border: 1px solid #ccc;
+                font-size: 0.9em;
+                line-height: 1.4;
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
             .section-title {
                 font-size: 1.5em;
                 font-weight: bold;
                 color: #2c3e50;
                 margin-bottom: 10px;
-                border-bottom: 2px solid #3498db;
-                padding-bottom: 5px;
             }
-            .step-box {
+            .info-box {
                 background-color: #f8f9fa;
-                padding: 15px;
+                padding: 10px;
                 border-left: 4px solid #3498db;
                 margin-bottom: 15px;
-                border-radius: 5px;
             }
-            .metric-box {
-                background-color: #e9f7ef;
+            .action-container {
+                background-color: #ffffff;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+            }
+            .prediction-box {
+                margin-top: 10px;
                 padding: 10px;
-                border-left: 4px solid #2ecc71;
-                margin-bottom: 10px;
+                border: 1px solid #ccc;
                 border-radius: 5px;
-            }
-            .stProgress > div > div > div {
-                background-color: #3498db;
+                background-color: #f9f9f9;
             }
             .mode-title {
                 font-size: 1.2em;
@@ -241,11 +157,15 @@ def run_mnist_neural_network_app():
                 color: #2c3e50;
                 margin-bottom: 10px;
             }
+            .stCanvas {
+                border: 1px solid #ddd;
+                border-radius: 5px;
+            }
         </style>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Pseudo Labeling", "Demo dự đoán", "Thông tin huấn luyện"])
-    tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_pseudo, tab_demo, tab_log_info = tabs
+    tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
+    tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
     # Tab 1: Thông tin
     with tab_info:
@@ -261,7 +181,8 @@ def run_mnist_neural_network_app():
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
                 "Neural Network – Mạng nơ-ron nhân tạo",
-                "Công thức đánh giá độ chính xác (Accuracy)"
+                "Công thức đánh giá độ chính xác (Accuracy)",
+                "Pseudo Labeling – Gán nhãn giả"
             ],
             label_visibility="collapsed",
             help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
@@ -342,7 +263,133 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                 """, unsafe_allow_html=True)
-                # ... (Giữ nguyên phần mô tả Neural Network từ code ban đầu, bỏ qua để tiết kiệm không gian)
+
+                st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
+                st.markdown("""
+                - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
+                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến (sử dụng hàm kích hoạt).  
+                - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔧 Quy trình hoạt động")
+                st.markdown("""
+                Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
+                """, unsafe_allow_html=True)
+
+                st.subheader("1. Khởi tạo mô hình")
+                st.markdown("""
+                - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
+                - **Tham số liên quan**:  
+                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
+                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
+                - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("2. Lan truyền thuận (Feedforward)")
+                st.markdown("""
+                - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
+                  $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
+                  $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
+                - **Giải thích**:  
+                  - $X$: Ma trận đầu vào, kích thước $N \\times 784$ ($N$ là số mẫu).  
+                  - $A^{(l-1)}$: Đầu ra của lớp trước, với $A^{(0)} = X$.  
+                  - $W^{(l)}$: Ma trận trọng số của lớp $l$, kích thước phụ thuộc số nơ-ron của lớp $l-1$ và $l$.  
+                  - $b^{(l)}$: Vector bias của lớp $l$.  
+                  - $Z^{(l)}$: Tổng trọng số tuyến tính của lớp $l$.  
+                  - $\\sigma$: Hàm kích hoạt (ví dụ: ReLU, Sigmoid, Tanh).  
+                  - $\\hat{Y}$: Đầu ra cuối cùng, kích thước $N \\times 10$ (10 lớp).  
+                - **Ví dụ với Sigmoid**:  
+                  $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
+                - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("3. Tính hàm mất mát (Loss Function)")
+                st.markdown("""
+                - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
+                  $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+                - **Giải thích**:  
+                  - $N$: Số mẫu trong tập dữ liệu.  
+                  - $y_{ij}$: Nhãn thực tế (one-hot encoded), $1$ nếu mẫu $i$ thuộc lớp $j$, $0$ nếu không.  
+                  - $\\hat{y}_{ij}$: Xác suất dự đoán mẫu $i$ thuộc lớp $j$.  
+                  - $\\sum_{i=1}^{N}$: Tổng trên tất cả mẫu.  
+                  - $\\sum_{j=0}^{9}$: Tổng trên tất cả lớp (0 đến 9).  
+                - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("4. Lan truyền ngược (Backpropagation)")
+                st.markdown("""
+                - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$:  
+                  - Lớp đầu ra:  
+                    $$ \\delta^{(L)} = \\hat{Y} - Y $$  
+                  - Lớp ẩn:  
+                    $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
+                  - Đạo hàm:  
+                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
+                    $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$  
+                - **Giải thích**:  
+                  - $\\delta^{(L)}$: Sai số tại lớp đầu ra.  
+                  - $\\delta^{(l)}$: Sai số tại lớp $l$, lan truyền ngược từ lớp sau.  
+                  - $(W^{(l+1)})^T$: Ma trận chuyển vị của trọng số lớp tiếp theo.  
+                  - $\\odot$: Nhân từng phần tử (Hadamard product).  
+                  - $\\sigma'(Z^{(l)})$: Đạo hàm của hàm kích hoạt tại $Z^{(l)}$ (ví dụ: Sigmoid: $\\sigma'(z) = \\sigma(z) \\cdot (1 - \\sigma(z))$).  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
+                - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("5. Cập nhật tham số (Gradient Descent)")
+                st.markdown("""
+                - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+                - **Giải thích**:  
+                  - $\\eta$: Tốc độ học (learning rate), điều chỉnh kích thước bước cập nhật.  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
+                - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("6. Lặp lại")
+                st.markdown("""
+                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
+                - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
@@ -371,13 +418,62 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu
+        elif info_option == "Pseudo Labeling – Gán nhãn giả":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+                st.subheader("📘 5. Pseudo Labeling – Gán nhãn giả")
+                st.markdown("""
+                **Pseudo Labeling** (Gán nhãn giả) là một kỹ thuật trong học bán giám sát (semi-supervised learning), giúp tận dụng dữ liệu chưa có nhãn để cải thiện hiệu suất của mô hình Neural Network, đặc biệt khi dữ liệu có nhãn hạn chế.
+                """, unsafe_allow_html=True)
+
+                st.subheader("🌐 Cách hoạt động của Pseudo Labeling")
+                st.markdown("""
+                Quá trình Pseudo Labeling diễn ra qua các bước sau:
+                1. **Huấn luyện ban đầu**: Dùng một tập dữ liệu có nhãn nhỏ (ví dụ: 1% mẫu từ mỗi lớp) để huấn luyện một mạng nơ-ron ban đầu.
+                2. **Dự đoán nhãn giả**: Sử dụng mạng đã huấn luyện để dự đoán nhãn cho tập dữ liệu chưa có nhãn (unlabeled data), tạo ra các nhãn giả (pseudo-labels).
+                3. **Huấn luyện lại**: Kết hợp tập dữ liệu có nhãn ban đầu với tập dữ liệu vừa được gán nhãn giả (nếu độ tin cậy cao, ví dụ > 0.95), rồi huấn luyện lại mạng nơ-ron.
+                4. **Lặp lại**: Tiếp tục các bước 2 và 3 cho đến khi tất cả dữ liệu chưa nhãn được gán hoặc đạt số vòng lặp tối đa.
+
+                Dưới đây là minh họa trực quan:
+                """, unsafe_allow_html=True)
+                try:
+                    labeling_image = Image.open("labeling.png")
+                    st.image(labeling_image, caption="Minh họa quy trình Pseudo Labeling", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy file `labeling.png`. Vui lòng kiểm tra đường dẫn.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("🔧 Thực tiễn áp dụng")
+                st.markdown("""
+                - **Ưu điểm**:  
+                  - Giảm sự phụ thuộc vào dữ liệu có nhãn, tiết kiệm chi phí gán nhãn thủ công.  
+                  - Cải thiện hiệu suất mô hình khi có lượng lớn dữ liệu chưa nhãn (ví dụ: MNIST với 70,000 mẫu).  
+                - **Nhược điểm**:  
+                  - Dễ bị ảnh hưởng bởi nhãn giả không chính xác, dẫn đến lan truyền sai sót (error propagation).  
+                  - Yêu cầu ngưỡng tin cậy hợp lý để tránh overfitting trên nhãn giả.  
+                - **Ứng dụng thực tế**:  
+                  - Nhận diện hình ảnh (như MNIST), phân loại văn bản, hoặc các bài toán học bán giám sát khác trong y học, tự động hóa.  
+                """, unsafe_allow_html=True)
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
+    # Tab 2: Chọn dữ liệu
     with tab_load:
         st.markdown('<div class="section-title">Tải Dữ liệu</div>', unsafe_allow_html=True)
+        st.markdown("""
+        """, unsafe_allow_html=True)
 
         if 'full_data' not in st.session_state:
-            if st.button("Tải dữ liệu MNIST", type="primary"):
-                with st.spinner("Đang tải dữ liệu MNIST..."):
+            if st.button("Tải dữ liệu MNIST ", type="primary"):
+                with st.spinner("Đang tải dữ liệu MNIST  ..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     try:
@@ -434,9 +530,10 @@ def run_mnist_neural_network_app():
                         st.success(f"Đã chọn {num_samples} mẫu!")
                         del X_full, y_full, X_sampled, y_sampled
                         gc.collect()
-                        st.rerun()
+
             with col_center:
                 st.markdown("<h3 style='text-align: center; margin-top: 30px;'>hoặc</h3>", unsafe_allow_html=True)
+
             with col2:
                 custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
                 if st.button("Xác nhận số lượng (tùy ý)", type="primary"):
@@ -573,6 +670,10 @@ def run_mnist_neural_network_app():
             
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
+            # Thêm tùy chọn chế độ huấn luyện
+            training_mode = st.radio("Chọn chế độ huấn luyện:", ["Huấn luyện thông thường", "Pseudo Labeling"],
+                                     help="Chọn giữa huấn luyện thông thường hoặc Pseudo Labeling với dữ liệu chưa gán nhãn.")
+
             st.subheader("⚙️ Cấu hình tham khảo Tham số Mô hình")
             st.markdown("""
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
@@ -619,24 +720,31 @@ def run_mnist_neural_network_app():
                     
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
                     params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
-                                                       index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                                                       help="Chọn hàm kích hoạt: ReLU (nhanh), Sigmoid (xác suất), Tanh (cân bằng).")
+                                                        index=["relu", "sigmoid", "tanh"].index(params["activation"]),
+                                                        help="Chọn hàm kích hoạt: ReLU (nhanh), Sigmoid (xác suất), Tanh (cân bằng).")
             
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
                     params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001], 
-                                                          index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
-                                                          help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
+                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
+                                                           help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
                     params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
-                                                      help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
+                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
                     params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
-                                                          help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
+                                                           help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
                     early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=False, 
-                                                help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
+                                                 help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
+                    
+                    # Thêm tham số cho Pseudo Labeling
+                    if training_mode == "Pseudo Labeling":
+                        pseudo_threshold = st.slider("Ngưỡng gán nhãn giả (Threshold)", 0.5, 1.0, 0.95, step=0.01,
+                                                     help="Ngưỡng xác suất để gán nhãn giả (0.5-1.0).")
+                        max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, value=5,
+                                                         help="Số lần lặp tối đa cho Pseudo Labeling.")
 
             col_reset, col_train = st.columns([1, 3])
             with col_reset:
@@ -653,63 +761,181 @@ def run_mnist_neural_network_app():
                         with st.spinner("Đang huấn luyện mô hình..."):
                             start_time = time.time()
 
-                            model = models.Sequential()
-                            model.add(layers.Input(shape=(784,)))
-                            for neurons in params["hidden_layer_sizes"]:
-                                model.add(layers.Dense(neurons, activation=params["activation"]))
-                            model.add(layers.Dense(10, activation='softmax'))
+                            if training_mode == "Huấn luyện thông thường":
+                                # Huấn luyện thông thường
+                                model = models.Sequential()
+                                model.add(layers.Input(shape=(784,)))
+                                for neurons in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(neurons, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
 
-                            optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
 
-                            model.compile(optimizer=optimizer,
-                                          loss='sparse_categorical_crossentropy',
-                                          metrics=['accuracy'])
+                                model.compile(optimizer=optimizer,
+                                              loss='sparse_categorical_crossentropy',
+                                              metrics=['accuracy'])
 
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
 
-                            class ProgressCallback(callbacks.Callback):
-                                def on_epoch_end(self, epoch, logs=None):
-                                    progress = (epoch + 1) / params["epochs"] * 100
-                                    progress_bar.progress(int(progress))
-                                    status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
+                                class ProgressCallback(callbacks.Callback):
+                                    def on_epoch_end(self, epoch, logs=None):
+                                        progress = (epoch + 1) / params["epochs"] * 100
+                                        progress_bar.progress(int(progress))
+                                        status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
 
-                            callbacks_list = [ProgressCallback()]
-                            if early_stopping:
-                                callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
+                                callbacks_list = [ProgressCallback()]
+                                if early_stopping:
+                                    callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
 
-                            history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                                validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
+                                history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
+                                                    validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
 
-                            y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_valid = accuracy_score(y_valid, y_valid_pred)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                            cm_test = confusion_matrix(y_test, y_test_pred)
+                                y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
+                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                acc_valid = accuracy_score(y_valid, y_valid_pred)
+                                acc_test = accuracy_score(y_test, y_test_pred)
+                                cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                                cm_test = confusion_matrix(y_test, y_test_pred)
 
-                            run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                            with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
-                                mlflow.log_metric("accuracy_val", acc_valid)
-                                mlflow.log_metric("accuracy_test", acc_test)
-                                mlflow.log_metric("training_time", time.time() - start_time)
-                                mlflow.log_metric("n_iter_actual", len(history.history['loss']))
+                                run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                                with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
+                                    mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
+                                    mlflow.log_metric("accuracy_val", acc_valid)
+                                    mlflow.log_metric("accuracy_test", acc_test)
+                                    mlflow.log_metric("training_time", time.time() - start_time)
+                                    mlflow.log_metric("n_iter_actual", len(history.history['loss']))
 
-                            st.session_state['model'] = model
-                            st.session_state['training_results'] = {
-                                'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                'cm_valid': cm_valid, 'cm_test': cm_test,
-                                'run_name': run_name, 'run_id': run.info.run_id,
-                                'params': params, 'training_time': time.time() - start_time,
-                                'loss_history': history.history['loss'][-10:],
-                                'val_loss_history': history.history['val_loss'][-10:] if 'val_loss' in history.history else [],
-                                'accuracy_history': history.history['accuracy'][-10:],
-                                'val_accuracy_history': history.history['val_accuracy'][-10:] if 'val_accuracy' in history.history else [],
-                                'n_iter_actual': len(history.history['loss'])
-                            }
+                                st.session_state['model'] = model
+                                st.session_state['training_results'] = {
+                                    'accuracy_val': acc_valid, 'accuracy_test': acc_test,
+                                    'cm_valid': cm_valid, 'cm_test': cm_test,
+                                    'run_name': run_name, 'run_id': run.info.run_id,
+                                    'params': params, 'training_time': time.time() - start_time,
+                                    'loss_history': history.history['loss'][-10:],
+                                    'val_loss_history': history.history['val_loss'][-10:] if 'val_loss' in history.history else [],
+                                    'accuracy_history': history.history['accuracy'][-10:],
+                                    'val_accuracy_history': history.history['val_accuracy'][-10:] if 'val_accuracy' in history.history else [],
+                                    'n_iter_actual': len(history.history['loss'])
+                                }
 
-                            st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
+                                st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
+
+                            elif training_mode == "Pseudo Labeling":
+                                # Bước 0: Chia tập train/test đã có từ split_data
+                                st.write("Bắt đầu quá trình Pseudo Labeling...")
+
+                                # Bước 1: Lấy 1% mẫu từ mỗi class trong tập train
+                                labeled_X, labeled_y = [], []
+                                unlabeled_X = []
+                                for digit in range(10):
+                                    digit_indices = np.where(y_train == digit)[0]
+                                    num_labeled = max(1, int(len(digit_indices) * 0.01))  # Lấy 1% hoặc ít nhất 1 mẫu
+                                    labeled_indices = np.random.choice(digit_indices, num_labeled, replace=False)
+                                    unlabeled_indices = np.setdiff1d(digit_indices, labeled_indices)
+                                    labeled_X.append(X_train[labeled_indices])
+                                    labeled_y.append(y_train[labeled_indices])
+                                    unlabeled_X.append(X_train[unlabeled_indices])
+
+                                labeled_X = np.concatenate(labeled_X, axis=0)
+                                labeled_y = np.concatenate(labeled_y, axis=0)
+                                unlabeled_X = np.concatenate(unlabeled_X, axis=0)
+                                st.write(f"Tập labeled ban đầu: {len(labeled_X)} mẫu")
+                                st.write(f"Tập unlabeled: {len(unlabeled_X)} mẫu")
+
+                                # Khởi tạo model
+                                def create_model():
+                                    model = models.Sequential()
+                                    model.add(layers.Input(shape=(784,)))
+                                    for neurons in params["hidden_layer_sizes"]:
+                                        model.add(layers.Dense(neurons, activation=params["activation"]))
+                                    model.add(layers.Dense(10, activation='softmax'))
+                                    optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+                                    return model
+
+                                model = create_model()
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
+
+                                # Vòng lặp Pseudo Labeling
+                                iteration = 0
+                                total_unlabeled = len(unlabeled_X)
+                                pseudo_labeled_X, pseudo_labeled_y = labeled_X.copy(), labeled_y.copy()
+
+                                while iteration < max_iterations and len(unlabeled_X) > 0:
+                                    iteration += 1
+                                    st.write(f"**Vòng lặp {iteration}/{max_iterations}**")
+
+                                    # Bước 2: Huấn luyện trên tập labeled hiện tại
+                                    history = model.fit(pseudo_labeled_X, pseudo_labeled_y, epochs=params["epochs"],
+                                                        batch_size=params["batch_size"], validation_data=(X_valid, y_valid),
+                                                        callbacks=[callbacks.EarlyStopping(monitor='val_loss', patience=10)] if early_stopping else [],
+                                                        verbose=0)
+                                    status_text.text(f"Vòng {iteration}: Huấn luyện xong, Loss: {history.history['loss'][-1]:.4f}, Accuracy: {history.history['accuracy'][-1]:.4f}")
+
+                                    # Bước 3: Dự đoán nhãn cho tập unlabeled
+                                    pseudo_predictions = model.predict(unlabeled_X, verbose=0)
+                                    pseudo_confidences = np.max(pseudo_predictions, axis=1)
+                                    pseudo_labels = np.argmax(pseudo_predictions, axis=1)
+
+                                    # Bước 4: Gán nhãn giả với ngưỡng
+                                    confident_mask = pseudo_confidences >= pseudo_threshold
+                                    new_labeled_X = unlabeled_X[confident_mask]
+                                    new_labeled_y = pseudo_labels[confident_mask]
+
+                                    if len(new_labeled_X) > 0:
+                                        pseudo_labeled_X = np.concatenate([pseudo_labeled_X, new_labeled_X], axis=0)
+                                        pseudo_labeled_y = np.concatenate([pseudo_labeled_y, new_labeled_y], axis=0)
+                                        unlabeled_X = unlabeled_X[~confident_mask]
+                                        st.write(f"Đã gán nhãn giả cho {len(new_labeled_X)} mẫu, còn lại {len(unlabeled_X)} mẫu chưa gán.")
+                                    else:
+                                        st.write("Không có mẫu nào đạt ngưỡng trong vòng này.")
+                                        break
+
+                                    progress_bar.progress(int((total_unlabeled - len(unlabeled_X)) / total_unlabeled * 100))
+
+                                # Đánh giá cuối cùng
+                                y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
+                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                acc_valid = accuracy_score(y_valid, y_valid_pred)
+                                acc_test = accuracy_score(y_test, y_test_pred)
+                                cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                                cm_test = confusion_matrix(y_test, y_test_pred)
+
+                                run_name = f"PseudoLabeling_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                                with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
+                                    mlflow.log_params({
+                                        "hidden_layer_sizes": params["hidden_layer_sizes"],
+                                        "learning_rate": params["learning_rate"],
+                                        "epochs": params["epochs"],
+                                        "batch_size": params["batch_size"],
+                                        "activation": params["activation"],
+                                        "solver": params["solver"],
+                                        "pseudo_threshold": pseudo_threshold,
+                                        "max_iterations": max_iterations
+                                    })
+                                    mlflow.log_metric("accuracy_val", acc_valid)
+                                    mlflow.log_metric("accuracy_test", acc_test)
+                                    mlflow.log_metric("training_time", time.time() - start_time)
+                                    mlflow.log_metric("n_iter_actual", iteration)
+
+                                st.session_state['model'] = model
+                                st.session_state['training_results'] = {
+                                    'accuracy_val': acc_valid, 'accuracy_test': acc_test,
+                                    'cm_valid': cm_valid, 'cm_test': cm_test,
+                                    'run_name': run_name, 'run_id': run.info.run_id,
+                                    'params': params, 'training_time': time.time() - start_time,
+                                    'loss_history': history.history['loss'][-10:],
+                                    'val_loss_history': history.history['val_loss'][-10:] if 'val_loss' in history.history else [],
+                                    'accuracy_history': history.history['accuracy'][-10:],
+                                    'val_accuracy_history': history.history['val_accuracy'][-10:] if 'val_accuracy' in history.history else [],
+                                    'n_iter_actual': iteration,
+                                    'pseudo_labeled_samples': len(pseudo_labeled_X)
+                                }
+
+                                st.success(f"Đã hoàn thành Pseudo Labeling! Thời gian: {time.time() - start_time:.2f} giây, Số vòng lặp: {iteration}, Số mẫu được gán nhãn: {len(pseudo_labeled_X)}")
+
                             tf.keras.backend.clear_session()
                             del X_train, y_train, X_valid, y_valid, X_test, y_test, split_data, history
                             gc.collect()
@@ -723,11 +949,15 @@ def run_mnist_neural_network_app():
                 st.subheader("📊 Kết quả Huấn luyện")
                 col_result1, col_result2, col_result3 = st.columns(3)
                 with col_result1:
-                    st.markdown(f'<div class="metric-box">Thời gian huấn luyện: <strong>{results["training_time"]:.2f} giây</strong></div>', unsafe_allow_html=True)
+                    st.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                 with col_result2:
-                    st.markdown(f'<div class="metric-box">Độ chính xác Validation: <strong>{results["accuracy_val"]*100:.2f}%</strong></div>', unsafe_allow_html=True)
+                    st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
                 with col_result3:
-                    st.markdown(f'<div class="metric-box">Độ chính xác Test: <strong>{results["accuracy_test"]*100:.2f}%</strong></div>', unsafe_allow_html=True)
+                    st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+
+                if training_mode == "Pseudo Labeling":
+                    st.metric("Số mẫu được gán nhãn", f"{results['pseudo_labeled_samples']}")
+                    st.metric("Số vòng lặp thực tế", f"{results['n_iter_actual']}")
 
                 st.subheader("📈 Ma trận Nhầm lẫn")
                 st.markdown("""
@@ -802,8 +1032,10 @@ def run_mnist_neural_network_app():
                     st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
                     st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")
                     st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
+                    if training_mode == "Pseudo Labeling":
+                        st.write(f"- Số mẫu được gán nhãn: {results['pseudo_labeled_samples']}")
                     st.markdown("**Tham số đã chọn:**")
-                    st.json({
+                    params_display = {
                         "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
                         "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
                         "Tốc độ học": results['params']['learning_rate'],
@@ -812,140 +1044,23 @@ def run_mnist_neural_network_app():
                         "Hàm kích hoạt": results['params']['activation'],
                         "Trình tối ưu": results['params']['solver'],
                         "Dừng sớm": early_stopping
-                    })
-
-    # Tab 6: Pseudo Labeling
-    with tab_pseudo:
-        st.markdown('<div class="section-title">Pseudo Labeling</div>', unsafe_allow_html=True)
-        st.header("Pseudo Labeling với Neural Network")
-        st.markdown("""
-            <p>Thuật toán Pseudo Labeling sử dụng một phần nhỏ dữ liệu có nhãn để huấn luyện ban đầu, sau đó dự đoán nhãn giả cho dữ liệu không nhãn dựa trên ngưỡng tin cậy. Quy trình lặp lại để cải thiện mô hình.</p>
-        """, unsafe_allow_html=True)
-
-        if 'split_data' not in st.session_state:
-            st.info("Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'.")
-        else:
-            split_data = st.session_state['split_data'].copy()
-            X_train = split_data["X_train"]
-            y_train = split_data["y_train"]
-            X_test = split_data["X_test"]
-            y_test = split_data["y_test"]
-            
-            X_train = np.array(X_train, dtype=np.float32)
-            y_train = np.array(y_train, dtype=np.int32)
-            X_test = np.array(X_test, dtype=np.float32)
-            y_test = np.array(y_test, dtype=np.int32)
-            
-            if "optimal_params" not in st.session_state:
-                st.session_state["optimal_params"] = get_optimal_params(len(X_train))
-            
-            params = st.session_state.get("pseudo_params", st.session_state["optimal_params"].copy())
-            
-            st.subheader("📋 Quy trình Pseudo Labeling")
-            st.markdown("""
-                <div class="step-box">
-                    <strong>Bước 1: Huấn luyện với dữ liệu có nhãn</strong><br>
-                    - Sử dụng 1% mẫu từ mỗi lớp (0-9) để huấn luyện mạng nơ-ron ban đầu.
-                </div>
-                <div class="step-box">
-                    <strong>Bước 2: Dự đoán nhãn giả</strong><br>
-                    - Dự đoán nhãn cho dữ liệu không nhãn dựa trên mô hình đã huấn luyện.
-                </div>
-                <div class="step-box">
-                    <strong>Bước 3: Huấn luyện lại với nhãn giả</strong><br>
-                    - Kết hợp dữ liệu có nhãn và nhãn giả (với độ tin cậy cao) để huấn luyện lại mạng.
-                </div>
-            """, unsafe_allow_html=True)
-
-            st.subheader("⚙️ Cấu hình Pseudo Labeling")
-            col_config1, col_config2 = st.columns(2)
-            
-            with col_config1:
-                threshold = st.slider("Ngưỡng tin cậy", 0.5, 0.99, 0.95, 0.01,
-                                    help="Ngưỡng xác suất để gán nhãn giả (0.5-0.99)")
-                max_iterations = st.number_input("Số vòng lặp tối đa", 1, 10, 5,
-                                               help="Số lần lặp tối đa của quá trình")
-            
-            with col_config2:
-                params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005], 
-                                                     index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate"]))
-                params["epochs"] = st.number_input("Số epochs mỗi vòng", 10, 100, params["epochs"])
-                params["batch_size"] = st.number_input("Kích thước batch", 32, 256, params["batch_size"])
-            
-            st.session_state["pseudo_params"] = params
-            
-            if st.button("🚀 Bắt đầu Pseudo Labeling", type="primary"):
-                with st.spinner("Đang thực hiện Pseudo Labeling..."):
-                    start_time = time.time()
-                    final_model, history = run_pseudo_labeling(
-                        X_train, y_train, X_test, y_test,
-                        params, threshold, max_iterations
-                    )
-                    
-                    test_pred = np.argmax(final_model.predict(X_test, verbose=0), axis=1)
-                    final_acc = accuracy_score(y_test, test_pred)
-                    
-                    st.session_state['pseudo_model'] = final_model
-                    st.session_state['pseudo_results'] = {
-                        'history': history,
-                        'final_accuracy': final_acc,
-                        'training_time': time.time() - start_time
                     }
-                    
-                    st.success(f"Hoàn tất Pseudo Labeling! Thời gian: {time.time() - start_time:.2f} giây")
-            
-            if 'pseudo_results' in st.session_state:
-                results = st.session_state['pseudo_results']
-                st.subheader("📊 Kết quả Pseudo Labeling")
-                
-                col_metric1, col_metric2 = st.columns(2)
-                with col_metric1:
-                    st.markdown(f'<div class="metric-box">Thời gian thực hiện: <strong>{results["training_time"]:.2f} giây</strong></div>', unsafe_allow_html=True)
-                with col_metric2:
-                    st.markdown(f'<div class="metric-box">Độ chính xác cuối cùng: <strong>{results["final_accuracy"]*100:.2f}%</strong></div>', unsafe_allow_html=True)
-                
-                # Vẽ biểu đồ tiến trình
-                history_df = pd.DataFrame(results['history'])
-                fig, ax = plt.subplots(figsize=(10, 5))
-                ax.plot(history_df['iteration'], history_df['test_accuracy'], 
-                       marker='o', label='Độ chính xác Test', color='#3498db', linewidth=2)
-                ax.set_xlabel("Vòng lặp", fontsize=12)
-                ax.set_ylabel("Độ chính xác", fontsize=12)
-                ax.set_title("Tiến trình Độ chính xác qua các vòng lặp", fontsize=14, pad=15)
-                ax.grid(True, linestyle='--', alpha=0.7)
-                ax.legend(fontsize=10)
-                st.pyplot(fig)
-                plt.close(fig)
-                
-                fig, ax = plt.subplots(figsize=(10, 5))
-                ax.plot(history_df['iteration'], history_df['n_labeled'], 
-                       marker='o', label='Số mẫu được gán nhãn', color='#2ecc71', linewidth=2)
-                ax.set_xlabel("Vòng lặp", fontsize=12)
-                ax.set_ylabel("Số mẫu", fontsize=12)
-                ax.set_title("Số mẫu được gán nhãn qua các vòng lặp", fontsize=14, pad=15)
-                ax.grid(True, linestyle='--', alpha=0.7)
-                ax.legend(fontsize=10)
-                st.pyplot(fig)
-                plt.close(fig)
+                    if training_mode == "Pseudo Labeling":
+                        params_display["Ngưỡng gán nhãn giả"] = pseudo_threshold
+                        params_display["Số vòng lặp tối đa"] = max_iterations
+                    st.json(params_display)
 
-    # Tab 7: Demo dự đoán
+    # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
         st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
 
-        if 'split_data' not in st.session_state or ('model' not in st.session_state and 'pseudo_model' not in st.session_state):
-            st.warning("⚠️ Vui lòng huấn luyện mô hình trước trong tab 'Huấn luyện/Đánh giá' hoặc 'Pseudo Labeling'!")
+        if 'split_data' not in st.session_state or 'model' not in st.session_state:
+            st.warning("⚠️ Vui lòng huấn luyện mô hình trước trong tab 'Huấn luyện/Đánh giá'!")
         else:
-            model_options = []
-            if 'model' in st.session_state:
-                model_options.append("Neural Network Thường")
-            if 'pseudo_model' in st.session_state:
-                model_options.append("Neural Network Pseudo Labeling")
-            
-            selected_model = st.selectbox("Chọn mô hình", model_options)
-            model = st.session_state['model'] if selected_model == "Neural Network Thường" else st.session_state['pseudo_model']
-            st.write(f"**Mô hình hiện tại**: {selected_model}")
+            model = st.session_state['model']
+            st.write("**Mô hình hiện tại**: Neural Network")
 
             input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
             is_normalized = 'data_processed' in st.session_state
@@ -972,7 +1087,7 @@ def run_mnist_neural_network_app():
                             predicted_class = np.argmax(prediction[0])
                             confidence = prediction[0][predicted_class] * 100
                             st.markdown(f"""
-                                <div class="metric-box">
+                                <div>
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
                                     <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                 </div>
@@ -1008,7 +1123,7 @@ def run_mnist_neural_network_app():
                             predicted_class = np.argmax(prediction[0])
                             confidence = prediction[0][predicted_class] * 100
                             st.markdown(f"""
-                                <div class="metric-box">
+                                <div class="prediction-box">
                                     <strong>Dự đoán:</strong> {predicted_class}<br>
                                     <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
                                     <strong>Nhãn thực tế:</strong> {y_test[idx]}
@@ -1051,7 +1166,7 @@ def run_mnist_neural_network_app():
                                 predicted_class = np.argmax(prediction[0])
                                 confidence = prediction[0][predicted_class] * 100
                                 st.markdown(f"""
-                                    <div class="metric-box">
+                                    <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
                                         <strong>Độ tin cậy:</strong> {confidence:.2f}%
                                     </div>
@@ -1065,7 +1180,7 @@ def run_mnist_neural_network_app():
                             st.session_state['canvas_key'] += 1
                             st.rerun()
 
-    # Tab 8: Thông tin huấn luyện
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
         try:
@@ -1175,4 +1290,4 @@ def run_mnist_neural_network_app():
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}")
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()
+    run_mnist_labelding_neural_network_app()

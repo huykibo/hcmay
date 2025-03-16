@@ -6,6 +6,7 @@ from MNIST_app import run_mnist_classification_app
 from MNIST_kmean import run_mnist_clustering_app
 from MNIST_PCA import run_mnist_dimension_reduction_app
 from netw import run_mnist_neural_network_app
+from Semisupervised import run_mnist_labelding_neural_network_app
 
 # Cấu hình trang chính - phải được gọi ngay đầu file
 st.set_page_config(page_title="Multi-App", layout="wide")
@@ -46,4 +47,15 @@ elif app_choice == "Dimension Reduction":
     run_mnist_dimension_reduction_app()
 elif app_choice == "Neural Network Classification":
     reset_other_apps("Neural Network Classification")
-    run_mnist_neural_network_app()
+    st.sidebar.subheader("Chọn loại Neural Network:")
+    nn_type = st.sidebar.selectbox(
+        "Loại Neural Network:",
+        ["Neural Network (Basic)", "Neural Network (Pseudo-Labeling)"]
+    )
+
+    if nn_type == "Neural Network (Basic)":
+        st.header("Neural Network Classification (Basic)")
+        run_mnist_neural_network_app()
+    elif nn_type == "Neural Network (Pseudo-Labeling)":
+        st.header("Neural Network Classification (Pseudo-Labeling)")
+        run_mnist_labelding_neural_network_app()
