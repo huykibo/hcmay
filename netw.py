@@ -35,10 +35,10 @@ def load_mnist_labels(filename):
 
 # Tải dữ liệu từ các file riêng lẻ
 def load_mnist_data():
-    X_train = load_mnist_images('train-images-idx3-ubyte')
-    y_train = load_mnist_labels('train-labels-idx1-ubyte')
-    X_test = load_mnist_images('t10k-images-idx3-ubyte')
-    y_test = load_mnist_labels('t10k-labels-idx1-ubyte')
+    X_train = load_mnist_images('train-images')
+    y_train = load_mnist_labels('train-labels')
+    X_test = load_mnist_images('t10k-images')
+    y_test = load_mnist_labels('t10k-images')
     X = np.concatenate([X_train, X_test], axis=0)
     y = np.concatenate([y_train, y_test], axis=0)
     return X, y
