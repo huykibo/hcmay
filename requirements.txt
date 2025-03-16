@@ -12,3 +12,4 @@ opencv-python-headless  # Thay vì opencv-python để tránh vấn đề GUI
 streamlit-drawable-canvas
 requests
 plotly  # Thêm từ lỗi trước với MNIST_kmean
+networkx
