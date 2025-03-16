@@ -181,8 +181,8 @@ def run_mnist_labelding_neural_network_app():
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
                 "Neural Network – Mạng nơ-ron nhân tạo",
-                "Công thức đánh giá độ chính xác (Accuracy)",
-                "Pseudo Labeling – Gán nhãn giả"
+                "Pseudo Labeling – Gán nhãn giả",
+                "Công thức đánh giá độ chính xác (Accuracy)"
             ],
             label_visibility="collapsed",
             help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
@@ -395,29 +395,6 @@ def run_mnist_labelding_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-        elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 101, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải thông tin... {i}%")
-                    time.sleep(0.05)
-                st.subheader("📘 4. Công thức đánh giá độ chính xác (Accuracy)")
-                st.markdown("""
-                - Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
-                  $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Giải thích**:  
-                  - $\\text{Số mẫu dự đoán đúng}$: Số lần mô hình dự đoán nhãn chính xác so với nhãn thực tế.  
-                  - $\\text{Tổng số mẫu}$: Tổng số mẫu trong tập dữ liệu kiểm tra.  
-                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 0.92$ (tức $92\%$).  
-                - Mục đích: Đo lường khả năng phân loại đúng các chữ số của Neural Network dựa trên đặc trưng pixel học được.
-                """, unsafe_allow_html=True)
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
-
         elif info_option == "Pseudo Labeling – Gán nhãn giả":
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
@@ -426,7 +403,7 @@ def run_mnist_labelding_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📘 5. Pseudo Labeling – Gán nhãn giả")
+                st.subheader("📘 4. Pseudo Labeling – Gán nhãn giả")
                 st.markdown("""
                 **Pseudo Labeling** (Gán nhãn giả) là một kỹ thuật trong học bán giám sát (semi-supervised learning), giúp tận dụng dữ liệu chưa có nhãn để cải thiện hiệu suất của mô hình Neural Network, đặc biệt khi dữ liệu có nhãn hạn chế.
                 """, unsafe_allow_html=True)
@@ -459,6 +436,29 @@ def run_mnist_labelding_neural_network_app():
                   - Yêu cầu ngưỡng tin cậy hợp lý để tránh overfitting trên nhãn giả.  
                 - **Ứng dụng thực tế**:  
                   - Nhận diện hình ảnh (như MNIST), phân loại văn bản, hoặc các bài toán học bán giám sát khác trong y học, tự động hóa.  
+                """, unsafe_allow_html=True)
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
+        elif info_option == "Công thức đánh giá độ chính xác (Accuracy)":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+                st.subheader("📘 5. Công thức đánh giá độ chính xác (Accuracy)")
+                st.markdown("""
+                - Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
+                  $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
+                - **Giải thích**:  
+                  - $\\text{Số mẫu dự đoán đúng}$: Số lần mô hình dự đoán nhãn chính xác so với nhãn thực tế.  
+                  - $\\text{Tổng số mẫu}$: Tổng số mẫu trong tập dữ liệu kiểm tra.  
+                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 0.92$ (tức $92\%$).  
+                - Mục đích: Đo lường khả năng phân loại đúng các chữ số của Neural Network dựa trên đặc trưng pixel học được.
                 """, unsafe_allow_html=True)
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)

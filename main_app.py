@@ -19,7 +19,14 @@ if 'current_app' not in st.session_state:
 st.sidebar.title("Menu Ứng Dụng")
 app_choice = st.sidebar.selectbox(
     "Chọn ứng dụng:",
-    ["Linear Regression", "Classification", "Clustering", "Dimension Reduction", "Neural Network Classification"]
+    [
+        "Linear Regression",
+        "Classification",
+        "Clustering",
+        "Dimension Reduction",
+        "Neural Network Classification ",
+        "Neural Network Classification (Pseudo-Labeling)"
+    ]
 )
 
 # Hàm để reset trạng thái của các ứng dụng khác
@@ -45,17 +52,11 @@ elif app_choice == "Clustering":
 elif app_choice == "Dimension Reduction":
     reset_other_apps("Dimension Reduction")
     run_mnist_dimension_reduction_app()
-elif app_choice == "Neural Network Classification":
-    reset_other_apps("Neural Network Classification")
-    st.sidebar.subheader("Chọn loại Neural Network:")
-    nn_type = st.sidebar.selectbox(
-        "Loại Neural Network:",
-        ["Neural Network (Basic)", "Neural Network (Pseudo-Labeling)"]
-    )
-
-    if nn_type == "Neural Network (Basic)":
-        st.header("Neural Network Classification (Basic)")
-        run_mnist_neural_network_app()
-    elif nn_type == "Neural Network (Pseudo-Labeling)":
-        st.header("Neural Network Classification (Pseudo-Labeling)")
-        run_mnist_labelding_neural_network_app()
+elif app_choice == "Neural Network Classification ":
+    reset_other_apps("Neural Network Classification ")
+    st.header("Neural Network Classification")
+    run_mnist_neural_network_app()
+elif app_choice == "Neural Network Classification (Pseudo-Labeling)":
+    reset_other_apps("Neural Network Classification (Pseudo-Labeling)")
+    st.header("Neural Network Classification (Pseudo-Labeling)")
+    run_mnist_labelding_neural_network_app()
