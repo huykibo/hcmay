@@ -23,12 +23,14 @@ import gc  # Để thu gom rác
 # Hàm tải dữ liệu MNIST với bộ nhớ cache
 @st.cache_data
 def fetch_mnist_data():
+    """Tải tập dữ liệu MNIST từ OpenML và trả về đặc trưng X và nhãn y."""
     mnist = openml.datasets.get_dataset(554)
     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
     return X, y
 
 # Hàm kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255]
 def validate_and_fix_pixels(X, name="dữ liệu"):
+    """Kiểm tra và chuẩn hóa giá trị pixel về khoảng [0, 255]."""
     X = np.array(X, dtype=np.float64)
     invalid_mask = (X < 0) | (X > 255)
     if np.any(invalid_mask):
@@ -40,10 +42,12 @@ def validate_and_fix_pixels(X, name="dữ liệu"):
 # Cache mô hình để tăng tốc độ
 @st.cache_resource
 def load_model(model):
+    """Tải mô hình đã được huấn luyện từ bộ nhớ cache."""
     return model
 
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
+    """Trả về tham số tối ưu dựa trên số lượng mẫu dữ liệu."""
     if num_samples <= 100:
         return {
             "hidden_layer_sizes": (32,),
@@ -82,6 +86,7 @@ def get_optimal_params(num_samples):
         }
 
 def run_mnist_neural_network_app():
+    """Chạy ứng dụng Streamlit phân loại chữ số MNIST với mạng neural network."""
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
@@ -168,19 +173,6 @@ def run_mnist_neural_network_app():
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 margin-bottom: 20px;
             }
-            .stTabs [role="tabpanel"] {
-                min-height: auto !important;
-                height: auto !important;
-            }
-            .stTabs [data-testid="stVerticalBlock"] {
-                min-height: auto !important;
-                height: auto !important;
-                padding-bottom: 0px !important;
-            }
-            .stTabs [data-testid="stVerticalBlock"] > div {
-                min-height: auto !important;
-                height: auto !important;
-            }
             .prediction-box {
                 margin-top: 10px;
                 padding: 10px;
@@ -204,7 +196,7 @@ def run_mnist_neural_network_app():
     tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # Tab 1: Thông tin
+    # **Tab 1: Thông tin**
     with tab_info:
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
@@ -295,7 +287,6 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                
                 st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
@@ -405,8 +396,8 @@ def run_mnist_neural_network_app():
                   $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
                 - **Giải thích**:  
                   - $\\eta$: Tốc độ học (learning rate), điều chỉnh kích thước bước cập nhật.  
-                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số lớp $l$.  
-                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias lớp $l$.  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
                 - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.
                 """, unsafe_allow_html=True)
                 try:
@@ -491,12 +482,9 @@ def run_mnist_neural_network_app():
                 - Hàm phi tuyến áp dụng trên mỗi nơ-ron, giúp mạng học các mối quan hệ phi tuyến.  
                 - **Phạm vi/Giá trị mặc định**: ReLU, Sigmoid, Tanh.  
                 - **Công thức liên quan**:  
-                  - ReLU:  
-                    $$ \\sigma(z) = \max(0, z) $$  
-                  - Sigmoid:  
-                    $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
-                  - Tanh:  
-                    $$ \\sigma(z) = \\tanh(z) $$  
+                  - ReLU: $$ \\sigma(z) = \max(0, z) $$  
+                  - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
+                  - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
                 - **Giải thích**:  
                   - $\\sigma(z)$: Đầu ra của hàm kích hoạt ứng với đầu vào $z$.  
                 - **Chú thích**: ReLU tránh gradient vanishing, Sigmoid phù hợp với đầu ra xác suất, Tanh cân bằng âm/dương.  
@@ -519,8 +507,7 @@ def run_mnist_neural_network_app():
                 - Phương pháp tối ưu hóa trọng số, ảnh hưởng đến tốc độ và hiệu quả hội tụ.  
                 - **Phạm vi/Giá trị mặc định**: Adam, SGD.  
                 - **Công thức liên quan**:  
-                  - SGD:  
-                    $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  - SGD: $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
                   - Adam:  
                     $$ m_t = \\beta_1 m_{t-1} + (1 - \\beta_1) \\cdot g_t $$  
                     $$ v_t = \\beta_2 v_{t-1} + (1 - \\beta_2) \\cdot g_t^2 $$  
@@ -571,10 +558,9 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu
+    # **Tab 2: Tải dữ liệu**
     with tab_load:
         st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
-
         st.markdown("""
         **Tập dữ liệu MNIST**: Gồm $70,000$ ảnh chữ số ($0$-$9$) với kích thước $28 \\times 28$ pixel. Bạn có thể tải toàn bộ dữ liệu và chọn số lượng mẫu phù hợp để huấn luyện.
         """, unsafe_allow_html=True)
@@ -611,7 +597,6 @@ def run_mnist_neural_network_app():
 
         if 'full_data' in st.session_state:
             X_full, y_full = st.session_state['full_data']
-
             st.subheader("Chọn số lượng mẫu")
             st.markdown("""
             - **100 mẫu**: Huấn luyện nhanh, độ chính xác thấp, phù hợp để thử nghiệm.  
@@ -646,7 +631,7 @@ def run_mnist_neural_network_app():
                         st.session_state['optimal_params'] = get_optimal_params(num_samples)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
-                        st.success(f"Đã chọn {num_samples} mẫu! Tham số tối ưu đã được cập nhật.")
+                        st.success(f"Đã chọn {num_samples} mẫu!")
                         status_text.text("Đã xử lý xong! 100%")
                         time.sleep(0.5)
                         status_text.empty()
@@ -672,7 +657,7 @@ def run_mnist_neural_network_app():
                             st.session_state['optimal_params'] = get_optimal_params(custom_num_samples)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
-                            st.success(f"Đã chọn {custom_num_samples} mẫu! Tham số tối ưu đã được cập nhật.")
+                            st.success(f"Đã chọn {custom_num_samples} mẫu! ")
                             status_text.text("Đã xử lý xong! 100%")
                             time.sleep(0.5)
                             status_text.empty()
@@ -682,7 +667,7 @@ def run_mnist_neural_network_app():
                     else:
                         st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng số mẫu đã tải!")
 
-    # Tab 3: Xử lý dữ liệu
+    # **Tab 3: Xử lý dữ liệu**
     with tab_preprocess:
         st.markdown('<div class="section-title">Xử lý Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -700,7 +685,7 @@ def run_mnist_neural_network_app():
                 ax.set_title(f"Label: {y[i]}")
                 ax.axis("off")
             st.pyplot(fig)
-            plt.close(fig)  # Xóa hình ảnh để giải phóng bộ nhớ
+            plt.close(fig)
 
             col1, col2 = st.columns([3, 1])
             with col1:
@@ -736,7 +721,7 @@ def run_mnist_neural_network_app():
                 X_processed, y_processed = st.session_state["data_processed"]
                 st.success("Đã xử lý dữ liệu!")
 
-    # Tab 4: Chia dữ liệu
+    # **Tab 4: Chia dữ liệu**
     with tab_split:
         st.markdown('<div class="section-title">Chia Tập Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -781,7 +766,7 @@ def run_mnist_neural_network_app():
                     del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
                     gc.collect()
 
-    # Tab 5: Huấn luyện/Đánh giá
+    # **Tab 5: Huấn luyện/Đánh giá**
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
@@ -1028,7 +1013,6 @@ def run_mnist_neural_network_app():
                     - **Val Loss (Mất mát validation):** Đo lường sai số trên tập validation (nếu có), giúp đánh giá khả năng tổng quát hóa. Nếu Val Loss ổn định hoặc giảm chậm, mô hình không bị overfitting.
                     - Hai đường này nên có xu hướng tương tự; nếu Val Loss tăng trong khi Train Loss giảm, đó là dấu hiệu của overfitting.
                     """)
-                    st.markdown("---")
 
                 if results['accuracy_history']:
                     fig, ax = plt.subplots(figsize=(8, 4))
@@ -1071,7 +1055,7 @@ def run_mnist_neural_network_app():
                         "Dừng sớm": early_stopping
                     })
 
-    # Tab 6: Demo dự đoán
+    # **Tab 6: Demo dự đoán**
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
@@ -1084,10 +1068,10 @@ def run_mnist_neural_network_app():
             st.write("**Mô hình hiện tại**: Neural Network")
 
             input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
-
             is_normalized = 'data_processed' in st.session_state
 
             def preprocess_input(data, is_normalized):
+                """Chuẩn bị dữ liệu đầu vào cho dự đoán."""
                 data, fixed = validate_and_fix_pixels(data)
                 if fixed:
                     st.success("Đã chuẩn hóa dữ liệu về [0, 255]!")
@@ -1192,7 +1176,7 @@ def run_mnist_neural_network_app():
                                 predicted_class = np.argmax(prediction[0])
                                 confidence = prediction[0][predicted_class] * 100
                                 st.markdown(f"""
-                                    <div class="prediction-box">
+                                    <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
                                         <strong>Xác suất:</strong> {confidence:.2f}%
                                     </div>
@@ -1206,138 +1190,124 @@ def run_mnist_neural_network_app():
                             st.session_state['canvas_key'] += 1
                             st.rerun()
 
-    # Tab 7: Thông tin huấn luyện
+    # **Tab 7: Thông tin huấn luyện**
     with tab_log_info:
         st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
-    try:
-        with st.spinner("Đang tải thông tin huấn luyện..."):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            for i in range(0, 101, 20):
-                progress_bar.progress(i)
-                status_text.text(f"Đang tải thông tin huấn luyện... {i}%")
-                time.sleep(0.1)
-            client = MlflowClient()
-            runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
-            if not runs:
-                st.info(f"Chưa có lần chạy nào trong Experiment ID {EXPERIMENT_ID}.")
-            else:
-                run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
-                selected_run_name = st.selectbox("Chọn run:", list(run_options.values()))
-                selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
-                selected_run = client.get_run(selected_run_id)
-
-                # Phần đổi tên Run
-                st.subheader("Đổi tên Run")
-                new_run_name = st.text_input("Nhập tên mới:", value=selected_run_name)
-                if st.button("Cập nhật tên"):
-                    client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
-                    st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
-                    st.rerun()
-
-                # Phần xóa Run
-                st.subheader("Xóa Run")
-                if st.button("Xóa lần chạy"):
-                    client.delete_run(selected_run_id)
-                    st.success(f"Đã xóa: {selected_run_name}")
-                    st.rerun()
-
-                # Phần thông tin chi tiết
-                st.subheader("Thông tin chi tiết")
-                st.write(f"**Tên:** {selected_run_name}")
-                st.write(f"**ID:** {selected_run_id}")
-                st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
-                
-                # Hiển thị tham số
-                st.markdown("**Tham số huấn luyện:**")
-                st.json(selected_run.data.params, expanded=True)
-                
-                # Hiển thị số liệu
-                st.markdown("**Số liệu huấn luyện:**")
-                st.json(selected_run.data.metrics, expanded=True)
-
-                # Biểu đồ Loss và Accuracy (nếu có dữ liệu lịch sử)
-                st.subheader("📈 Lịch sử Huấn luyện")
-                history_metrics = client.get_metric_history(selected_run_id, "loss")
-                if history_metrics:
-                    epochs = range(1, len(history_metrics) + 1)
-                    loss_values = [metric.value for metric in history_metrics]
-                    fig, ax = plt.subplots(figsize=(10, 5))
-                    ax.plot(epochs, loss_values, label='Training Loss', linestyle='-', color='blue', linewidth=2)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Loss")
-                    ax.set_title("Lịch sử Mất mát")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
+        try:
+            with st.spinner("Đang tải thông tin huấn luyện..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 20):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin huấn luyện... {i}%")
+                    time.sleep(0.1)
+                client = MlflowClient()
+                runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
+                if not runs:
+                    st.info(f"Chưa có lần chạy nào trong Experiment ID {EXPERIMENT_ID}.")
                 else:
-                    # Nếu không có lịch sử loss, lấy từ session state (nếu có)
-                    if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
-                        results = st.session_state['training_results']
-                        if results['loss_history']:
-                            fig, ax = plt.subplots(figsize=(10, 5))
-                            ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
-                                    label='Training Loss', linestyle='-', color='blue', linewidth=2)
-                            if results['val_loss_history']:
-                                ax.plot(range(1, len(results['val_loss_history']) + 1), results['val_loss_history'], 
-                                        label='Validation Loss', linestyle='--', color='orange', linewidth=2)
-                            ax.set_xlabel("Epochs")
-                            ax.set_ylabel("Loss")
-                            ax.set_title("Lịch sử Mất mát")
-                            ax.legend()
-                            ax.grid(True)
-                            st.pyplot(fig)
-                            plt.close(fig)
+                    run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
+                    selected_run_name = st.selectbox("Chọn run:", list(run_options.values()))
+                    selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
+                    selected_run = client.get_run(selected_run_id)
 
-                # Biểu đồ Accuracy
-                history_accuracy = client.get_metric_history(selected_run_id, "accuracy")
-                if history_accuracy:
-                    epochs = range(1, len(history_accuracy) + 1)
-                    accuracy_values = [metric.value for metric in history_accuracy]
-                    fig, ax = plt.subplots(figsize=(10, 5))
-                    ax.plot(epochs, accuracy_values, label='Training Accuracy', linestyle='-', color='green', linewidth=2)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Accuracy")
-                    ax.set_title("Lịch sử Độ chính xác")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                else:
-                    if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
-                        results = st.session_state['training_results']
-                        if results['accuracy_history']:
-                            fig, ax = plt.subplots(figsize=(10, 5))
-                            ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
-                                    label='Training Accuracy', linestyle='-', color='green', linewidth=2)
-                            if results['val_accuracy_history']:
-                                ax.plot(range(1, len(results['val_accuracy_history']) + 1), results['val_accuracy_history'], 
-                                        label='Validation Accuracy', linestyle='--', color='red', linewidth=2)
-                            ax.set_xlabel("Epochs")
-                            ax.set_ylabel("Accuracy")
-                            ax.set_title("Lịch sử Độ chính xác")
-                            ax.legend()
-                            ax.grid(True)
-                            st.pyplot(fig)
-                            plt.close(fig)
+                    st.subheader("Đổi tên Run")
+                    new_run_name = st.text_input("Nhập tên mới:", value=selected_run_name)
+                    if st.button("Cập nhật tên"):
+                        client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
+                        st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
+                        st.rerun()
 
-                # Thêm đường link MLflow UI ở cuối
-                mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
-                mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
-                st.markdown("---")
-                st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
+                    st.subheader("Xóa Run")
+                    if st.button("Xóa lần chạy"):
+                        client.delete_run(selected_run_id)
+                        st.success(f"Đã xóa: {selected_run_name}")
+                        st.rerun()
 
-        status_text.text("Đã tải xong! 100%")
-        time.sleep(0.5)
-        status_text.empty()
-        progress_bar.empty()
-    except Exception as e:
-        st.error(f"Lỗi khi tải thông tin huấn luyện: {e}")
-        status_text.empty()
-        progress_bar.empty()
-    except Exception as e:
-            st.error(f"Lỗi khi tải thông tin từ MLflow: {e}")
+                    st.subheader("Thông tin chi tiết")
+                    st.write(f"**Tên:** {selected_run_name}")
+                    st.write(f"**ID:** {selected_run_id}")
+                    st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
+                    
+                    st.markdown("**Tham số huấn luyện:**")
+                    st.json(selected_run.data.params, expanded=True)
+                    
+                    st.markdown("**Số liệu huấn luyện:**")
+                    st.json(selected_run.data.metrics, expanded=True)
+
+                    st.subheader("📈 Lịch sử Huấn luyện")
+                    history_metrics = client.get_metric_history(selected_run_id, "loss")
+                    if history_metrics:
+                        epochs = range(1, len(history_metrics) + 1)
+                        loss_values = [metric.value for metric in history_metrics]
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        ax.plot(epochs, loss_values, label='Training Loss', linestyle='-', color='blue', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Loss")
+                        ax.set_title("Lịch sử Mất mát")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    else:
+                        if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
+                            results = st.session_state['training_results']
+                            if results['loss_history']:
+                                fig, ax = plt.subplots(figsize=(10, 5))
+                                ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
+                                        label='Training Loss', linestyle='-', color='blue', linewidth=2)
+                                if results['val_loss_history']:
+                                    ax.plot(range(1, len(results['val_loss_history']) + 1), results['val_loss_history'], 
+                                            label='Validation Loss', linestyle='--', color='orange', linewidth=2)
+                                ax.set_xlabel("Epochs")
+                                ax.set_ylabel("Loss")
+                                ax.set_title("Lịch sử Mất mát")
+                                ax.legend()
+                                ax.grid(True)
+                                st.pyplot(fig)
+                                plt.close(fig)
+
+                    history_accuracy = client.get_metric_history(selected_run_id, "accuracy")
+                    if history_accuracy:
+                        epochs = range(1, len(history_accuracy) + 1)
+                        accuracy_values = [metric.value for metric in history_accuracy]
+                        fig, ax = plt.subplots(figsize=(10, 5))
+                        ax.plot(epochs, accuracy_values, label='Training Accuracy', linestyle='-', color='green', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Accuracy")
+                        ax.set_title("Lịch sử Độ chính xác")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    else:
+                        if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
+                            results = st.session_state['training_results']
+                            if results['accuracy_history']:
+                                fig, ax = plt.subplots(figsize=(10, 5))
+                                ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
+                                        label='Training Accuracy', linestyle='-', color='green', linewidth=2)
+                                if results['val_accuracy_history']:
+                                    ax.plot(range(1, len(results['val_accuracy_history']) + 1), results['val_accuracy_history'], 
+                                            label='Validation Accuracy', linestyle='--', color='red', linewidth=2)
+                                ax.set_xlabel("Epochs")
+                                ax.set_ylabel("Accuracy")
+                                ax.set_title("Lịch sử Độ chính xác")
+                                ax.legend()
+                                ax.grid(True)
+                                st.pyplot(fig)
+                                plt.close(fig)
+
+                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+                    st.markdown("---")
+                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
+
+            status_text.text("Đã tải xong! 100%")
+            time.sleep(0.5)
+            status_text.empty()
+            progress_bar.empty()
+        except Exception as e:
+            st.error(f"Lỗi khi tải thông tin huấn luyện: {e}")
             status_text.empty()
             progress_bar.empty()
 
