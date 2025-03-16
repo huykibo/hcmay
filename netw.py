@@ -44,7 +44,7 @@ class TrainingLogger:
         self.accuracy_history.append(accuracy)
 
 def run_mnist_neural_network_app():
-    # Thiết lập MLflow
+    # # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
@@ -409,19 +409,14 @@ def run_mnist_neural_network_app():
                 progress_bar.empty()
 
     with tab_load:
-        st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
-
         # Hộp thông tin về dữ liệu
         st.markdown("""
-            <div class="info-box">
-                <strong>Tập dữ liệu MNIST</strong>: Gồm 70,000 ảnh chữ số (0-9) với kích thước 28x28 pixel. 
-                Bạn có thể tải toàn bộ dữ liệu và chọn số lượng mẫu phù hợp để huấn luyện.
-            </div>
-        """, unsafe_allow_html=True)
+        **Tập dữ liệu MNIST**: Gồm 70,000 ảnh chữ số (0-9) với kích thước 28x28 pixel. 
+        Bạn có thể tải toàn bộ dữ liệu và chọn số lượng mẫu phù hợp để huấn luyện.
+    """, unsafe_allow_html=True)
 
         # Container cho hành động tải dữ liệu
         with st.container():
-            st.markdown('<div class="action-container">', unsafe_allow_html=True)
             st.subheader("Tải dữ liệu")
             if st.button("Tải dữ liệu MNIST từ OpenML", type="primary", help="Tải toàn bộ tập dữ liệu MNIST từ OpenML"):
                 with st.spinner("Đang tải dữ liệu..."):
@@ -1029,4 +1024,4 @@ def run_mnist_neural_network_app():
             st.error(f"Lỗi kết nối MLflow: {e}")
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()
+    run_mnist_neural_network_app()  
