@@ -18,47 +18,8 @@ import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc
-import struct
 
-# Hàm đọc dữ liệu từ file .idx
-def load_mnist_images(filename):
-    with open(filename, 'rb') as f:
-        magic, num, rows, cols = struct.unpack('>IIII', f.read(16))
-        images = np.fromfile(f, dtype=np.uint8).reshape(num, rows, cols)
-    return images
-
-def load_mnist_labels(filename):
-    with open(filename, 'rb') as f:
-        magic, num = struct.unpack('>II', f.read(8))
-        labels = np.fromfile(f, dtype=np.uint8)
-    return labels
-
-# Tải dữ liệu từ các file riêng lẻ
-def load_mnist_data():
-    X_train = load_mnist_images('train-images')
-    y_train = load_mnist_labels('train-labels')
-    X_test = load_mnist_images('t10k-images')
-    y_test = load_mnist_labels('t10k-images')
-    X = np.concatenate([X_train, X_test], axis=0)
-    y = np.concatenate([y_train, y_test], axis=0)
-    return X, y
-
-# Kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255]
-def validate_and_fix_pixels(X, name="dữ liệu"):
-    X = np.array(X, dtype=np.float64)
-    invalid_mask = (X < 0) | (X > 255)
-    if np.any(invalid_mask):
-        st.warning(f"Phát hiện giá trị pixel không hợp lệ trong {name}. Đang chuẩn hóa...")
-        X_fixed = np.clip(X, 0, 255)
-        return X_fixed, True
-    return X, False
-
-# Cache mô hình để tăng tốc độ
-@st.cache_resource
-def load_model(model):
-    return model
-
-# Chọn tham số tối ưu dựa trên số mẫu
+# Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
     if num_samples <= 1000:
         return {
@@ -576,16 +537,22 @@ def run_mnist_neural_network_app():
     with tab_load:
         st.markdown('<div class="section-title">Chọn Dữ liệu</div>', unsafe_allow_html=True)
         st.markdown("""
-        **Tập dữ liệu MNIST**: Được tải từ các file `train-images-idx3-ubyte`, `train-labels-idx1-ubyte`, `t10k-images-idx3-ubyte`, `t10k-labels-idx1-ubyte`. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
+        **Tập dữ liệu MNIST**: Được tải từ thư viện TensorFlow. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
         """, unsafe_allow_html=True)
 
         if 'full_data' not in st.session_state:
-            if st.button("Tải dữ liệu từ các file MNIST", type="primary"):
-                with st.spinner("Đang tải dữ liệu từ các file MNIST..."):
+            if st.button("Tải dữ liệu MNIST từ TensorFlow", type="primary"):
+                with st.spinner("Đang tải dữ liệu MNIST từ TensorFlow..."):
                     try:
-                        X, y = load_mnist_data()
+                        # Tải dữ liệu MNIST từ TensorFlow
+                        (X_train, y_train), (X_test, y_test) = tf.keras.datasets.mnist.load_data()
+                        # Kết hợp tập huấn luyện và tập kiểm tra thành một tập dữ liệu đầy đủ
+                        X = np.concatenate([X_train, X_test], axis=0)
+                        y = np.concatenate([y_train, y_test], axis=0)
+                        # Reshape dữ liệu thành dạng (số mẫu, 784) và chuyển kiểu dữ liệu
                         X = X.reshape(-1, 784).astype(np.float64)
                         y = y.astype(np.int32)
+                        # Lưu dữ liệu vào session_state
                         st.session_state['full_data'] = (X, y)
                         st.success("Đã tải dữ liệu thành công!")
                         st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
@@ -823,8 +790,6 @@ def run_mnist_neural_network_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                    params["dropout_rate"] = st.slider("Dropout Rate", 0.0, 0.5, value=params.get("dropout_rate", 0.2), step=0.1,
-                                                       help="Tỷ lệ dropout để giảm overfitting (0.0-0.5).")
                     early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
                                                  help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
 
@@ -1012,16 +977,13 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.warning("⚠️ Vui lòng huấn luyện mô hình trước trong tab 'Huấn luyện/Đánh giá'!")
         else:
-            model = load_model(st.session_state['model'])
+            model = st.session_state['model']
             st.write("**Mô hình hiện tại**: Neural Network")
 
             input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
             is_normalized = 'data_processed' in st.session_state
 
             def preprocess_input(data, is_normalized):
-                data, fixed = validate_and_fix_pixels(data)
-                if fixed:
-                    st.success("Đã chuẩn hóa dữ liệu về [0, 255]!")
                 if not is_normalized:
                     data = data / 255.0
                 return data
