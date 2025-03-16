@@ -744,18 +744,45 @@ def run_mnist_neural_network_app():
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
 
             def get_optimal_params(num_samples):
+                """
+                Trả về các tham số tối ưu dựa trên số lượng mẫu, cân bằng giữa tốc độ và hiệu suất.
+                """
                 if num_samples <= 100:
-                    return {"hidden_layer_sizes": (16,), "learning_rate_init": 0.01, "max_iter": 20, 
-                            "activation": "relu", "solver": "adam", "batch_size": 32}
+                    return {
+                        "hidden_layer_sizes": (32,),            # Một lớp ẩn, đủ để học cơ bản, nhanh hơn (16,)
+                        "learning_rate_init": 0.01,             # Tốc độ học cao để hội tụ nhanh với dữ liệu nhỏ
+                        "max_iter": 15,                         # Ít lần lặp để nhanh, đủ cho dữ liệu nhỏ
+                        "activation": "relu",                   # ReLU nhanh và hiệu quả
+                        "solver": "sgd",                        # SGD nhanh hơn Adam với dữ liệu nhỏ
+                        "batch_size": 64                        # Batch lớn hơn để giảm số lần cập nhật
+                    }
                 elif num_samples <= 1000:
-                    return {"hidden_layer_sizes": (32,), "learning_rate_init": 0.005, "max_iter": 50, 
-                            "activation": "relu", "solver": "adam", "batch_size": 64}
+                    return {
+                        "hidden_layer_sizes": (64,),            # Tăng nơ-ron để học tốt hơn
+                        "learning_rate_init": 0.005,            # Giảm nhẹ tốc độ học cho ổn định
+                        "max_iter": 30,                         # Tăng lần lặp để cải thiện hiệu suất
+                        "activation": "relu",                   # Giữ ReLU vì hiệu quả cao
+                        "solver": "adam",                       # Adam phù hợp với dữ liệu trung bình
+                        "batch_size": 128                       # Batch lớn hơn để nhanh hơn
+                    }
                 elif num_samples <= 10000:
-                    return {"hidden_layer_sizes": (64, 32), "learning_rate_init": 0.001, "max_iter": 75, 
-                            "activation": "relu", "solver": "adam", "batch_size": 128}
-                else:
-                    return {"hidden_layer_sizes": (128, 64), "learning_rate_init": 0.0005, "max_iter": 100, 
-                            "activation": "relu", "solver": "adam", "batch_size": 256}
+                    return {
+                        "hidden_layer_sizes": (100, 50),        # Hai lớp ẩn, tối ưu cho dữ liệu vừa
+                        "learning_rate_init": 0.001,            # Tốc độ học nhỏ hơn để ổn định
+                        "max_iter": 50,                         # Đủ lần lặp để hội tụ tốt
+                        "activation": "relu",                   # ReLU vẫn là lựa chọn tối ưu
+                        "solver": "adam",                       # Adam hiệu quả với dữ liệu lớn hơn
+                        "batch_size": 256                       # Batch lớn để tăng tốc
+                    }
+                else:  # >10,000
+                    return {
+                        "hidden_layer_sizes": (128, 64),        # Giữ cấu trúc sâu để học tốt
+                        "learning_rate_init": 0.001,            # Tốc độ học nhỏ để chính xác cao
+                        "max_iter": 75,                         # Tăng lần lặp để tối ưu với dữ liệu lớn
+                        "activation": "relu",                   # ReLU cho tốc độ và hiệu suất
+                        "solver": "adam",                       # Adam tối ưu cho dữ liệu lớn
+                        "batch_size": 512                       # Batch rất lớn để tăng tốc đáng kể
+                    }
 
             if "optimal_params" not in st.session_state:
                 st.session_state["optimal_params"] = get_optimal_params(num_samples)
@@ -766,10 +793,10 @@ def run_mnist_neural_network_app():
             Dưới đây là bảng tham số tối ưu dựa trên số mẫu huấn luyện:
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-            | $\\leq 100$  | $1$       | $16$              | $0.01$     | $20$       | ReLU          | Adam         | $32$             |
-            | $\\leq 1,000$| $1$       | $32$              | $0.005$    | $50$       | ReLU          | Adam         | $64$             |
-            | $\\leq 10,000$| $2$      | $(64, 32)$        | $0.001$    | $75$       | ReLU          | Adam         | $128$            |
-            | $>10,000$    | $2$      | $(128, 64)$       | $0.0005$   | $100$      | ReLU          | Adam         | $256$            |
+            | $\\leq 100$  | $1$       | $32$              | $0.01$     | $15$       | ReLU          | SGD          | $64$             |
+            | $\\leq 1,000$| $1$       | $64$              | $0.005$    | $30$       | ReLU          | Adam         | $128$            |
+            | $\\leq 10,000$| $2$      | $(100, 50)$       | $0.001$    | $50$       | ReLU          | Adam         | $256$            |
+            | $>10,000$    | $2$      | $(128, 64)$       | $0.001$    | $75$       | ReLU          | Adam         | $512$            |
             """, unsafe_allow_html=True)
 
             st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
@@ -787,9 +814,11 @@ def run_mnist_neural_network_app():
                     params["learning_rate_init"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005], 
                                                                 index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate_init"]))
                     params["max_iter"] = st.number_input("Số lần lặp", min_value=10, max_value=100, value=params["max_iter"])
-                    params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"])
+                    params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=512, value=params["batch_size"])
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd", "lbfgs"], 
                                                     index=["adam", "sgd", "lbfgs"].index(params["solver"]))
+                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
+                                                 help="Dừng huấn luyện nếu không cải thiện trên tập validation, tiết kiệm thời gian.")
 
             if st.button("🔄 Khôi phục tham số tối ưu"):
                 st.session_state["training_params"] = st.session_state["optimal_params"].copy()
@@ -810,7 +839,14 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
 
                         logger = TrainingLogger()
-                        model = MLPClassifier(**params, verbose=True)
+                        # Thêm early_stopping vào MLPClassifier
+                        model = MLPClassifier(
+                            **params,
+                            early_stopping=early_stopping,  # Thêm tham số dừng sớm
+                            validation_fraction=0.1,        # Tỷ lệ dữ liệu dùng cho validation nếu early_stopping=True
+                            n_iter_no_change=10,            # Số lần lặp không cải thiện trước khi dừng
+                            verbose=True
+                        )
 
                         status_text.text("Đang huấn luyện mô hình... 50%")
                         progress_bar.progress(50)
@@ -825,7 +861,8 @@ def run_mnist_neural_network_app():
                         sys.stdout = old_stdout
                         training_output = new_stdout.getvalue()
 
-                        epochs = range(1, params["max_iter"] + 1)
+                        # Giả lập loss và accuracy nếu early_stopping dừng sớm
+                        epochs = range(1, min(params["max_iter"], model.n_iter_) + 1)
                         for epoch in epochs:
                             simulated_loss = 1.0 / (1 + np.log(epoch + 1))
                             simulated_accuracy = 1.0 - simulated_loss
@@ -846,10 +883,11 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                         run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                            mlflow.log_params(params)
+                            mlflow.log_params({**params, "early_stopping": early_stopping})
                             mlflow.log_metric("accuracy_val", acc_valid)
                             mlflow.log_metric("accuracy_test", acc_test)
                             mlflow.log_metric("training_time", time.time() - start_time)
+                            mlflow.log_metric("n_iter_actual", model.n_iter_)  # Số lần lặp thực tế
                             for epoch, (loss, acc) in enumerate(zip(logger.loss_history, logger.accuracy_history), 1):
                                 mlflow.log_metric(f"loss_epoch_{epoch}", loss)
                                 mlflow.log_metric(f"accuracy_epoch_{epoch}", acc)
@@ -861,10 +899,11 @@ def run_mnist_neural_network_app():
                                 'run_name': run_name, 'run_id': run.info.run_id,
                                 'params': params, 'training_time': time.time() - start_time,
                                 'loss_history': logger.loss_history,
-                                'accuracy_history': logger.accuracy_history
+                                'accuracy_history': logger.accuracy_history,
+                                'n_iter_actual': model.n_iter_  # Lưu số lần lặp thực tế
                             }
 
-                        st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
+                        st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {model.n_iter_}")
                         status_text.text("Đã hoàn tất huấn luyện! 100%")
                         time.sleep(0.5)
                         status_text.empty()
@@ -937,6 +976,7 @@ def run_mnist_neural_network_app():
                     st.write(f"- Tên: {results['run_name']}")
                     st.write(f"- ID: {results['run_id']}")
                     st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
                     st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")
                     st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
                     st.markdown("**Tham số đã chọn:**")
@@ -947,7 +987,8 @@ def run_mnist_neural_network_app():
                         "Số lần lặp": results['params']['max_iter'],
                         "Kích thước batch": results['params']['batch_size'],
                         "Hàm kích hoạt": results['params']['activation'],
-                        "Trình tối ưu": results['params']['solver']
+                        "Trình tối ưu": results['params']['solver'],
+                        "Dừng sớm": early_stopping
                     })
 
     with tab_demo:
@@ -1019,7 +1060,7 @@ def run_mnist_neural_network_app():
                         st.markdown(f"""
                             <div class="prediction-box">
                                 <strong>Dự đoán:</strong> {prediction}<br>
-                                <strong>Xác suất cao nhất:</strong> {max_proba:.2f}%<br>
+                                <strong>Độ tin cậy:</strong> {max_proba:.2f}%<br>
                                 <strong>Nhãn thực tế:</strong> {y_test.iloc[idx]}
                             </div>
                         """, unsafe_allow_html=True)
@@ -1062,7 +1103,7 @@ def run_mnist_neural_network_app():
                                         st.markdown(f"""
                                             <div class="prediction-box">
                                                 <strong>Dự đoán:</strong> {prediction}<br>
-                                                <strong>Xác suất cao nhất:</strong> {max_proba:.2f}%
+                                                <strong>Độ tin cậy:</strong> {max_proba:.2f}%
                                             </div>
                                         """, unsafe_allow_html=True)
                                         status_text.text(f"Đã dự đoán xong ảnh {i+1}! 100%")
@@ -1103,7 +1144,7 @@ def run_mnist_neural_network_app():
                                 st.markdown(f"""
                                     <div class="prediction-box">
                                         <strong>Dự đoán:</strong> {prediction}<br>
-                                        <strong>Xác suất cao nhất:</strong> {max_proba:.2f}%
+                                        <strong>Độ tin cậy:</strong> {max_proba:.2f}%
                                     </div>
                                 """, unsafe_allow_html=True)
 
