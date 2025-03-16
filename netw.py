@@ -426,13 +426,13 @@ def run_mnist_neural_network_app():
                 st.subheader("3. Tốc độ học (Learning Rate)")
                 st.markdown("""
                 - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005]$.  
+                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001]$.  
                 - **Công thức liên quan**:  
                   $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
                 - **Giải thích**:  
                   - $\\eta$: Tốc độ học.  
                   - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của hàm mất mát theo trọng số.  
-                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0005$ học chậm nhưng ổn định.  
+                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0001$ học chậm nhưng ổn định.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("4. Số lần lặp (Max Iterations)")
@@ -777,8 +777,8 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0001], 
-                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001], 
+                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
                                                            help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
                     params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
                                                        help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
