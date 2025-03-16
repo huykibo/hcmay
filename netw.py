@@ -78,15 +78,25 @@ def get_optimal_params(num_samples):
             "batch_size": 64,
             "dropout_rate": 0.3
         }
-    else:
+    elif num_samples <= 50000:
         return {
-            "hidden_layer_sizes": (64, 32, 16),
+            "hidden_layer_sizes": (128, 64, 32),
             "learning_rate": 0.0003,
             "epochs": 100,
             "activation": "relu",
             "solver": "adam",
             "batch_size": 128,
             "dropout_rate": 0.3
+        }
+    else:  # Cho num_samples > 50,000 (bao gồm 70,000 mẫu)
+        return {
+            "hidden_layer_sizes": (256, 128, 64),
+            "learning_rate": 0.0001,
+            "epochs": 150,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 256,
+            "dropout_rate": 0.4
         }
 
 def run_mnist_neural_network_app():
@@ -312,8 +322,8 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
                 - **Tham số liên quan**:  
-                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
-                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
+                  - **Số lớp ẩn**: Được chọn từ $1$ đến $3$ trong giao diện huấn luyện.  
+                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $256$.  
                 - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.
                 """, unsafe_allow_html=True)
                 try:
@@ -413,7 +423,7 @@ def run_mnist_neural_network_app():
 
                 st.subheader("6. Lặp lại")
                 st.markdown("""
-                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
+                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $150$) cho đến khi mất mát $L$ hội tụ.  
                 - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.
                 """, unsafe_allow_html=True)
                 try:
@@ -431,7 +441,7 @@ def run_mnist_neural_network_app():
                 st.subheader("1. Số lớp ẩn")
                 st.markdown("""
                 - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
-                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$ trong giao diện huấn luyện.  
+                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $3$ trong giao diện huấn luyện.  
                 - **Công thức liên quan**:  
                   $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
                 - **Giải thích**:  
@@ -440,45 +450,45 @@ def run_mnist_neural_network_app():
                   - $W^{(l)}$: Trọng số của lớp $l$.  
                   - $b^{(l)}$: Bias của lớp $l$.  
                   - $\\sigma$: Hàm kích hoạt.  
-                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
+                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $3$ tăng khả năng học các mẫu phức tạp như MNIST đầy đủ.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("2. Số nơ-ron mỗi lớp")
                 st.markdown("""
                 - Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
-                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $128$.  
+                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $256$.  
                 - **Công thức liên quan**:  
                   $$ W^{(l)} \in \mathbb{R}^{n_{l-1} \times n_l} $$  
                 - **Giải thích**:  
                   - $n_{l-1}$: Số nơ-ron của lớp trước.  
                   - $n_l$: Số nơ-ron của lớp hiện tại.  
                   - $W^{(l)}$: Ma trận trọng số giữa lớp $l-1$ và $l$.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $256$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("3. Tốc độ học (Learning Rate)")
                 st.markdown("""
                 - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005]$.  
+                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005, 0.0001]$.  
                 - **Công thức liên quan**:  
                   $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
                 - **Giải thích**:  
                   - $\\eta$: Tốc độ học.  
                   - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của hàm mất mát theo trọng số.  
-                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0005$ học chậm nhưng ổn định.  
+                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0001$ học chậm nhưng ổn định với dữ liệu lớn.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("4. Số lần lặp (Max Iterations)")
                 st.markdown("""
                 - Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $100$.  
+                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $150$.  
                 - **Công thức liên quan**:  
                   $$ \text{Tổng cập nhật} = E \\cdot \\frac{N}{B} $$  
                 - **Giải thích**:  
                   - $E$: Số epoch.  
                   - $N$: Số mẫu.  
                   - $B$: Kích thước batch.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $150$) tăng cơ hội hội tụ nhưng tốn thời gian với dữ liệu lớn.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("5. Hàm kích hoạt")
@@ -503,7 +513,7 @@ def run_mnist_neural_network_app():
                 - **Giải thích**:  
                   - $B$: Kích thước batch.  
                   - $\\frac{\\partial L_i}{\\partial W^{(l)}}$: Gradient của mất mát cho mẫu $i$.  
-                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
+                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định với dữ liệu lớn.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("7. Trình tối ưu (Solver)")
@@ -583,11 +593,11 @@ def run_mnist_neural_network_app():
                         X, y = fetch_mnist_data()
                         X = np.array(X, dtype=np.float64)
                         y = np.array(y, dtype=np.int32)
-                        st.session_state['full_data'] = (X[:5000].copy(), y[:5000].copy())  # Giới hạn 5000 mẫu
+                        st.session_state['full_data'] = (X, y)  # Lưu toàn bộ dữ liệu
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
-                            mlflow.log_param("total_samples", 5000)
+                            mlflow.log_param("total_samples", len(X))
                         st.success("Tải dữ liệu thành công!")
-                        st.write(f"Kích thước dữ liệu: {5000} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
+                        st.write(f"Kích thước dữ liệu: {len(X)} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
                         status_text.text("Đã tải xong! 100%")
                         time.sleep(0.5)
                         status_text.empty()
@@ -606,7 +616,7 @@ def run_mnist_neural_network_app():
             - **100 mẫu**: Huấn luyện nhanh, độ chính xác thấp, phù hợp để thử nghiệm.  
             - **1,000 mẫu**: Huấn luyện khá nhanh, độ chính xác trung bình, phù hợp để kiểm tra cơ bản.  
             - **10,000 mẫu**: Huấn luyện lâu hơn, độ chính xác khá, cân bằng giữa tốc độ và hiệu suất.  
-            - **50,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
+            - **70,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
             """, unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
@@ -615,7 +625,7 @@ def run_mnist_neural_network_app():
                     "100 mẫu (Thử nghiệm nhanh)": 100,
                     "1,000 mẫu (Kiểm tra cơ bản)": 1000,
                     "10,000 mẫu (Cân bằng hiệu suất)": 10000,
-                    "50,000 mẫu (Huấn luyện chuyên sâu)": 50000
+                    "70,000 mẫu (Huấn luyện chuyên sâu)": 70000
                 }
                 selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()), help="Chọn số lượng mẫu có sẵn")
                 num_samples = min(sample_options[selected_option], len(X_full))
@@ -644,7 +654,7 @@ def run_mnist_neural_network_app():
                         gc.collect()
 
             with col2:
-                custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa $70,000$):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
+                custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
                 if st.button("Xác nhận số lượng (tùy ý)", type="primary"):
                     if custom_num_samples <= len(X_full):
                         with st.spinner(f"Đang lấy {custom_num_samples} mẫu..."):
@@ -669,7 +679,7 @@ def run_mnist_neural_network_app():
                             del X_full, y_full, X_sampled, y_sampled
                             gc.collect()
                     else:
-                        st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng số mẫu đã tải!")
+                        st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng 70,000!")
 
     # **Tab 3: Xử lý dữ liệu**
     with tab_preprocess:
@@ -816,7 +826,8 @@ def run_mnist_neural_network_app():
             | ≤ 100        | 1         | 16                | 0.005      | 20         | ReLU          | Adam         | 32               | 0.2          |
             | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.2          |
             | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.3          |
-            | > 10,000     | 3         | (64, 32, 16)      | 0.0003     | 100        | ReLU          | Adam         | 128              | 0.3          |
+            | ≤ 50,000     | 3         | (128, 64, 32)     | 0.0003     | 100        | ReLU          | Adam         | 128              | 0.3          |
+            | > 50,000     | 3         | (256, 128, 64)    | 0.0001     | 150        | ReLU          | Adam         | 256              | 0.4          |
             """, unsafe_allow_html=True)
             st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
 
@@ -829,28 +840,28 @@ def run_mnist_neural_network_app():
                     hidden_sizes = list(params["hidden_layer_sizes"])
                     
                     if num_hidden_layers == 1:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
                                                         value=hidden_sizes[0] if len(hidden_sizes) > 0 else 16, 
-                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
+                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-256).")
                         hidden_sizes = [hidden_size_1]
                     elif num_hidden_layers == 2:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
                                                         value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-256).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=256, 
                                                         value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-256).")
                         hidden_sizes = [hidden_size_1, hidden_size_2]
                     elif num_hidden_layers == 3:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
-                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 16, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 128, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-256).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=256, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 64, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-256).")
+                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=256, 
+                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-256).")
                         hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
                     
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
@@ -861,11 +872,11 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005], 
-                                                           index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate"]),
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0001], 
+                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
                                                            help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
-                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
-                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
+                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=200, value=params["epochs"], 
+                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-200).")
                     params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
                                                            help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
