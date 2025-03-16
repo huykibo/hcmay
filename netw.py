@@ -50,39 +50,43 @@ def get_optimal_params(num_samples):
     """Trả về tham số tối ưu dựa trên số lượng mẫu dữ liệu."""
     if num_samples <= 100:
         return {
-            "hidden_layer_sizes": (32,),
-            "learning_rate": 0.01,
-            "epochs": 10,
-            "activation": "relu",
-            "solver": "sgd",
-            "batch_size": 32
-        }
-    elif num_samples <= 1000:
-        return {
-            "hidden_layer_sizes": (64,),
+            "hidden_layer_sizes": (16,),
             "learning_rate": 0.005,
             "epochs": 20,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 64
+            "batch_size": 32,
+            "dropout_rate": 0.2
         }
-    elif num_samples <= 10000:
+    elif num_samples <= 1000:
         return {
-            "hidden_layer_sizes": (100, 50),
+            "hidden_layer_sizes": (32,),
             "learning_rate": 0.001,
             "epochs": 30,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 128
+            "batch_size": 32,
+            "dropout_rate": 0.2
         }
-    else:
+    elif num_samples <= 10000:
         return {
-            "hidden_layer_sizes": (128, 64),
-            "learning_rate": 0.001,
+            "hidden_layer_sizes": (64, 32),
+            "learning_rate": 0.0005,
             "epochs": 50,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 256
+            "batch_size": 64,
+            "dropout_rate": 0.3
+        }
+    else:
+        return {
+            "hidden_layer_sizes": (64, 32, 16),
+            "learning_rate": 0.0003,
+            "epochs": 100,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 128,
+            "dropout_rate": 0.3
         }
 
 def run_mnist_neural_network_app():
@@ -427,7 +431,7 @@ def run_mnist_neural_network_app():
                 st.subheader("1. Số lớp ẩn")
                 st.markdown("""
                 - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
-                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$.  
+                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$ trong giao diện huấn luyện.  
                 - **Công thức liên quan**:  
                   $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
                 - **Giải thích**:  
@@ -807,12 +811,12 @@ def run_mnist_neural_network_app():
 
             st.subheader("⚙️ Cấu hình Tham số Mô hình")
             st.markdown("""
-            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
-            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-            | ≤ 100        | 1         | 32                | 0.01       | 10         | ReLU          | SGD          | 32              |
-            | ≤ 1,000      | 1         | 64                | 0.005      | 20         | ReLU          | Adam         | 64              |
-            | ≤ 10,000     | 2         | (100, 50)         | 0.001      | 30         | ReLU          | Adam         | 128             |
-            | > 10,000     | 2         | (128, 64)         | 0.001      | 50         | ReLU          | Adam         | 256             |
+            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch | Dropout Rate |
+            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|--------------|
+            | ≤ 100        | 1         | 16                | 0.005      | 20         | ReLU          | Adam         | 32               | 0.2          |
+            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.2          |
+            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.3          |
+            | > 10,000     | 3         | (64, 32, 16)      | 0.0003     | 100        | ReLU          | Adam         | 128              | 0.3          |
             """, unsafe_allow_html=True)
             st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
 
@@ -820,23 +824,34 @@ def run_mnist_neural_network_app():
             with col_param1:
                 with st.expander("🧠 Cấu trúc Mạng", expanded=True):
                     st.markdown("**Tùy chỉnh số lớp ẩn và nơ-ron**", unsafe_allow_html=True)
-                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=2, value=len(params["hidden_layer_sizes"]), 
-                                                       help="Chọn 1 hoặc 2 lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
+                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=len(params["hidden_layer_sizes"]), 
+                                                       help="Chọn 1, 2 hoặc 3 lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
                     hidden_sizes = list(params["hidden_layer_sizes"])
                     
                     if num_hidden_layers == 1:
                         hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0], 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 16, 
                                                         help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
                         hidden_sizes = [hidden_size_1]
                     elif num_hidden_layers == 2:
                         hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 100, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
                                                         help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
                         hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 50, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
                                                         help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
                         hidden_sizes = [hidden_size_1, hidden_size_2]
+                    elif num_hidden_layers == 3:
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
+                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 16, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
+                        hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
                     
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
                     params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
@@ -856,6 +871,8 @@ def run_mnist_neural_network_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
+                    params["dropout_rate"] = st.slider("Dropout Rate", 0.0, 0.5, value=params.get("dropout_rate", 0.2), step=0.1,
+                                                       help="Tỷ lệ dropout để giảm overfitting (0.0-0.5).")
                     early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
                                                  help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
 
@@ -882,8 +899,10 @@ def run_mnist_neural_network_app():
 
                             model = models.Sequential()
                             model.add(layers.Input(shape=(784,)))
+                            dropout_rate = params.get("dropout_rate", 0.2)
                             for neurons in params["hidden_layer_sizes"]:
                                 model.add(layers.Dense(neurons, activation=params["activation"]))
+                                model.add(layers.Dropout(dropout_rate))
                             model.add(layers.Dense(10, activation='softmax'))
 
                             optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
@@ -925,7 +944,7 @@ def run_mnist_neural_network_app():
 
                             run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
+                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver', 'dropout_rate']})
                                 mlflow.log_metric("accuracy_val", acc_valid)
                                 mlflow.log_metric("accuracy_test", acc_test)
                                 mlflow.log_metric("training_time", time.time() - start_time)
@@ -1052,6 +1071,7 @@ def run_mnist_neural_network_app():
                         "Kích thước batch": results['params']['batch_size'],
                         "Hàm kích hoạt": results['params']['activation'],
                         "Trình tối ưu": results['params']['solver'],
+                        "Dropout Rate": results['params']['dropout_rate'],
                         "Dừng sớm": early_stopping
                     })
 
