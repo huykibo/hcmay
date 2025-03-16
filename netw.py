@@ -537,8 +537,8 @@ def run_mnist_neural_network_app():
         """, unsafe_allow_html=True)
 
         if 'full_data' not in st.session_state:
-            if st.button("Tải dữ liệu MNIST từ TensorFlow", type="primary"):
-                with st.spinner("Đang tải dữ liệu MNIST từ TensorFlow..."):
+            if st.button("Tải dữ liệu MNIST ", type="primary"):
+                with st.spinner("Đang tải dữ liệu MNIST  ..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
                     try:
