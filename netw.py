@@ -34,7 +34,7 @@ def validate_and_fix_pixels(X, name="dữ liệu"):
         return X_fixed, True
     return X, False
 
-# Hàm theo dõi loss và accuracy (giả lập)
+# Hàm theo dõi loss và accuracy
 class TrainingLogger:
     def __init__(self):
         self.loss_history = []
@@ -43,6 +43,11 @@ class TrainingLogger:
     def update(self, loss, accuracy):
         self.loss_history.append(loss)
         self.accuracy_history.append(accuracy)
+
+# Cache mô hình để tăng tốc độ
+@st.cache_resource
+def load_model(model):
+    return model
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
@@ -144,6 +149,15 @@ def run_mnist_neural_network_app():
             .stTabs [data-testid="stVerticalBlock"] > div {
                 min-height: auto !important;
                 height: auto !important;
+            }
+            .prediction-box {
+                margin-top: 10px;
+            }
+            .mode-title {
+                font-size: 1.2em;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 10px;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -536,7 +550,6 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
-                        # Chuyển đổi ngay thành numpy array với kiểu dữ liệu phù hợp
                         X = np.array(X, dtype=np.float64)
                         y = np.array(y, dtype=np.int32)
                         st.session_state['full_data'] = (X, y)
@@ -558,10 +571,10 @@ def run_mnist_neural_network_app():
 
             st.subheader("Chọn số lượng mẫu")
             st.markdown("""
-            - **100 mẫu**: Thử nghiệm nhanh (~vài giây, độ chính xác thấp).  
-            - **1,000 mẫu**: Kiểm tra cơ bản (~10-20 giây, độ chính xác trung bình).  
-            - **10,000 mẫu**: Cân bằng hiệu suất (~1-2 phút, độ chính xác khá).  
-            - **50,000 mẫu**: Huấn luyện chuyên sâu (~5-10 phút, độ chính xác cao).  
+            - **100 mẫu**: Huấn luyện nhanh, độ chính xác thấp, phù hợp để thử nghiệm.  
+            - **1,000 mẫu**: Huấn luyện khá nhanh, độ chính xác trung bình, phù hợp để kiểm tra cơ bản.  
+            - **10,000 mẫu**: Huấn luyện lâu hơn, độ chính xác khá, cân bằng giữa tốc độ và hiệu suất.  
+            - **50,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
             """, unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
@@ -584,7 +597,7 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang chọn {num_samples} mẫu... {i}%")
                             time.sleep(0.1)
                         indices = np.random.choice(len(X_full), size=num_samples, replace=False)
-                        X_sampled = X_full[indices]  # Đã là numpy array
+                        X_sampled = X_full[indices]
                         y_sampled = y_full[indices]
                         st.session_state['data'] = (X_sampled, y_sampled)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
@@ -633,7 +646,7 @@ def run_mnist_neural_network_app():
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
-                ax.imshow(X[i].reshape(28, 28), cmap='gray')  # Đã là numpy array
+                ax.imshow(X[i].reshape(28, 28), cmap='gray')
                 ax.set_title(f"Label: {y[i]}")
                 ax.axis("off")
             st.pyplot(fig)
@@ -731,7 +744,6 @@ def run_mnist_neural_network_app():
             X_test = st.session_state['split_data']["X_test"]
             y_test = st.session_state['split_data']["y_test"]
 
-            # Chuyển đổi kiểu dữ liệu
             X_train = np.array(X_train, dtype=np.float64)
             y_train = np.array(y_train, dtype=np.int32)
             X_valid = np.array(X_valid, dtype=np.float64)
@@ -739,7 +751,6 @@ def run_mnist_neural_network_app():
             y_valid = np.array(y_valid, dtype=np.int32)
             y_test = np.array(y_test, dtype=np.int32)
 
-            # Kiểm tra và xử lý NaN
             if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
                 st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
                 X_train = np.nan_to_num(X_train, nan=0.0)
@@ -750,7 +761,6 @@ def run_mnist_neural_network_app():
             if np.any(np.isnan(X_test)):
                 X_test = np.nan_to_num(X_test, nan=0.0)
 
-            # Cập nhật lại session_state
             st.session_state['split_data'] = {
                 "X_train": X_train, "y_train": y_train,
                 "X_valid": X_valid, "y_valid": y_valid,
@@ -879,11 +889,13 @@ def run_mnist_neural_network_app():
                         sys.stdout = old_stdout
                         training_output = new_stdout.getvalue()
 
-                        epochs = range(1, min(params["max_iter"], model.n_iter_) + 1)
-                        for epoch in epochs:
-                            simulated_loss = 1.0 / (1 + np.log(epoch + 1))
-                            simulated_accuracy = 1.0 - simulated_loss
-                            logger.update(simulated_loss, simulated_accuracy)
+                        logger.loss_history = model.loss_curve_ if hasattr(model, 'loss_curve_') else []
+                        if logger.loss_history:
+                            acc = accuracy_score(y_train, model.predict(X_train))
+                            logger.accuracy_history = [acc] * len(logger.loss_history)
+                        else:
+                            logger.loss_history = []
+                            logger.accuracy_history = []
 
                         status_text.text("Đang đánh giá mô hình... 90%")
                         progress_bar.progress(90)
@@ -1014,19 +1026,8 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.info("Vui lòng huấn luyện mô hình trước khi sử dụng Demo.")
         else:
-            st.markdown("""
-                <style>
-                    .prediction-box {
-                        margin-top: 10px;
-                    }
-                    .mode-title {
-                        font-size: 1.2em;
-                        font-weight: bold;
-                        color: #2c3e50;
-                        margin-bottom: 10px;
-                    }
-                </style>
-            """, unsafe_allow_html=True)
+            model = load_model(st.session_state['model'])
+            is_normalized = 'data_processed' in st.session_state
 
             mode = st.selectbox("Chọn phương thức dự đoán:", 
                                ["Dữ liệu Test", "Upload ảnh", "Vẽ số"], 
@@ -1039,9 +1040,6 @@ def run_mnist_neural_network_app():
                 if not is_normalized:
                     data = data / 255.0
                 return data
-
-            is_normalized = 'data_processed' in st.session_state
-            model = st.session_state['model']
 
             if mode == "Dữ liệu Test":
                 st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
@@ -1062,12 +1060,6 @@ def run_mnist_neural_network_app():
 
                 if st.button("🔍 Dự đoán", key="predict_test"):
                     with st.spinner("Đang dự đoán..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in range(0, 101, 20):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang dự đoán mẫu Test... {i}%")
-                            time.sleep(0.1)
                         sample = X_test[idx].reshape(1, -1)
                         sample_processed = preprocess_input(sample, is_normalized)
                         prediction = model.predict(sample_processed)[0]
@@ -1081,10 +1073,6 @@ def run_mnist_neural_network_app():
                                 <strong>Nhãn thực tế:</strong> {y_test[idx]}
                             </div>
                         """, unsafe_allow_html=True)
-                        status_text.text("Đã dự đoán xong! 100%")
-                        time.sleep(0.5)
-                        status_text.empty()
-                        progress_bar.empty()
 
             elif mode == "Upload ảnh":
                 st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
@@ -1106,12 +1094,6 @@ def run_mnist_neural_network_app():
                             with col_btn:
                                 if st.button(f"Dự đoán ảnh {i+1}", key=f"predict_upload_{i}"):
                                     with st.spinner(f"Đang xử lý ảnh {i+1}..."):
-                                        progress_bar = st.progress(0)
-                                        status_text = st.empty()
-                                        for j in range(0, 101, 20):
-                                            progress_bar.progress(j)
-                                            status_text.text(f"Đang xử lý ảnh {i+1}... {j}%")
-                                            time.sleep(0.1)
                                         img_processed = preprocess_input(img_array, is_normalized)
                                         prediction = model.predict(img_processed)[0]
                                         proba = model.predict_proba(img_processed)[0]
@@ -1123,10 +1105,6 @@ def run_mnist_neural_network_app():
                                                 <strong>Độ tin cậy:</strong> {max_proba:.2f}%
                                             </div>
                                         """, unsafe_allow_html=True)
-                                        status_text.text(f"Đã dự đoán xong ảnh {i+1}! 100%")
-                                        time.sleep(0.5)
-                                        status_text.empty()
-                                        progress_bar.empty()
                         except Exception as e:
                             st.error(f"Lỗi khi xử lý ảnh {i+1}: {e}")
 
@@ -1134,26 +1112,33 @@ def run_mnist_neural_network_app():
                 st.markdown('<p class="mode-title">Dự đoán từ Hình vẽ</p>', unsafe_allow_html=True)
                 st.write("Vẽ chữ số từ $0$-$9$:")
 
-                canvas_result = st_canvas(fill_color="black", stroke_width=20, stroke_color="white", 
-                                          background_color="black", width=280, height=280, drawing_mode="freedraw", key="canvas")
+                canvas_result = st_canvas(
+                    fill_color="black",
+                    stroke_width=20,
+                    stroke_color="white",
+                    background_color="black",
+                    width=140,
+                    height=140,
+                    drawing_mode="freedraw",
+                    key="canvas",
+                    update_streamlit=False
+                )
+
                 col1, col2 = st.columns([1, 1])
                 with col1:
                     if st.button("Dự đoán số đã vẽ"):
                         if canvas_result.image_data is not None and np.any(canvas_result.image_data):
-                            with st.spinner("Đang xử lý..."):
-                                progress_bar = st.progress(0)
-                                status_text = st.empty()
-                                for i in range(0, 101, 20):
-                                    progress_bar.progress(i)
-                                    status_text.text(f"Đang xử lý hình vẽ... {i}%")
-                                    time.sleep(0.1)
-                                img = Image.fromarray((canvas_result.image_data * 255).astype(np.uint8)).convert('L').resize((28, 28))
-                                img_array = np.array(img).flatten().reshape(1, -1)
+                            with st.spinner("Đang dự đoán..."):
+                                img_data = canvas_result.image_data[:, :, 3]
+                                img = Image.fromarray(img_data).resize((28, 28), Image.Resampling.LANCZOS)
+                                img_array = np.array(img).flatten().reshape(1, -1).astype(np.float32)
+
                                 img_array, fixed = validate_and_fix_pixels(img_array, "hình vẽ")
                                 if fixed:
                                     st.success("Đã chuẩn hóa hình vẽ về [0, 255]!")
                                 if not is_normalized:
-                                    img_array = preprocess_input(img_array, is_normalized)
+                                    img_array = img_array / 255.0
+
                                 prediction = model.predict(img_array)[0]
                                 proba = model.predict_proba(img_array)[0]
                                 max_proba = np.max(proba) * 100
@@ -1164,12 +1149,7 @@ def run_mnist_neural_network_app():
                                         <strong>Độ tin cậy:</strong> {max_proba:.2f}%
                                     </div>
                                 """, unsafe_allow_html=True)
-
                                 st.image(img, caption="Hình vẽ của bạn")
-                                status_text.text("Đã dự đoán xong! 100%")
-                                time.sleep(0.5)
-                                status_text.empty()
-                                progress_bar.empty()
                         else:
                             st.warning("Vui lòng vẽ trước!")
                 with col2:
