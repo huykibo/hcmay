@@ -6,7 +6,7 @@ from MNIST_app import run_mnist_classification_app
 from MNIST_kmean import run_mnist_clustering_app
 from MNIST_PCA import run_mnist_dimension_reduction_app
 from netw import run_mnist_neural_network_app
-from Semisupervised import run_mnist_labelding_neural_network_app
+from Semisupervised import   run_mnist_pseudo_labeling_app
 
 # Cấu hình trang chính - phải được gọi ngay đầu file
 st.set_page_config(page_title="Multi-App", layout="wide")
@@ -59,4 +59,4 @@ elif app_choice == "Neural Network Classification ":
 elif app_choice == "Neural Network Classification (Pseudo-Labeling)":
     reset_other_apps("Neural Network Classification (Pseudo-Labeling)")
     st.header("Neural Network Classification (Pseudo-Labeling)")
-    run_mnist_labelding_neural_network_app()
+    run_mnist_pseudo_labeling_app()
