@@ -59,7 +59,7 @@ def get_optimal_params(num_samples):
 
 def run_mnist_pseudo_labeling_app():
     # Thiết lập MLflow
-    mlflow_tracking_uri = "https://dagshub.com/huykibo/MNIST_Pseudo_Labeling.mlflow"
+    mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
