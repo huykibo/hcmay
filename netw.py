@@ -28,8 +28,7 @@ def get_optimal_params(num_samples):
             "epochs": 30,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 32,
-            "dropout_rate": 0.2
+            "batch_size": 32
         }
     elif num_samples <= 10000:
         return {
@@ -38,8 +37,7 @@ def get_optimal_params(num_samples):
             "epochs": 50,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 64,
-            "dropout_rate": 0.3
+            "batch_size": 64
         }
     elif num_samples <= 50000:
         return {
@@ -48,8 +46,7 @@ def get_optimal_params(num_samples):
             "epochs": 70,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 128,
-            "dropout_rate": 0.3
+            "batch_size": 128
         }
     else:  # > 50,000
         return {
@@ -58,8 +55,7 @@ def get_optimal_params(num_samples):
             "epochs": 100,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 256,
-            "dropout_rate": 0.4
+            "batch_size": 256
         }
 
 def run_mnist_neural_network_app():
@@ -556,6 +552,7 @@ def run_mnist_neural_network_app():
                         st.session_state['full_data'] = (X, y)
                         st.success("Đã tải dữ liệu thành công!")
                         st.write(f"Kích thước dữ liệu: {X.shape[0]} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
+                        st.rerun()  # Làm mới giao diện để hiển thị phần chọn số lượng mẫu
                     except Exception as e:
                         st.error(f"Lỗi khi tải dữ liệu: {e}")
         else:
@@ -730,12 +727,12 @@ def run_mnist_neural_network_app():
 
             st.subheader("⚙️ Cấu hình Tham số Mô hình")
             st.markdown("""
-            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch | Dropout Rate |
-            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|--------------|
-            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.2          |
-            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.3          |
-            | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              | 0.3          |
-            | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              | 0.4          |
+            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
+            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
+            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               |
+            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               |
+            | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              |
+            | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              |
             """, unsafe_allow_html=True)
             st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
 
@@ -810,10 +807,8 @@ def run_mnist_neural_network_app():
 
                             model = models.Sequential()
                             model.add(layers.Input(shape=(784,)))
-                            dropout_rate = params.get("dropout_rate", 0.2)
                             for neurons in params["hidden_layer_sizes"]:
                                 model.add(layers.Dense(neurons, activation=params["activation"]))
-                                model.add(layers.Dropout(dropout_rate))
                             model.add(layers.Dense(10, activation='softmax'))
 
                             optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
@@ -843,7 +838,7 @@ def run_mnist_neural_network_app():
 
                             run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver', 'dropout_rate']})
+                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
                                 mlflow.log_metric("accuracy_val", acc_valid)
                                 mlflow.log_metric("accuracy_test", acc_test)
                                 mlflow.log_metric("training_time", time.time() - start_time)
@@ -964,7 +959,6 @@ def run_mnist_neural_network_app():
                         "Kích thước batch": results['params']['batch_size'],
                         "Hàm kích hoạt": results['params']['activation'],
                         "Trình tối ưu": results['params']['solver'],
-                        "Dropout Rate": results['params']['dropout_rate'],
                         "Dừng sớm": early_stopping
                     })
 
