@@ -77,6 +77,7 @@ def run_mnist_neural_network_app():
 
     st.title("Phân loại Chữ số MNIST với Neural Network")
 
+    # CSS tùy chỉnh để loại bỏ khung trắng và tối ưu giao diện
     st.markdown("""
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
         <style>
@@ -129,6 +130,20 @@ def run_mnist_neural_network_app():
                 border-radius: 5px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 margin-bottom: 20px;
+            }
+            /* Loại bỏ khung trắng */
+            .stTabs [role="tabpanel"] {
+                min-height: auto !important;
+                height: auto !important;
+            }
+            .stTabs [data-testid="stVerticalBlock"] {
+                min-height: auto !important;
+                height: auto !important;
+                padding-bottom: 0px !important;
+            }
+            .stTabs [data-testid="stVerticalBlock"] > div {
+                min-height: auto !important;
+                height: auto !important;
             }
         </style>
     """, unsafe_allow_html=True)
