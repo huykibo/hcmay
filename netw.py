@@ -20,7 +20,7 @@ from tensorflow.keras import layers, models, callbacks
 import gc
 import struct
 
-# Hàm đọc dữ liệu từ file .idx trong thư mục dulieuminst
+# Hàm đọc dữ liệu từ file .idx
 def load_mnist_images(filename):
     with open(filename, 'rb') as f:
         magic, num, rows, cols = struct.unpack('>IIII', f.read(16))
@@ -33,12 +33,12 @@ def load_mnist_labels(filename):
         labels = np.fromfile(f, dtype=np.uint8)
     return labels
 
-# Tải dữ liệu từ thư mục dulieuminst
+# Tải dữ liệu từ các file riêng lẻ
 def load_mnist_data():
-    X_train = load_mnist_images('dulieuminst/train-images-idx3-ubyte')
-    y_train = load_mnist_labels('dulieuminst/train-labels-idx1-ubyte')
-    X_test = load_mnist_images('dulieuminst/t10k-images-idx3-ubyte')
-    y_test = load_mnist_labels('dulieuminst/t10k-labels-idx1-ubyte')
+    X_train = load_mnist_images('train-images-idx3-ubyte')
+    y_train = load_mnist_labels('train-labels-idx1-ubyte')
+    X_test = load_mnist_images('t10k-images-idx3-ubyte')
+    y_test = load_mnist_labels('t10k-labels-idx1-ubyte')
     X = np.concatenate([X_train, X_test], axis=0)
     y = np.concatenate([y_train, y_test], axis=0)
     return X, y
@@ -210,7 +210,7 @@ def run_mnist_neural_network_app():
     tabs = st.tabs(["Thông tin", "Chọn dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # **Tab 1: Thông tin**
+    # Tab 1: Thông tin
     with tab_info:
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
@@ -572,16 +572,16 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # **Tab 2: Chọn dữ liệu**
+    # Tab 2: Chọn dữ liệu
     with tab_load:
         st.markdown('<div class="section-title">Chọn Dữ liệu</div>', unsafe_allow_html=True)
         st.markdown("""
-        **Tập dữ liệu MNIST**: Được lưu trữ trong thư mục `dulieuminst`. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
+        **Tập dữ liệu MNIST**: Được tải từ các file `train-images-idx3-ubyte`, `train-labels-idx1-ubyte`, `t10k-images-idx3-ubyte`, `t10k-labels-idx1-ubyte`. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
         """, unsafe_allow_html=True)
 
         if 'full_data' not in st.session_state:
-            if st.button("Tải dữ liệu từ thư mục `dulieuminst`", type="primary"):
-                with st.spinner("Đang tải dữ liệu từ thư mục `dulieuminst`..."):
+            if st.button("Tải dữ liệu từ các file MNIST", type="primary"):
+                with st.spinner("Đang tải dữ liệu từ các file MNIST..."):
                     try:
                         X, y = load_mnist_data()
                         X = X.reshape(-1, 784).astype(np.float64)
@@ -643,7 +643,7 @@ def run_mnist_neural_network_app():
                     else:
                         st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng 70,000!")
 
-    # **Tab 3: Xử lý dữ liệu**
+    # Tab 3: Xử lý dữ liệu
     with tab_preprocess:
         st.markdown('<div class="section-title">Xử lý Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -687,7 +687,7 @@ def run_mnist_neural_network_app():
                 X_processed, y_processed = st.session_state["data_processed"]
                 st.success("Đã xử lý dữ liệu!")
 
-    # **Tab 4: Chia dữ liệu**
+    # Tab 4: Chia dữ liệu
     with tab_split:
         st.markdown('<div class="section-title">Chia Tập Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -722,7 +722,7 @@ def run_mnist_neural_network_app():
                     del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
                     gc.collect()
 
-    # **Tab 5: Huấn luyện/Đánh giá**
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
@@ -1003,7 +1003,7 @@ def run_mnist_neural_network_app():
                         "Dừng sớm": early_stopping
                     })
 
-    # **Tab 6: Demo dự đoán**
+    # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
@@ -1137,7 +1137,7 @@ def run_mnist_neural_network_app():
                             st.session_state['canvas_key'] += 1
                             st.rerun()
 
-    # **Tab 7: Thông tin huấn luyện**
+    # Tab 7: Thông tin huấn luyện
     with tab_log_info:
         st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
         try:
