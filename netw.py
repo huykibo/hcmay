@@ -26,6 +26,7 @@ def fetch_mnist_data():
 
 # Hàm kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255]
 def validate_and_fix_pixels(X, name="dữ liệu"):
+    X = np.array(X, dtype=np.float64)  # Đảm bảo dữ liệu là numpy array kiểu float64
     invalid_mask = (X < 0) | (X > 255)
     if np.any(invalid_mask):
         st.warning(f"Phát hiện giá trị pixel không hợp lệ trong {name} (ngoài [0, 255]). Đang chuẩn hóa...")
@@ -77,7 +78,7 @@ def run_mnist_neural_network_app():
 
     st.title("Phân loại Chữ số MNIST với Neural Network")
 
-    # CSS tùy chỉnh để loại bỏ khung trắng và tối ưu giao diện
+    # CSS tùy chỉnh
     st.markdown("""
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
         <style>
@@ -258,7 +259,6 @@ def run_mnist_neural_network_app():
                 Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
                 """, unsafe_allow_html=True)
 
-                # Bước 1: Khởi tạo mô hình
                 st.subheader("1. Khởi tạo mô hình")
                 st.markdown("""
                 - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
@@ -274,7 +274,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                # Bước 2: Lan truyền thuận
                 st.subheader("2. Lan truyền thuận (Feedforward)")
                 st.markdown("""
                 - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
@@ -299,7 +298,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                # Bước 3: Tính hàm mất mát
                 st.subheader("3. Tính hàm mất mát (Loss Function)")
                 st.markdown("""
                 - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
@@ -319,7 +317,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                # Bước 4: Lan truyền ngược
                 st.subheader("4. Lan truyền ngược (Backpropagation)")
                 st.markdown("""
                 - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$:  
@@ -347,7 +344,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                # Bước 5: Cập nhật tham số
                 st.subheader("5. Cập nhật tham số (Gradient Descent)")
                 st.markdown("""
                 - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
@@ -366,7 +362,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                # Bước 6: Lặp lại
                 st.subheader("6. Lặp lại")
                 st.markdown("""
                 - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
@@ -384,7 +379,6 @@ def run_mnist_neural_network_app():
                 Các tham số được sử dụng trong tab **Huấn luyện/Đánh giá** ảnh hưởng trực tiếp đến hiệu suất của Neural Network. Dưới đây là mô tả chi tiết từng tham số:
                 """, unsafe_allow_html=True)
 
-                # Tham số 1: Số lớp ẩn
                 st.subheader("1. Số lớp ẩn")
                 st.markdown("""
                 - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
@@ -400,7 +394,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 2: Số nơ-ron mỗi lớp
                 st.subheader("2. Số nơ-ron mỗi lớp")
                 st.markdown("""
                 - Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
@@ -414,7 +407,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 3: Tốc độ học
                 st.subheader("3. Tốc độ học (Learning Rate)")
                 st.markdown("""
                 - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
@@ -427,7 +419,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0005$ học chậm nhưng ổn định.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 4: Số lần lặp
                 st.subheader("4. Số lần lặp (Max Iterations)")
                 st.markdown("""
                 - Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
@@ -441,7 +432,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 5: Hàm kích hoạt
                 st.subheader("5. Hàm kích hoạt")
                 st.markdown("""
                 - Hàm phi tuyến áp dụng trên mỗi nơ-ron, giúp mạng học các mối quan hệ phi tuyến.  
@@ -458,7 +448,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: ReLU tránh gradient vanishing, Sigmoid phù hợp với đầu ra xác suất, Tanh cân bằng âm/dương.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 6: Kích thước batch
                 st.subheader("6. Kích thước batch")
                 st.markdown("""
                 - Số mẫu xử lý cùng lúc trong mỗi lần cập nhật trọng số, ảnh hưởng đến hiệu suất và độ ổn định.  
@@ -471,7 +460,6 @@ def run_mnist_neural_network_app():
                 - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
                 """, unsafe_allow_html=True)
 
-                # Tham số 7: Trình tối ưu
                 st.subheader("7. Trình tối ưu (Solver)")
                 st.markdown("""
                 - Phương pháp tối ưu hóa trọng số, ảnh hưởng đến tốc độ và hiệu quả hội tụ.  
@@ -548,6 +536,9 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
+                        # Chuyển đổi ngay thành numpy array với kiểu dữ liệu phù hợp
+                        X = np.array(X, dtype=np.float64)
+                        y = np.array(y, dtype=np.int32)
                         st.session_state['full_data'] = (X, y)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
                             mlflow.log_param("total_samples", X.shape[0])
@@ -593,8 +584,8 @@ def run_mnist_neural_network_app():
                             status_text.text(f"Đang chọn {num_samples} mẫu... {i}%")
                             time.sleep(0.1)
                         indices = np.random.choice(len(X_full), size=num_samples, replace=False)
-                        X_sampled = X_full.iloc[indices]
-                        y_sampled = y_full.iloc[indices]
+                        X_sampled = X_full[indices]  # Đã là numpy array
+                        y_sampled = y_full[indices]
                         st.session_state['data'] = (X_sampled, y_sampled)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
@@ -616,8 +607,8 @@ def run_mnist_neural_network_app():
                                 status_text.text(f"Đang chọn {custom_num_samples} mẫu... {i}%")
                                 time.sleep(0.1)
                             indices = np.random.choice(len(X_full), size=custom_num_samples, replace=False)
-                            X_sampled = X_full.iloc[indices]
-                            y_sampled = y_full.iloc[indices]
+                            X_sampled = X_full[indices]
+                            y_sampled = y_full[indices]
                             st.session_state['data'] = (X_sampled, y_sampled)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
@@ -642,8 +633,8 @@ def run_mnist_neural_network_app():
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
-                ax.imshow(X.iloc[i].values.reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {y.iloc[i]}")
+                ax.imshow(X[i].reshape(28, 28), cmap='gray')  # Đã là numpy array
+                ax.set_title(f"Label: {y[i]}")
                 ax.axis("off")
             st.pyplot(fig)
 
@@ -680,8 +671,8 @@ def run_mnist_neural_network_app():
                 st.subheader("Dữ liệu đã xử lý")
                 fig, axes = plt.subplots(2, 5, figsize=(10, 4))
                 for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_processed.iloc[i].values.reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y_processed.iloc[i]}")
+                    ax.imshow(X_processed[i].reshape(28, 28), cmap='gray')
+                    ax.set_title(f"Label: {y_processed[i]}")
                     ax.axis("off")
                 st.pyplot(fig)
 
@@ -740,48 +731,76 @@ def run_mnist_neural_network_app():
             X_test = st.session_state['split_data']["X_test"]
             y_test = st.session_state['split_data']["y_test"]
 
+            # Chuyển đổi kiểu dữ liệu
+            X_train = np.array(X_train, dtype=np.float64)
+            y_train = np.array(y_train, dtype=np.int32)
+            X_valid = np.array(X_valid, dtype=np.float64)
+            X_test = np.array(X_test, dtype=np.float64)
+            y_valid = np.array(y_valid, dtype=np.int32)
+            y_test = np.array(y_test, dtype=np.int32)
+
+            # Kiểm tra và xử lý NaN
+            if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
+                st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
+                X_train = np.nan_to_num(X_train, nan=0.0)
+                y_train = np.nan_to_num(y_train, nan=0.0)
+                st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
+            if np.any(np.isnan(X_valid)):
+                X_valid = np.nan_to_num(X_valid, nan=0.0)
+            if np.any(np.isnan(X_test)):
+                X_test = np.nan_to_num(X_test, nan=0.0)
+
+            # Cập nhật lại session_state
+            st.session_state['split_data'] = {
+                "X_train": X_train, "y_train": y_train,
+                "X_valid": X_valid, "y_valid": y_valid,
+                "X_test": X_test, "y_test": y_test
+            }
+
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
+            st.write(f"Kích thước X_train: {X_train.shape}, dtype: {X_train.dtype}")
+            st.write(f"Kích thước y_train: {y_train.shape}, dtype: {y_train.dtype}")
+            if X_train.shape[0] != y_train.shape[0]:
+                st.error("Số mẫu của X_train và y_train không khớp!")
+                st.stop()
 
             def get_optimal_params(num_samples):
-                """
-                Trả về các tham số tối ưu dựa trên số lượng mẫu, cân bằng giữa tốc độ và hiệu suất.
-                """
                 if num_samples <= 100:
                     return {
-                        "hidden_layer_sizes": (32,),            # Một lớp ẩn, đủ để học cơ bản, nhanh hơn (16,)
-                        "learning_rate_init": 0.01,             # Tốc độ học cao để hội tụ nhanh với dữ liệu nhỏ
-                        "max_iter": 15,                         # Ít lần lặp để nhanh, đủ cho dữ liệu nhỏ
-                        "activation": "relu",                   # ReLU nhanh và hiệu quả
-                        "solver": "sgd",                        # SGD nhanh hơn Adam với dữ liệu nhỏ
-                        "batch_size": 64                        # Batch lớn hơn để giảm số lần cập nhật
+                        "hidden_layer_sizes": (32,),
+                        "learning_rate_init": 0.01,
+                        "max_iter": 15,
+                        "activation": "relu",
+                        "solver": "sgd",
+                        "batch_size": 64
                     }
                 elif num_samples <= 1000:
                     return {
-                        "hidden_layer_sizes": (64,),            # Tăng nơ-ron để học tốt hơn
-                        "learning_rate_init": 0.005,            # Giảm nhẹ tốc độ học cho ổn định
-                        "max_iter": 30,                         # Tăng lần lặp để cải thiện hiệu suất
-                        "activation": "relu",                   # Giữ ReLU vì hiệu quả cao
-                        "solver": "adam",                       # Adam phù hợp với dữ liệu trung bình
-                        "batch_size": 128                       # Batch lớn hơn để nhanh hơn
+                        "hidden_layer_sizes": (64,),
+                        "learning_rate_init": 0.005,
+                        "max_iter": 30,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 128
                     }
                 elif num_samples <= 10000:
                     return {
-                        "hidden_layer_sizes": (100, 50),        # Hai lớp ẩn, tối ưu cho dữ liệu vừa
-                        "learning_rate_init": 0.001,            # Tốc độ học nhỏ hơn để ổn định
-                        "max_iter": 50,                         # Đủ lần lặp để hội tụ tốt
-                        "activation": "relu",                   # ReLU vẫn là lựa chọn tối ưu
-                        "solver": "adam",                       # Adam hiệu quả với dữ liệu lớn hơn
-                        "batch_size": 256                       # Batch lớn để tăng tốc
+                        "hidden_layer_sizes": (100, 50),
+                        "learning_rate_init": 0.001,
+                        "max_iter": 50,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 256
                     }
-                else:  # >10,000
+                else:
                     return {
-                        "hidden_layer_sizes": (128, 64),        # Giữ cấu trúc sâu để học tốt
-                        "learning_rate_init": 0.001,            # Tốc độ học nhỏ để chính xác cao
-                        "max_iter": 75,                         # Tăng lần lặp để tối ưu với dữ liệu lớn
-                        "activation": "relu",                   # ReLU cho tốc độ và hiệu suất
-                        "solver": "adam",                       # Adam tối ưu cho dữ liệu lớn
-                        "batch_size": 512                       # Batch rất lớn để tăng tốc đáng kể
+                        "hidden_layer_sizes": (128, 64),
+                        "learning_rate_init": 0.001,
+                        "max_iter": 75,
+                        "activation": "relu",
+                        "solver": "adam",
+                        "batch_size": 512
                     }
 
             if "optimal_params" not in st.session_state:
@@ -839,12 +858,11 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
 
                         logger = TrainingLogger()
-                        # Thêm early_stopping vào MLPClassifier
                         model = MLPClassifier(
                             **params,
-                            early_stopping=early_stopping,  # Thêm tham số dừng sớm
-                            validation_fraction=0.1,        # Tỷ lệ dữ liệu dùng cho validation nếu early_stopping=True
-                            n_iter_no_change=10,            # Số lần lặp không cải thiện trước khi dừng
+                            early_stopping=early_stopping,
+                            validation_fraction=0.1,
+                            n_iter_no_change=10,
                             verbose=True
                         )
 
@@ -861,7 +879,6 @@ def run_mnist_neural_network_app():
                         sys.stdout = old_stdout
                         training_output = new_stdout.getvalue()
 
-                        # Giả lập loss và accuracy nếu early_stopping dừng sớm
                         epochs = range(1, min(params["max_iter"], model.n_iter_) + 1)
                         for epoch in epochs:
                             simulated_loss = 1.0 / (1 + np.log(epoch + 1))
@@ -887,7 +904,7 @@ def run_mnist_neural_network_app():
                             mlflow.log_metric("accuracy_val", acc_valid)
                             mlflow.log_metric("accuracy_test", acc_test)
                             mlflow.log_metric("training_time", time.time() - start_time)
-                            mlflow.log_metric("n_iter_actual", model.n_iter_)  # Số lần lặp thực tế
+                            mlflow.log_metric("n_iter_actual", model.n_iter_)
                             for epoch, (loss, acc) in enumerate(zip(logger.loss_history, logger.accuracy_history), 1):
                                 mlflow.log_metric(f"loss_epoch_{epoch}", loss)
                                 mlflow.log_metric(f"accuracy_epoch_{epoch}", acc)
@@ -900,7 +917,7 @@ def run_mnist_neural_network_app():
                                 'params': params, 'training_time': time.time() - start_time,
                                 'loss_history': logger.loss_history,
                                 'accuracy_history': logger.accuracy_history,
-                                'n_iter_actual': model.n_iter_  # Lưu số lần lặp thực tế
+                                'n_iter_actual': model.n_iter_
                             }
 
                         st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {model.n_iter_}")
@@ -1038,10 +1055,10 @@ def run_mnist_neural_network_app():
                 with col_display:
                     st.write("**Ảnh mẫu Test:**")
                     fig, ax = plt.subplots(figsize=(2, 2))
-                    ax.imshow(X_test.iloc[idx].values.reshape(28, 28), cmap='gray')
+                    ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
                     ax.axis('off')
                     st.pyplot(fig)
-                    st.write(f"**Nhãn thực tế:** {y_test.iloc[idx]}")
+                    st.write(f"**Nhãn thực tế:** {y_test[idx]}")
 
                 if st.button("🔍 Dự đoán", key="predict_test"):
                     with st.spinner("Đang dự đoán..."):
@@ -1051,7 +1068,7 @@ def run_mnist_neural_network_app():
                             progress_bar.progress(i)
                             status_text.text(f"Đang dự đoán mẫu Test... {i}%")
                             time.sleep(0.1)
-                        sample = X_test.iloc[idx].values.reshape(1, -1)
+                        sample = X_test[idx].reshape(1, -1)
                         sample_processed = preprocess_input(sample, is_normalized)
                         prediction = model.predict(sample_processed)[0]
                         proba = model.predict_proba(sample_processed)[0]
@@ -1061,7 +1078,7 @@ def run_mnist_neural_network_app():
                             <div class="prediction-box">
                                 <strong>Dự đoán:</strong> {prediction}<br>
                                 <strong>Độ tin cậy:</strong> {max_proba:.2f}%<br>
-                                <strong>Nhãn thực tế:</strong> {y_test.iloc[idx]}
+                                <strong>Nhãn thực tế:</strong> {y_test[idx]}
                             </div>
                         """, unsafe_allow_html=True)
                         status_text.text("Đã dự đoán xong! 100%")
