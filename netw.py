@@ -89,7 +89,7 @@ def run_mnist_neural_network_app():
         st.error(f"Lỗi truy xuất Experiment ID {EXPERIMENT_ID}: {e}.")
         st.stop()
 
-    st.title("Phân loại Chữ số MNIST với Neural Network (TensorFlow)")
+    st.title("Phân loại Chữ số MNIST với Neural Network")
 
     # CSS tùy chỉnh
     st.markdown("""
@@ -164,7 +164,7 @@ def run_mnist_neural_network_app():
         </style>
     """, unsafe_allow_html=True)
 
-    tabs = st.tabs(["Thông tin", "Chọn dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
+    tabs = st.tabs(["Thông tin", "Tải dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
     # Tab 1: Thông tin
@@ -727,6 +727,7 @@ def run_mnist_neural_network_app():
 
             st.subheader("⚙️ Cấu hình Tham số Mô hình")
             st.markdown("""
+            **Bảng tham số tối ưu (được tự động chọn dựa trên số mẫu):**
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
             | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               |
@@ -1079,7 +1080,7 @@ def run_mnist_neural_network_app():
                                 predicted_class = np.argmax(prediction[0])
                                 confidence = prediction[0][predicted_class] * 100
                                 st.markdown(f"""
-                                    <div>
+                                    <div class="prediction-box">
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
                                         <strong>Xác suất:</strong> {confidence:.2f}%
                                     </div>
