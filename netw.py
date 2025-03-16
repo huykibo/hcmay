@@ -531,7 +531,7 @@ def run_mnist_neural_network_app():
 
     # Tab 2: Chọn dữ liệu
     with tab_load:
-        st.markdown('<div class="section-title">Chọn Dữ liệu</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Tải Dữ liệu</div>', unsafe_allow_html=True)
         st.markdown("""
         **Tập dữ liệu MNIST**: Được tải từ thư viện TensorFlow. Bạn có thể chọn số lượng mẫu phù hợp để huấn luyện.
         """, unsafe_allow_html=True)
@@ -732,7 +732,7 @@ def run_mnist_neural_network_app():
             
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-            st.subheader("⚙️ Cấu hình Tham số Mô hình")
+            st.subheader("⚙️ Cấu hình tham khảo Tham số Mô hình")
             st.markdown("""
             | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
             |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
@@ -794,7 +794,7 @@ def run_mnist_neural_network_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
+                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=False, 
                                                  help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
 
             col_reset, col_train = st.columns([1, 3])
@@ -1090,7 +1090,7 @@ def run_mnist_neural_network_app():
                                 predicted_class = np.argmax(prediction[0])
                                 confidence = prediction[0][predicted_class] * 100
                                 st.markdown(f"""
-                                    <div class="prediction-box">
+                                    <div>
                                         <strong>Dự đoán:</strong> {predicted_class}<br>
                                         <strong>Xác suất:</strong> {confidence:.2f}%
                                     </div>
