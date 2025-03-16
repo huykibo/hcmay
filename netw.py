@@ -4,7 +4,6 @@ import streamlit as st
 import openml
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -19,6 +18,7 @@ import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc  # Để thu gom rác
+import psutil  # Để kiểm tra bộ nhớ
 
 # Hàm tải dữ liệu MNIST với bộ nhớ cache
 @st.cache_data
@@ -26,24 +26,17 @@ def fetch_mnist_data():
     """Tải tập dữ liệu MNIST từ OpenML và trả về đặc trưng X và nhãn y."""
     mnist = openml.datasets.get_dataset(554)
     X, y, _, _ = mnist.get_data(target=mnist.default_target_attribute)
+    X = np.array(X, dtype=np.float32) / 255.0  # Chuẩn hóa ngay lúc tải
+    y = np.array(y, dtype=np.int32)
     return X, y
 
-# Hàm kiểm tra và chuẩn hóa dữ liệu pixel về [0, 255]
-def validate_and_fix_pixels(X, name="dữ liệu"):
-    """Kiểm tra và chuẩn hóa giá trị pixel về khoảng [0, 255]."""
-    X = np.array(X, dtype=np.float64)
-    invalid_mask = (X < 0) | (X > 255)
-    if np.any(invalid_mask):
-        st.warning(f"Phát hiện giá trị pixel không hợp lệ trong {name} (ngoài [0, 255]). Đang chuẩn hóa...")
-        X_fixed = np.clip(X, 0, 255)
-        return X_fixed, True
-    return X, False
-
-# Cache mô hình để tăng tốc độ
-@st.cache_resource
-def load_model(model):
-    """Tải mô hình đã được huấn luyện từ bộ nhớ cache."""
-    return model
+# Hàm kiểm tra bộ nhớ khả dụng
+def check_memory():
+    mem = psutil.virtual_memory()
+    available_mb = mem.available / (1024 * 1024)
+    if available_mb < 500:  # Cần ít nhất 500MB trống
+        st.warning(f"Bộ nhớ khả dụng thấp: {available_mb:.2f} MB. Có thể không đủ để xử lý 70,000 mẫu.")
+    return available_mb
 
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
@@ -78,25 +71,15 @@ def get_optimal_params(num_samples):
             "batch_size": 64,
             "dropout_rate": 0.3
         }
-    elif num_samples <= 50000:
+    else:
         return {
-            "hidden_layer_sizes": (128, 64, 32),
+            "hidden_layer_sizes": (64, 32, 16),
             "learning_rate": 0.0003,
             "epochs": 100,
             "activation": "relu",
             "solver": "adam",
             "batch_size": 128,
             "dropout_rate": 0.3
-        }
-    else:  # Cho num_samples > 50,000 (bao gồm 70,000 mẫu)
-        return {
-            "hidden_layer_sizes": (256, 128, 64),
-            "learning_rate": 0.0001,
-            "epochs": 150,
-            "activation": "relu",
-            "solver": "adam",
-            "batch_size": 256,
-            "dropout_rate": 0.4
         }
 
 def run_mnist_neural_network_app():
@@ -322,8 +305,8 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
                 - **Tham số liên quan**:  
-                  - **Số lớp ẩn**: Được chọn từ $1$ đến $3$ trong giao diện huấn luyện.  
-                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $256$.  
+                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
+                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
                 - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.
                 """, unsafe_allow_html=True)
                 try:
@@ -423,7 +406,7 @@ def run_mnist_neural_network_app():
 
                 st.subheader("6. Lặp lại")
                 st.markdown("""
-                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $150$) cho đến khi mất mát $L$ hội tụ.  
+                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
                 - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.
                 """, unsafe_allow_html=True)
                 try:
@@ -441,7 +424,7 @@ def run_mnist_neural_network_app():
                 st.subheader("1. Số lớp ẩn")
                 st.markdown("""
                 - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
-                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $3$ trong giao diện huấn luyện.  
+                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$ trong giao diện huấn luyện.  
                 - **Công thức liên quan**:  
                   $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
                 - **Giải thích**:  
@@ -450,45 +433,45 @@ def run_mnist_neural_network_app():
                   - $W^{(l)}$: Trọng số của lớp $l$.  
                   - $b^{(l)}$: Bias của lớp $l$.  
                   - $\\sigma$: Hàm kích hoạt.  
-                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $3$ tăng khả năng học các mẫu phức tạp như MNIST đầy đủ.  
+                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("2. Số nơ-ron mỗi lớp")
                 st.markdown("""
                 - Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
-                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $256$.  
+                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $128$.  
                 - **Công thức liên quan**:  
                   $$ W^{(l)} \in \mathbb{R}^{n_{l-1} \times n_l} $$  
                 - **Giải thích**:  
                   - $n_{l-1}$: Số nơ-ron của lớp trước.  
                   - $n_l$: Số nơ-ron của lớp hiện tại.  
                   - $W^{(l)}$: Ma trận trọng số giữa lớp $l-1$ và $l$.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $256$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("3. Tốc độ học (Learning Rate)")
                 st.markdown("""
                 - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005, 0.0001]$.  
+                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005]$.  
                 - **Công thức liên quan**:  
                   $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
                 - **Giải thích**:  
                   - $\\eta$: Tốc độ học.  
                   - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của hàm mất mát theo trọng số.  
-                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0001$ học chậm nhưng ổn định với dữ liệu lớn.  
+                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0005$ học chậm nhưng ổn định.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("4. Số lần lặp (Max Iterations)")
                 st.markdown("""
                 - Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $150$.  
+                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $100$.  
                 - **Công thức liên quan**:  
                   $$ \text{Tổng cập nhật} = E \\cdot \\frac{N}{B} $$  
                 - **Giải thích**:  
                   - $E$: Số epoch.  
                   - $N$: Số mẫu.  
                   - $B$: Kích thước batch.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $150$) tăng cơ hội hội tụ nhưng tốn thời gian với dữ liệu lớn.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("5. Hàm kích hoạt")
@@ -513,7 +496,7 @@ def run_mnist_neural_network_app():
                 - **Giải thích**:  
                   - $B$: Kích thước batch.  
                   - $\\frac{\\partial L_i}{\\partial W^{(l)}}$: Gradient của mất mát cho mẫu $i$.  
-                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định với dữ liệu lớn.  
+                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("7. Trình tối ưu (Solver)")
@@ -591,32 +574,33 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
-                        X = np.array(X, dtype=np.float64)
-                        y = np.array(y, dtype=np.int32)
-                        st.session_state['full_data'] = (X, y)  # Lưu toàn bộ dữ liệu
+                        dataset = tf.data.Dataset.from_tensor_slices((X, y)).shuffle(1000).batch(128)
+                        st.session_state['full_dataset'] = dataset
+                        st.session_state['full_data_size'] = 70000
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Load"):
-                            mlflow.log_param("total_samples", len(X))
+                            mlflow.log_param("total_samples", 70000)
                         st.success("Tải dữ liệu thành công!")
-                        st.write(f"Kích thước dữ liệu: {len(X)} mẫu, mỗi mẫu {X.shape[1]} đặc trưng")
+                        st.write(f"Kích thước dữ liệu: {70000} mẫu, mỗi mẫu 784 đặc trưng")
                         status_text.text("Đã tải xong! 100%")
                         time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
                         del X, y
                         gc.collect()
+                    except MemoryError:
+                        st.error("Không đủ bộ nhớ để tải 70,000 mẫu. Hãy thử giảm số lượng mẫu hoặc tăng RAM.")
                     except Exception as e:
                         st.error(f"Không thể tải dữ liệu: {e}")
                         status_text.empty()
                         progress_bar.empty()
 
-        if 'full_data' in st.session_state:
-            X_full, y_full = st.session_state['full_data']
+        if 'full_dataset' in st.session_state:
             st.subheader("Chọn số lượng mẫu")
             st.markdown("""
             - **100 mẫu**: Huấn luyện nhanh, độ chính xác thấp, phù hợp để thử nghiệm.  
             - **1,000 mẫu**: Huấn luyện khá nhanh, độ chính xác trung bình, phù hợp để kiểm tra cơ bản.  
             - **10,000 mẫu**: Huấn luyện lâu hơn, độ chính xác khá, cân bằng giữa tốc độ và hiệu suất.  
-            - **70,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
+            - **50,000 mẫu**: Huấn luyện lâu nhất, độ chính xác cao, phù hợp cho huấn luyện chuyên sâu.  
             """, unsafe_allow_html=True)
 
             col1, col2 = st.columns(2)
@@ -625,10 +609,10 @@ def run_mnist_neural_network_app():
                     "100 mẫu (Thử nghiệm nhanh)": 100,
                     "1,000 mẫu (Kiểm tra cơ bản)": 1000,
                     "10,000 mẫu (Cân bằng hiệu suất)": 10000,
-                    "70,000 mẫu (Huấn luyện chuyên sâu)": 70000
+                    "50,000 mẫu (Huấn luyện chuyên sâu)": 50000
                 }
                 selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()), help="Chọn số lượng mẫu có sẵn")
-                num_samples = min(sample_options[selected_option], len(X_full))
+                num_samples = min(sample_options[selected_option], st.session_state['full_data_size'])
 
                 if st.button("Xác nhận số lượng (tùy chọn có sẵn)", type="primary"):
                     with st.spinner(f"Đang lấy {num_samples} mẫu..."):
@@ -638,10 +622,8 @@ def run_mnist_neural_network_app():
                             progress_bar.progress(i)
                             status_text.text(f"Đang chọn {num_samples} mẫu... {i}%")
                             time.sleep(0.1)
-                        indices = np.random.choice(len(X_full), size=num_samples, replace=False)
-                        X_sampled = X_full[indices]
-                        y_sampled = y_full[indices]
-                        st.session_state['data'] = (X_sampled.copy(), y_sampled.copy())
+                        dataset = st.session_state['full_dataset'].take(num_samples)
+                        st.session_state['data'] = dataset
                         st.session_state['optimal_params'] = get_optimal_params(num_samples)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
@@ -650,13 +632,12 @@ def run_mnist_neural_network_app():
                         time.sleep(0.5)
                         status_text.empty()
                         progress_bar.empty()
-                        del X_full, y_full, X_sampled, y_sampled
                         gc.collect()
 
             with col2:
-                custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa 70,000):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
+                custom_num_samples = st.number_input("Nhập số lượng tùy ý (tối đa $70,000$):", min_value=1, max_value=70000, value=1000, step=100, help="Nhập số lượng mẫu tùy chỉnh")
                 if st.button("Xác nhận số lượng (tùy ý)", type="primary"):
-                    if custom_num_samples <= len(X_full):
+                    if custom_num_samples <= st.session_state['full_data_size']:
                         with st.spinner(f"Đang lấy {custom_num_samples} mẫu..."):
                             progress_bar = st.progress(0)
                             status_text = st.empty()
@@ -664,22 +645,19 @@ def run_mnist_neural_network_app():
                                 progress_bar.progress(i)
                                 status_text.text(f"Đang chọn {custom_num_samples} mẫu... {i}%")
                                 time.sleep(0.1)
-                            indices = np.random.choice(len(X_full), size=custom_num_samples, replace=False)
-                            X_sampled = X_full[indices]
-                            y_sampled = y_full[indices]
-                            st.session_state['data'] = (X_sampled.copy(), y_sampled.copy())
+                            dataset = st.session_state['full_dataset'].take(custom_num_samples)
+                            st.session_state['data'] = dataset
                             st.session_state['optimal_params'] = get_optimal_params(custom_num_samples)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
-                            st.success(f"Đã chọn {custom_num_samples} mẫu! ")
+                            st.success(f"Đã chọn {custom_num_samples} mẫu!")
                             status_text.text("Đã xử lý xong! 100%")
                             time.sleep(0.5)
                             status_text.empty()
                             progress_bar.empty()
-                            del X_full, y_full, X_sampled, y_sampled
                             gc.collect()
                     else:
-                        st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng 70,000!")
+                        st.error("Số lượng mẫu vượt quá dữ liệu hiện có. Vui lòng nhập số nhỏ hơn hoặc bằng số mẫu đã tải!")
 
     # **Tab 3: Xử lý dữ liệu**
     with tab_preprocess:
@@ -688,52 +666,19 @@ def run_mnist_neural_network_app():
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và chọn số lượng mẫu trước.")
         else:
-            X, y = st.session_state['data']
-            if "data_original" not in st.session_state:
-                st.session_state["data_original"] = (X.copy(), y.copy())
-
+            dataset = st.session_state['data']
             st.subheader("Dữ liệu Gốc")
+            # Hiển thị một số mẫu
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-            for i, ax in enumerate(axes.flat):
-                ax.imshow(X[i].reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {y[i]}")
+            for i, (x, y) in enumerate(dataset.unbatch().take(10)):
+                ax = axes[i // 5, i % 5]
+                ax.imshow(x.numpy().reshape(28, 28), cmap='gray')
+                ax.set_title(f"Label: {y.numpy()}")
                 ax.axis("off")
             st.pyplot(fig)
             plt.close(fig)
 
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                if st.button("Chuẩn hóa dữ liệu (Normalization)", type="primary", help="Chuẩn hóa dữ liệu về thang [0, 1]"):
-                    with st.spinner("Đang chuẩn hóa dữ liệu về [0, 1]..."):
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        for i in range(0, 101, 20):
-                            progress_bar.progress(i)
-                            status_text.text(f"Đang chuẩn hóa dữ liệu... {i}%")
-                            time.sleep(0.1)
-                        X_norm = X / 255.0
-                        st.session_state["data_processed"] = (X_norm.copy(), y.copy())
-                        st.success("Đã xử lý dữ liệu!")
-                        status_text.text("Đã xử lý xong! 100%")
-                        time.sleep(0.5)
-                        status_text.empty()
-                        progress_bar.empty()
-                        del X, y, X_norm
-                        gc.collect()
-                        st.rerun()
-            with col2:
-                st.markdown("""
-                    <div class="tooltip">? (Norm)
-                        <span class="tooltiptext">
-                            Đưa dữ liệu về $[0, 1]$ bằng cách chia cho $255$.<br>
-                            Công dụng: Đảm bảo thang đo đồng nhất cho Neural Network.
-                        </span>
-                    </div>
-                """, unsafe_allow_html=True)
-
-            if "data_processed" in st.session_state:
-                X_processed, y_processed = st.session_state["data_processed"]
-                st.success("Đã xử lý dữ liệu!")
+            st.info("Dữ liệu đã được chuẩn hóa về [0, 1] trong quá trình tải.")
 
     # **Tab 4: Chia dữ liệu**
     with tab_split:
@@ -742,9 +687,8 @@ def run_mnist_neural_network_app():
         if 'data' not in st.session_state:
             st.info("Vui lòng tải và xử lý dữ liệu trước.")
         else:
-            data_source = st.session_state.get('data_processed', st.session_state['data'])
-            X, y = data_source
-            total_samples = len(X)
+            dataset = st.session_state['data']
+            total_samples = st.session_state.get('full_data_size', 0)  # Sử dụng full_data_size đã lưu
             st.write(f"Tổng số mẫu: {total_samples}")
 
             col1, col2 = st.columns(2)
@@ -753,12 +697,10 @@ def run_mnist_neural_network_app():
             with col2:
                 valid_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20, help="Tỷ lệ dữ liệu dùng để xác thực mô hình")
 
-            test_size = test_pct / 100
-            X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-            valid_size = (valid_pct / 100) / (1 - test_size) if test_size < 1 else 0
-            X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42)
+            test_size = int(test_pct / 100 * total_samples)
+            valid_size = int(valid_pct / 100 * (total_samples - test_size))
+            train_size = total_samples - test_size - valid_size
 
-            st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Validation: {len(X_valid)}, Test: {len(X_test)}")
             if st.button("Xác nhận phân chia", type="primary"):
                 with st.spinner("Đang chia dữ liệu..."):
                     progress_bar = st.progress(0)
@@ -767,17 +709,22 @@ def run_mnist_neural_network_app():
                         progress_bar.progress(i)
                         status_text.text(f"Đang chia dữ liệu... {i}%")
                         time.sleep(0.1)
+                    # Chia dataset
+                    train_dataset = dataset.take(train_size)
+                    valid_dataset = dataset.skip(train_size).take(valid_size)
+                    test_dataset = dataset.skip(train_size + valid_size).take(test_size)
                     st.session_state['split_data'] = {
-                        "X_train": X_train.copy(), "y_train": y_train.copy(),
-                        "X_valid": X_valid.copy(), "y_valid": y_valid.copy(),
-                        "X_test": X_test.copy(), "y_test": y_test.copy()
+                        "train_dataset": train_dataset,
+                        "valid_dataset": valid_dataset,
+                        "test_dataset": test_dataset,
+                        "sizes": {"train": train_size, "valid": valid_size, "test": test_size}
                     }
                     st.success("Đã chia dữ liệu thành công!")
+                    st.write(f"**Phân bổ dữ liệu**: Train: {train_size}, Validation: {valid_size}, Test: {test_size}")
                     status_text.text("Đã xử lý xong! 100%")
                     time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
-                    del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
                     gc.collect()
 
     # **Tab 5: Huấn luyện/Đánh giá**
@@ -787,35 +734,14 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state:
             st.info("Vui lòng chia dữ liệu trước.")
         else:
-            split_data = st.session_state['split_data'].copy()
-            X_train = split_data["X_train"]
-            y_train = split_data["y_train"]
-            X_valid = split_data["X_valid"]
-            y_valid = split_data["y_valid"]
-            X_test = split_data["X_test"]
-            y_test = split_data["y_test"]
-
-            X_train = np.array(X_train, dtype=np.float32)
-            y_train = np.array(y_train, dtype=np.int32)
-            X_valid = np.array(X_valid, dtype=np.float32)
-            y_valid = np.array(y_valid, dtype=np.int32)
-            X_test = np.array(X_test, dtype=np.float32)
-            y_test = np.array(y_test, dtype=np.int32)
-
-            if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
-                st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
-                X_train = np.nan_to_num(X_train, nan=0.0)
-                y_train = np.nan_to_num(y_train, nan=0.0)
-                st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
-
-            num_samples = len(X_train)
-            st.write(f"**Số mẫu huấn luyện**: {num_samples}")
-            if X_train.shape[0] != y_train.shape[0]:
-                st.error("Số mẫu của X_train và y_train không khớp!")
-                st.stop()
+            split_data = st.session_state['split_data']
+            train_dataset = split_data["train_dataset"]
+            valid_dataset = split_data["valid_dataset"]
+            test_dataset = split_data["test_dataset"]
+            train_size = split_data["sizes"]["train"]
 
             if "optimal_params" not in st.session_state:
-                st.session_state["optimal_params"] = get_optimal_params(num_samples)
+                st.session_state["optimal_params"] = get_optimal_params(train_size)
             
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
@@ -826,10 +752,9 @@ def run_mnist_neural_network_app():
             | ≤ 100        | 1         | 16                | 0.005      | 20         | ReLU          | Adam         | 32               | 0.2          |
             | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.2          |
             | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.3          |
-            | ≤ 50,000     | 3         | (128, 64, 32)     | 0.0003     | 100        | ReLU          | Adam         | 128              | 0.3          |
-            | > 50,000     | 3         | (256, 128, 64)    | 0.0001     | 150        | ReLU          | Adam         | 256              | 0.4          |
+            | > 10,000     | 3         | (64, 32, 16)      | 0.0003     | 100        | ReLU          | Adam         | 128              | 0.3          |
             """, unsafe_allow_html=True)
-            st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
+            st.info(f"Tham số tối ưu cho {train_size} mẫu: {st.session_state['optimal_params']}")
 
             col_param1, col_param2 = st.columns(2)
             with col_param1:
@@ -840,28 +765,28 @@ def run_mnist_neural_network_app():
                     hidden_sizes = list(params["hidden_layer_sizes"])
                     
                     if num_hidden_layers == 1:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
                                                         value=hidden_sizes[0] if len(hidden_sizes) > 0 else 16, 
-                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-256).")
+                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
                         hidden_sizes = [hidden_size_1]
                     elif num_hidden_layers == 2:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
                                                         value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-256).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=256, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
                                                         value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-256).")
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
                         hidden_sizes = [hidden_size_1, hidden_size_2]
                     elif num_hidden_layers == 3:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=256, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 128, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-256).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=256, 
-                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-256).")
-                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=256, 
-                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-256).")
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
+                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 16, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
                         hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
                     
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
@@ -872,11 +797,11 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0001], 
-                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0001].index(params["learning_rate"]),
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005], 
+                                                           index=[0.01, 0.005, 0.001, 0.0005].index(params["learning_rate"]),
                                                            help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
-                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=200, value=params["epochs"], 
-                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-200).")
+                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
+                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
                     params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
                                                            help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
@@ -910,10 +835,9 @@ def run_mnist_neural_network_app():
 
                             model = models.Sequential()
                             model.add(layers.Input(shape=(784,)))
-                            dropout_rate = params.get("dropout_rate", 0.2)
                             for neurons in params["hidden_layer_sizes"]:
                                 model.add(layers.Dense(neurons, activation=params["activation"]))
-                                model.add(layers.Dropout(dropout_rate))
+                                model.add(layers.Dropout(params["dropout_rate"]))
                             model.add(layers.Dense(10, activation='softmax'))
 
                             optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
@@ -935,19 +859,13 @@ def run_mnist_neural_network_app():
                             status_text.text("Đang huấn luyện mô hình... 50%")
                             progress_bar.progress(50)
 
-                            history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                                validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
+                            history = model.fit(train_dataset, epochs=params["epochs"], validation_data=valid_dataset, callbacks=callbacks_list, verbose=0)
 
                             status_text.text("Đang đánh giá mô hình... 90%")
                             progress_bar.progress(90)
                             time.sleep(0.1)
 
-                            y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_valid = accuracy_score(y_valid, y_valid_pred)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                            cm_test = confusion_matrix(y_test, y_test_pred)
+                            test_loss, test_acc = model.evaluate(test_dataset, verbose=0)
 
                             status_text.text("Đang lưu kết quả... 100%")
                             progress_bar.progress(100)
@@ -956,17 +874,17 @@ def run_mnist_neural_network_app():
                             run_name = f"NeuralNetwork_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
                                 mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver', 'dropout_rate']})
-                                mlflow.log_metric("accuracy_val", acc_valid)
-                                mlflow.log_metric("accuracy_test", acc_test)
+                                mlflow.log_metric("accuracy_test", test_acc)
                                 mlflow.log_metric("training_time", time.time() - start_time)
                                 mlflow.log_metric("n_iter_actual", len(history.history['loss']))
 
                             st.session_state['model'] = model
                             st.session_state['training_results'] = {
-                                'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                'cm_valid': cm_valid, 'cm_test': cm_test,
-                                'run_name': run_name, 'run_id': run.info.run_id,
-                                'params': params, 'training_time': time.time() - start_time,
+                                'accuracy_test': test_acc,
+                                'run_name': run_name,
+                                'run_id': run.info.run_id,
+                                'params': params,
+                                'training_time': time.time() - start_time,
                                 'loss_history': history.history['loss'][-10:],
                                 'val_loss_history': history.history['val_loss'][-10:] if 'val_loss' in history.history else [],
                                 'accuracy_history': history.history['accuracy'][-10:],
@@ -980,7 +898,6 @@ def run_mnist_neural_network_app():
                             status_text.empty()
                             progress_bar.empty()
                             tf.keras.backend.clear_session()
-                            del X_train, y_train, X_valid, y_valid, X_test, y_test, split_data, history
                             gc.collect()
                             st.rerun()
 
@@ -996,33 +913,9 @@ def run_mnist_neural_network_app():
                 with col_result1:
                     st.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                 with col_result2:
-                    st.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
-                with col_result3:
                     st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
-                st.subheader("📈 Ma trận Nhầm lẫn")
-                st.markdown("""
-                - Ma trận nhầm lẫn cho thấy số lượng dự đoán đúng và sai của mô hình cho từng lớp ($0$-$9$):  
-                  - **Hàng**: Nhãn thực tế.  
-                  - **Cột**: Nhãn dự đoán.  
-                  - **Số trên đường chéo**: Số mẫu dự đoán đúng.  
-                  - **Số ngoài đường chéo**: Số mẫu dự đoán sai (nhầm lẫn giữa các lớp).  
-                """, unsafe_allow_html=True)
-                col_cm1, col_cm2 = st.columns(2)
-                with col_cm1:
-                    fig, ax = plt.subplots(figsize=(6, 5))
-                    sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Validation")
-                    st.pyplot(fig)
-                    plt.close(fig)
-                with col_cm2:
-                    fig, ax = plt.subplots(figsize=(6, 5))
-                    sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Test")
-                    st.pyplot(fig)
-                    plt.close(fig)
-
-                st.subheader("📉 Biểu đồ Kết quả Huấn luyện")
+                st.subheader("📈 Biểu đồ Kết quả Huấn luyện")
                 if results['loss_history']:
                     fig, ax = plt.subplots(figsize=(8, 4))
                     ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
@@ -1071,7 +964,6 @@ def run_mnist_neural_network_app():
                     st.write(f"- ID: {results['run_id']}")
                     st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
                     st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
-                    st.write(f"- Độ chính xác Validation: {results['accuracy_val']*100:.2f}%")
                     st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
                     st.markdown("**Tham số đã chọn:**")
                     st.json({
@@ -1095,18 +987,15 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state or 'model' not in st.session_state:
             st.warning("⚠️ Vui lòng huấn luyện mô hình trước trong tab 'Huấn luyện/Đánh giá'!")
         else:
-            model = load_model(st.session_state['model'])
+            model = st.session_state['model']
             st.write("**Mô hình hiện tại**: Neural Network")
 
             input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
-            is_normalized = 'data_processed' in st.session_state
 
-            def preprocess_input(data, is_normalized):
+            def preprocess_input(data):
                 """Chuẩn bị dữ liệu đầu vào cho dự đoán."""
-                data, fixed = validate_and_fix_pixels(data)
-                if fixed:
-                    st.success("Đã chuẩn hóa dữ liệu về [0, 255]!")
-                if not is_normalized:
+                data = np.array(data, dtype=np.float32)
+                if data.max() > 1.0:
                     data = data / 255.0
                 return data
 
@@ -1121,9 +1010,9 @@ def run_mnist_neural_network_app():
                     if st.button("Dự đoán", key="predict_upload_button"):
                         with st.spinner("Đang xử lý ảnh..."):
                             image_array = np.array(image, dtype=np.float32)
+                            image_array = preprocess_input(image_array)
                             image_array = image_array.reshape(1, 784)
-                            image_processed = preprocess_input(image_array, is_normalized)
-                            prediction = model.predict(image_processed, verbose=0)
+                            prediction = model.predict(image_array, verbose=0)
                             predicted_class = np.argmax(prediction[0])
                             confidence = prediction[0][predicted_class] * 100
                             st.markdown(f"""
@@ -1133,45 +1022,45 @@ def run_mnist_neural_network_app():
                                 </div>
                             """, unsafe_allow_html=True)
                             st.success("Dự đoán hoàn tất!")
-                            del image, image_array, image_processed, prediction
+                            del image, image_array, prediction
                             gc.collect()
 
             elif input_method == "Dữ liệu Test":
                 st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
-                X_test = st.session_state['split_data']["X_test"]
-                y_test = st.session_state['split_data']["y_test"]
-                if len(X_test) == 0:
+                test_dataset = st.session_state['split_data']["test_dataset"]
+                if test_dataset is None:
                     st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
                 else:
                     col_select, col_display = st.columns([3, 2])
                     with col_select:
-                        idx = st.slider("Chọn mẫu Test", 0, min(len(X_test) - 1, 100), 0)
+                        idx = st.slider("Chọn mẫu Test", 0, min(len(test_dataset) - 1, 100), 0)
                     with col_display:
                         st.write("**Ảnh mẫu Test:**")
-                        fig, ax = plt.subplots(figsize=(2, 2))
-                        ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
-                        ax.axis('off')
-                        st.pyplot(fig)
-                        plt.close(fig)
-                        st.write(f"**Nhãn thực tế:** {y_test[idx]}")
+                        for x, y in test_dataset.unbatch().skip(idx).take(1):
+                            fig, ax = plt.subplots(figsize=(2, 2))
+                            ax.imshow(x.numpy().reshape(28, 28), cmap='gray')
+                            ax.axis('off')
+                            st.pyplot(fig)
+                            plt.close(fig)
+                            st.write(f"**Nhãn thực tế:** {y.numpy()}")
 
                     if st.button("🔍 Dự đoán", key="predict_test"):
                         with st.spinner("Đang dự đoán..."):
-                            sample = X_test[idx].reshape(1, -1)
-                            sample_processed = preprocess_input(sample, is_normalized)
-                            prediction = model.predict(sample_processed, verbose=0)
-                            predicted_class = np.argmax(prediction[0])
-                            confidence = prediction[0][predicted_class] * 100
-                            st.markdown(f"""
-                                <div class="prediction-box">
-                                    <strong>Dự đoán:</strong> {predicted_class}<br>
-                                    <strong>Xác suất:</strong> {confidence:.2f}%<br>
-                                    <strong>Nhãn thực tế:</strong> {y_test[idx]}
-                                </div>
-                            """, unsafe_allow_html=True)
-                            st.success("Dự đoán hoàn tất!")
-                            del sample, sample_processed, prediction
-                            gc.collect()
+                            for x, y in test_dataset.unbatch().skip(idx).take(1):
+                                sample = x.numpy().reshape(1, -1)
+                                prediction = model.predict(sample, verbose=0)
+                                predicted_class = np.argmax(prediction[0])
+                                confidence = prediction[0][predicted_class] * 100
+                                st.markdown(f"""
+                                    <div class="prediction-box">
+                                        <strong>Dự đoán:</strong> {predicted_class}<br>
+                                        <strong>Xác suất:</strong> {confidence:.2f}%<br>
+                                        <strong>Nhãn thực tế:</strong> {y.numpy()}
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                st.success("Dự đoán hoàn tất!")
+                                del sample, prediction
+                                gc.collect()
 
             elif input_method == "Vẽ trực tiếp":
                 st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
@@ -1201,9 +1090,9 @@ def run_mnist_neural_network_app():
                         if st.button("Dự đoán", key="predict_button"):
                             with st.spinner("Đang xử lý hình vẽ..."):
                                 image_array = np.array(image_resized, dtype=np.float32)
+                                image_array = preprocess_input(image_array)
                                 image_array = image_array.reshape(1, 784)
-                                image_processed = preprocess_input(image_array, is_normalized)
-                                prediction = model.predict(image_processed, verbose=0)
+                                prediction = model.predict(image_array, verbose=0)
                                 predicted_class = np.argmax(prediction[0])
                                 confidence = prediction[0][predicted_class] * 100
                                 st.markdown(f"""
@@ -1213,7 +1102,7 @@ def run_mnist_neural_network_app():
                                     </div>
                                 """, unsafe_allow_html=True)
                                 st.success("Dự đoán hoàn tất!")
-                                del image, image_resized, image_array, image_processed, prediction
+                                del image, image_resized, image_array, prediction
                                 gc.collect()
 
                     with col_clear:
