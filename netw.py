@@ -77,6 +77,45 @@ def preprocess_canvas_image(canvas_image):
         st.error(f"Lỗi xử lý ảnh canvas: {e}")
         return None
 
+# Hàm chọn tham số tối ưu dựa trên số lượng mẫu (định nghĩa ở phạm vi toàn cục)
+def get_optimal_params(num_samples):
+    if num_samples <= 100:
+        return {
+            "hidden_layer_sizes": (32,),
+            "learning_rate": 0.01,
+            "epochs": 15,
+            "activation": "relu",
+            "solver": "sgd",
+            "batch_size": 64
+        }
+    elif num_samples <= 1000:
+        return {
+            "hidden_layer_sizes": (64,),
+            "learning_rate": 0.005,
+            "epochs": 30,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 128
+        }
+    elif num_samples <= 10000:
+        return {
+            "hidden_layer_sizes": (100, 50),
+            "learning_rate": 0.001,
+            "epochs": 50,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 256
+        }
+    else:
+        return {
+            "hidden_layer_sizes": (128, 64),
+            "learning_rate": 0.001,
+            "epochs": 75,
+            "activation": "relu",
+            "solver": "adam",
+            "batch_size": 512
+        }
+
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
@@ -85,7 +124,7 @@ def run_mnist_neural_network_app():
         os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
         mlflow.set_tracking_uri(mlflow_tracking_uri)
     except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets.")
+        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets. Vui lòng kiểm tra file secrets.toml.")
         st.stop()
 
     try:
@@ -164,19 +203,6 @@ def run_mnist_neural_network_app():
                 border-radius: 5px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 margin-bottom: 20px;
-            }
-            .stTabs [role="tabpanel"] {
-                min-height: auto !important;
-                height: auto !important;
-            }
-            .stTabs [data-testid="stVerticalBlock"] {
-                min-height: auto !important;
-                height: auto !important;
-                padding-bottom: 0px !important;
-            }
-            .stTabs [data-testid="stVerticalBlock"] > div {
-                min-height: auto !important;
-                height: auto !important;
             }
             .prediction-box {
                 margin-top: 10px;
@@ -276,7 +302,7 @@ def run_mnist_neural_network_app():
                     mnist_image = Image.open("mnist.png")
                     st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
+                    st.warning("Không tìm thấy file `mnist.png`. Vui lòng thêm file vào thư mục dự án.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
@@ -321,7 +347,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 1. Vui lòng thêm file vào thư mục `plnw`.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -345,7 +371,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 2.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -364,7 +390,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 3.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -391,7 +417,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 4.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -409,7 +435,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 5.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -421,7 +447,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
                 except FileNotFoundError:
-                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                    st.warning("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -568,7 +594,7 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Tải dữ liệu (Đã cập nhật để tự động chọn tham số tối ưu)
+    # Tab 2: Tải dữ liệu
     with tab_load:
         st.markdown('<div class="section-title">Tải và Chuẩn bị Dữ liệu</div>', unsafe_allow_html=True)
 
@@ -588,6 +614,9 @@ def run_mnist_neural_network_app():
                         time.sleep(0.1)
                     try:
                         X, y = fetch_mnist_data()
+                        X, fixed = validate_and_fix_pixels(X, "dữ liệu gốc")
+                        if fixed:
+                            st.warning("Dữ liệu đã được chuẩn hóa về [0, 255].")
                         X = np.array(X, dtype=np.float64)
                         y = np.array(y, dtype=np.int32)
                         st.session_state['full_data'] = (X, y)
@@ -638,7 +667,6 @@ def run_mnist_neural_network_app():
                         X_sampled = X_full[indices]
                         y_sampled = y_full[indices]
                         st.session_state['data'] = (X_sampled, y_sampled)
-                        # Tự động cập nhật tham số tối ưu dựa trên num_samples
                         st.session_state['optimal_params'] = get_optimal_params(num_samples)
                         with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                             mlflow.log_param("num_samples", num_samples)
@@ -663,7 +691,6 @@ def run_mnist_neural_network_app():
                             X_sampled = X_full[indices]
                             y_sampled = y_full[indices]
                             st.session_state['data'] = (X_sampled, y_sampled)
-                            # Tự động cập nhật tham số tối ưu dựa trên custom_num_samples
                             st.session_state['optimal_params'] = get_optimal_params(custom_num_samples)
                             with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample_Custom"):
                                 mlflow.log_param("num_samples", custom_num_samples)
@@ -689,9 +716,10 @@ def run_mnist_neural_network_app():
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
-                ax.imshow(X[i].reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {y[i]}")
-                ax.axis("off")
+                if i < len(X):
+                    ax.imshow(X[i].reshape(28, 28), cmap='gray')
+                    ax.set_title(f"Label: {y[i]}")
+                    ax.axis("off")
             st.pyplot(fig)
 
             col1, col2 = st.columns([3, 1])
@@ -769,7 +797,7 @@ def run_mnist_neural_network_app():
                     status_text.empty()
                     progress_bar.empty()
 
-    # Tab 5: Huấn luyện/Đánh giá (Đã cập nhật để sử dụng tham số tối ưu tự động)
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
@@ -793,7 +821,7 @@ def run_mnist_neural_network_app():
             if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
                 st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
                 X_train = np.nan_to_num(X_train, nan=0.0)
-                y_train = np.nan_to_num(y_train, nan=0.0)
+                y_train = np.nan_to_num(y_train, nan=0)
                 st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
             if np.any(np.isnan(X_valid)):
                 X_valid = np.nan_to_num(X_valid, nan=0.0)
@@ -813,44 +841,6 @@ def run_mnist_neural_network_app():
             if X_train.shape[0] != y_train.shape[0]:
                 st.error("Số mẫu của X_train và y_train không khớp!")
                 st.stop()
-
-            def get_optimal_params(num_samples):
-                if num_samples <= 100:
-                    return {
-                        "hidden_layer_sizes": (32,),
-                        "learning_rate": 0.01,
-                        "epochs": 15,
-                        "activation": "relu",
-                        "solver": "sgd",
-                        "batch_size": 64
-                    }
-                elif num_samples <= 1000:
-                    return {
-                        "hidden_layer_sizes": (64,),
-                        "learning_rate": 0.005,
-                        "epochs": 30,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 128
-                    }
-                elif num_samples <= 10000:
-                    return {
-                        "hidden_layer_sizes": (100, 50),
-                        "learning_rate": 0.001,
-                        "epochs": 50,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 256
-                    }
-                else:
-                    return {
-                        "hidden_layer_sizes": (128, 64),
-                        "learning_rate": 0.001,
-                        "epochs": 75,
-                        "activation": "relu",
-                        "solver": "adam",
-                        "batch_size": 512
-                    }
 
             # Đảm bảo optimal_params đã được khởi tạo
             if "optimal_params" not in st.session_state:
@@ -952,7 +942,7 @@ def run_mnist_neural_network_app():
                             # Callback để theo dõi tiến trình
                             class ProgressCallback(callbacks.Callback):
                                 def on_epoch_end(self, epoch, logs=None):
-                                    progress = (epoch + 1) / params["epochs"] * 100
+                                    progress = min((epoch + 1) / params["epochs"] * 80 + 20, 100)  # Từ 20% đến 100%
                                     progress_bar.progress(int(progress))
                                     status_text.text(f"Đang huấn luyện... {int(progress)}%")
 
@@ -1070,9 +1060,9 @@ def run_mnist_neural_network_app():
                     st.pyplot(fig)
                     st.markdown("""
                     **Giải thích biểu đồ Loss:**
-                    - **Train Loss (Mất mát huấn luyện):** Đại diện cho sai số giữa dự đoán và nhãn thực tế trên tập huấn luyện. Giá trị giảm dần qua các epoch cho thấy mô hình đang học tốt hơn.
-                    - **Val Loss (Mất mát validation):** Đo lường sai số trên tập validation (nếu có), giúp đánh giá khả năng tổng quát hóa. Nếu Val Loss ổn định hoặc giảm chậm, mô hình không bị overfitting.
-                    - Hai đường này nên có xu hướng tương tự; nếu Val Loss tăng trong khi Train Loss giảm, đó là dấu hiệu của overfitting.
+                    - **Train Loss:** Sai số trên tập huấn luyện, giảm dần qua các epoch.
+                    - **Val Loss:** Sai số trên tập validation, đánh giá khả năng tổng quát hóa.
+                    - Nếu Val Loss tăng trong khi Train Loss giảm, mô hình có thể bị overfitting.
                     """)
                     st.markdown("---")
 
@@ -1092,9 +1082,9 @@ def run_mnist_neural_network_app():
                     st.pyplot(fig)
                     st.markdown("""
                     **Giải thích biểu đồ Accuracy:**
-                    - **Train Accuracy (Độ chính xác huấn luyện):** Tỷ lệ dự đoán đúng trên tập huấn luyện, thường tăng qua các epoch khi mô hình học.
-                    - **Val Accuracy (Độ chính xác validation):** Tỷ lệ dự đoán đúng trên tập validation (nếu có), phản ánh khả năng tổng quát hóa. Giá trị cao và ổn định cho thấy mô hình hoạt động tốt trên dữ liệu mới.
-                    - Sự khác biệt giữa Train Accuracy và Val Accuracy không quá lớn là dấu hiệu của một mô hình cân bằng.
+                    - **Train Accuracy:** Tỷ lệ đúng trên tập huấn luyện, tăng qua các epoch.
+                    - **Val Accuracy:** Tỷ lệ đúng trên tập validation, phản ánh khả năng tổng quát hóa.
+                    - Sự khác biệt lớn giữa hai đường có thể chỉ ra overfitting.
                     """)
 
                 st.subheader("ℹ️ Thông tin Chi tiết")
