@@ -210,7 +210,8 @@ def run_mnist_pseudo_labeling_app():
                 - **Nhiệm vụ:** Dự đoán nhãn tương ứng với từng chữ số từ 0 đến 9.
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("mnist.png"), caption="Tổng quan về tập dữ liệu MNIST", width=800)
+                    mnist_image = Image.open("mnist.png")
+                    st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
                 except FileNotFoundError:
                     st.warning("Không tìm thấy ảnh minh họa 'mnist_overview.png'. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
