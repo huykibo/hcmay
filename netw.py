@@ -695,9 +695,6 @@ def run_mnist_neural_network_app():
                 if 'cancel_training' not in st.session_state:
                     st.session_state['cancel_training'] = False
 
-                # Debug trạng thái (tùy chọn, có thể bỏ qua)
-                # st.write(f"Debug - Trạng thái huấn luyện: {st.session_state['training_in_progress']}")
-
                 col_train, col_cancel = st.columns([1, 1])
                 with col_train:
                     if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
@@ -912,18 +909,30 @@ def run_mnist_neural_network_app():
             st.warning("⚠️ Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'!")
         else:
             client = MlflowClient()
-            runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''")
+            runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''", order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags['mlflow.runName'] for run in runs if 'mlflow.runName' in run.data.tags}
+            
+            # Tự động chọn mô hình mới nhất nếu chưa chọn
+            if model_options and 'selected_model_id' not in st.session_state:
+                st.session_state['selected_model_id'] = runs[0].info.run_id  # Mô hình mới nhất
+            
             if model_options:
-                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()))
+                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=list(model_options.keys()).index(st.session_state['selected_model_id']))
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
-                with st.spinner("Đang tải mô hình..."):
-                    model_uri = f"runs:/{selected_run_id}/model"
-                    try:
-                        model = mlflow.keras.load_model(model_uri)
-                    except Exception as e:
-                        st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
-                        model = None
+                
+                # Chỉ tải lại mô hình khi người dùng thay đổi lựa chọn
+                if selected_run_id != st.session_state['selected_model_id'] or 'model' not in st.session_state:
+                    st.session_state['selected_model_id'] = selected_run_id
+                    with st.spinner("Đang tải mô hình..."):
+                        model_uri = f"runs:/{selected_run_id}/model"
+                        try:
+                            model = mlflow.keras.load_model(model_uri)
+                            st.session_state['model'] = model
+                        except Exception as e:
+                            st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
+                            model = None
+                else:
+                    model = st.session_state.get('model', None)
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
