@@ -618,10 +618,10 @@ def run_mnist_pseudo_labeling_app():
                 st.markdown("""
                 Trong quá trình huấn luyện bài toán phân loại MNIST với Pseudo-Labeling, các tham số sau được sử dụng để điều khiển kỹ thuật học bán giám sát này:
 
-                | **Tham số**            | **Mô tả**                                                                 | **Giá trị mặc định** | **Phạm vi điều chỉnh** |
-                |-----------------------|---------------------------------------------------------------------------|----------------------|-----------------------|
-                | **Ngưỡng tin cậy**    | Mức độ tin cậy tối thiểu để gán nhãn giả cho dữ liệu không có nhãn.       | 0.95                | 0.5 - 1.0            |
-                | **Số vòng lặp tối đa**| Số lần lặp tối đa của quy trình Pseudo-Labeling để gắn nhãn và huấn luyện.| 5                   | 1 - 10               |
+                | **Tham số**            | **Mô tả**                                                                |
+                |-----------------------|---------------------------------------------------------------------------|
+                | **Ngưỡng tin cậy**    | Mức độ tin cậy tối thiểu để gán nhãn giả cho dữ liệu không có nhãn.       |
+                | **Số vòng lặp tối đa**| Số lần lặp tối đa của quy trình Pseudo-Labeling để gắn nhãn và huấn luyện.|
 
                 **Chi tiết:**
                 - **Ngưỡng tin cậy (threshold)**:  
