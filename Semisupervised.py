@@ -831,7 +831,7 @@ def run_mnist_pseudo_labeling_app():
             st.write(f"**Tổng số mẫu huấn luyện ban đầu**: {num_samples}")
 
             # Bước 1: Lấy 1% số lượng ảnh cho mỗi class (0-9) để làm tập train ban đầu
-            st.subheader("Bước 1: Tạo tập dữ liệu ban đầu (1% mỗi lớp)")
+            st.subheader("Tạo tập dữ liệu ban đầu (1% mỗi lớp)")
             classes = np.unique(y_train_full)
             X_train_initial = []
             y_train_initial = []
