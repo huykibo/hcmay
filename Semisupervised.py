@@ -209,14 +209,7 @@ def run_mnist_pseudo_labeling_app():
                 - **Đặc trưng:** Giá trị pixel từ 0 đến 255, biểu diễn dưới dạng vector 784 chiều.
                 - **Nhiệm vụ:** Dự đoán nhãn tương ứng với từng chữ số từ 0 đến 9.
                 """, unsafe_allow_html=True)
-                try:
-                    mnist_image = Image.open("mnist.png")
-                    st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
-                except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa 'mnist_overview.png'. Vui lòng kiểm tra đường dẫn.")
-                except Exception as e:
-                    st.error(f"Lỗi khi tải ảnh: {e}")
-                status_text.text("Đã tải xong! 100%")
+               
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -244,9 +237,9 @@ def run_mnist_pseudo_labeling_app():
                 - Hỗ trợ nghiên cứu và đào tạo cho cả người mới bắt đầu lẫn các chuyên gia trong lĩnh vực học sâu.
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("mhpersoudo", "mnist_samples.png"), caption="Minh họa các mẫu ảnh từ tập dữ liệu MNIST", width=600)
+                    st.image(os.path.join("mnist.png"), caption="Tổng quan về tập dữ liệu MNIST", width=800)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa 'mnist_samples.png'. Vui lòng kiểm tra đường dẫn.")
+                    st.warning("Không tìm thấy ảnh minh họa 'mnist_overview.png'. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
