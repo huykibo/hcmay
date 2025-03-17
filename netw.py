@@ -293,67 +293,7 @@ def run_mnist_neural_network_app():
                 - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
                 """, unsafe_allow_html=True)
 
-                st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
-                st.markdown("""
-                Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
-
-                1. **Số lớp ẩn (Number of Hidden Layers):**
-                   - **Ý nghĩa**: Quyết định độ sâu của mạng, ảnh hưởng đến khả năng học các đặc trưng phức tạp.
-                   - **Hoạt động**: Tăng số lớp ẩn giúp mạng học được các đặc trưng cấp cao hơn, nhưng quá nhiều lớp có thể gây khó hội tụ hoặc overfitting.
-                   - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm (trong ứng dụng này: từ 1 đến 5).
-
-                2. **Số nơ-ron mỗi lớp ẩn (Number of Neurons per Layer):**
-                   - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là khả năng biểu diễn thông tin trong mỗi lớp.
-                   - **Hoạt động**: Nhiều nơ-ron hơn giúp mạng học được nhiều đặc trưng hơn, nhưng cũng tăng chi phí tính toán.
-                   - **Công thức**: Không có, thường là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa phần cứng.
-
-                3. **Tốc độ học (Learning Rate - η):**
-                   - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số trong mỗi lần cập nhật.
-                   - **Hoạt động**: Giá trị nhỏ (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định; giá trị lớn (ví dụ: 0.01) học nhanh hơn nhưng dễ vượt qua điểm tối ưu.
-                   - **Công thức**:  
-                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                     Trong đó: $W_t$ là trọng số tại bước $t$, $L$ là hàm mất mát.
-
-                4. **Số lần lặp (Epochs):**
-                   - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng.
-                   - **Hoạt động**: Tăng số lần lặp giúp mạng học tốt hơn, nhưng quá nhiều có thể dẫn đến overfitting.
-                   - **Công thức**: Không có, là tham số người dùng chọn (trong ứng dụng này: 10-200).
-
-                5. **Kích thước batch (Batch Size):**
-                   - **Ý nghĩa**: Số mẫu được xử lý trước khi cập nhật trọng số.
-                   - **Hoạt động**: Batch nhỏ (ví dụ: 16) giúp cập nhật thường xuyên hơn nhưng chậm; batch lớn (ví dụ: 512) nhanh hơn nhưng cần nhiều bộ nhớ.
-                   - **Công thức**: Không có, thường là lũy thừa của 2 để tối ưu hóa tính toán.
-
-                6. **Hàm kích hoạt (Activation Function):**
-                   - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào.
-                   - **Hoạt động**: Chuyển đổi đầu ra tuyến tính thành phi tuyến để mạng học được các đặc trưng phức tạp.
-                   - **Chi tiết các hàm kích hoạt phổ biến:**
-                     - **ReLU (Rectified Linear Unit):**
-                       - **Ý nghĩa**: Đơn giản, nhanh, tránh vấn đề biến mất gradient.
-                       - **Hoạt động**: Chỉ cho phép các giá trị dương đi qua, đặt giá trị âm về 0.
-                       - **Công thức**:  
-                         $$ f(x) = \\max(0, x) $$
-                     - **Tanh (Hyperbolic Tangent):**
-                       - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm/dương.
-                       - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient với mạng sâu.
-                       - **Công thức**:  
-                         $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$
-                     - **Softmax:**
-                       - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi thành xác suất cho phân loại đa lớp.
-                       - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp dự đoán lớp có xác suất cao nhất.
-                       - **Công thức**:  
-                         $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
-                         Trong đó: $x_i$ là đầu vào của nơ-ron thứ $i$, $k$ là số lớp.
-
-                7. **Trình tối ưu (Optimizer):**
-                   - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.
-                   - **Hoạt động**: Quyết định cách mạng hội tụ đến điểm tối ưu.
-                   - **Ví dụ phổ biến:**
-                     - **Adam**: Kết hợp động lượng và RMSProp, thích nghi với tốc độ học, nhanh và hiệu quả.
-                     - **SGD (Stochastic Gradient Descent)**: Cập nhật trọng số dựa trên gradient, đơn giản nhưng chậm hơn Adam.
-                   - **Công thức (SGD)**:  
-                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$
-                """, unsafe_allow_html=True)
+                
 
                 st.subheader("🔧 Quy trình hoạt động")
                 st.markdown("""
@@ -437,6 +377,67 @@ def run_mnist_neural_network_app():
                     st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
+                st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
+                st.markdown("""
+                Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
+
+                1. **Số lớp ẩn (Number of Hidden Layers):**
+                   - **Ý nghĩa**: Quyết định độ sâu của mạng, ảnh hưởng đến khả năng học các đặc trưng phức tạp.
+                   - **Hoạt động**: Tăng số lớp ẩn giúp mạng học được các đặc trưng cấp cao hơn, nhưng quá nhiều lớp có thể gây khó hội tụ hoặc overfitting.
+                   - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm (trong ứng dụng này: từ 1 đến 5).
+
+                2. **Số nơ-ron mỗi lớp ẩn (Number of Neurons per Layer):**
+                   - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là khả năng biểu diễn thông tin trong mỗi lớp.
+                   - **Hoạt động**: Nhiều nơ-ron hơn giúp mạng học được nhiều đặc trưng hơn, nhưng cũng tăng chi phí tính toán.
+                   - **Công thức**: Không có, thường là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa phần cứng.
+
+                3. **Tốc độ học (Learning Rate - η):**
+                   - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số trong mỗi lần cập nhật.
+                   - **Hoạt động**: Giá trị nhỏ (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định; giá trị lớn (ví dụ: 0.01) học nhanh hơn nhưng dễ vượt qua điểm tối ưu.
+                   - **Công thức**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                     Trong đó: $W_t$ là trọng số tại bước $t$, $L$ là hàm mất mát.
+
+                4. **Số lần lặp (Epochs):**
+                   - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng.
+                   - **Hoạt động**: Tăng số lần lặp giúp mạng học tốt hơn, nhưng quá nhiều có thể dẫn đến overfitting.
+                   - **Công thức**: Không có, là tham số người dùng chọn (trong ứng dụng này: 10-200).
+
+                5. **Kích thước batch (Batch Size):**
+                   - **Ý nghĩa**: Số mẫu được xử lý trước khi cập nhật trọng số.
+                   - **Hoạt động**: Batch nhỏ (ví dụ: 16) giúp cập nhật thường xuyên hơn nhưng chậm; batch lớn (ví dụ: 512) nhanh hơn nhưng cần nhiều bộ nhớ.
+                   - **Công thức**: Không có, thường là lũy thừa của 2 để tối ưu hóa tính toán.
+
+                6. **Hàm kích hoạt (Activation Function):**
+                   - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào.
+                   - **Hoạt động**: Chuyển đổi đầu ra tuyến tính thành phi tuyến để mạng học được các đặc trưng phức tạp.
+                   - **Chi tiết các hàm kích hoạt phổ biến:**
+                     - **ReLU (Rectified Linear Unit):**
+                       - **Ý nghĩa**: Đơn giản, nhanh, tránh vấn đề biến mất gradient.
+                       - **Hoạt động**: Chỉ cho phép các giá trị dương đi qua, đặt giá trị âm về 0.
+                       - **Công thức**:  
+                         $$ f(x) = \\max(0, x) $$
+                     - **Tanh (Hyperbolic Tangent):**
+                       - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm/dương.
+                       - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient với mạng sâu.
+                       - **Công thức**:  
+                         $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$
+                     - **Softmax:**
+                       - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi thành xác suất cho phân loại đa lớp.
+                       - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp dự đoán lớp có xác suất cao nhất.
+                       - **Công thức**:  
+                         $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                         Trong đó: $x_i$ là đầu vào của nơ-ron thứ $i$, $k$ là số lớp.
+
+                7. **Trình tối ưu (Optimizer):**
+                   - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.
+                   - **Hoạt động**: Quyết định cách mạng hội tụ đến điểm tối ưu.
+                   - **Ví dụ phổ biến:**
+                     - **Adam**: Kết hợp động lượng và RMSProp, thích nghi với tốc độ học, nhanh và hiệu quả.
+                     - **SGD (Stochastic Gradient Descent)**: Cập nhật trọng số dựa trên gradient, đơn giản nhưng chậm hơn Adam.
+                   - **Công thức (SGD)**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$
+                """, unsafe_allow_html=True)
 
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
