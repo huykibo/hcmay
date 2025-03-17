@@ -936,8 +936,9 @@ def run_mnist_pseudo_labeling_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
+                    threshold_default = st.session_state.get("optimal_params", {}).get("threshold", 0.95)  # Giá trị mặc định nếu không có optimal_params
                     threshold = st.slider("Ngưỡng tin cậy Pseudo-Label", 0.5, 1.0, 
-                                          st.session_state["optimal_params"]["threshold"], 
+                                          threshold_default, 
                                           help="Ngưỡng để gán nhãn giả cho dữ liệu không có nhãn.")
                     max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, 
                                                      value=st.session_state["optimal_params"]["max_iterations"], 
