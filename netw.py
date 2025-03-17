@@ -377,8 +377,9 @@ def run_mnist_neural_network_app():
                     st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
-                st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
-                st.markdown("""
+
+            st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
+            st.markdown("""
                 Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
                 1. **Số lớp ẩn (Number of Hidden Layers):**
@@ -439,10 +440,10 @@ def run_mnist_neural_network_app():
                      $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$
                 """, unsafe_allow_html=True)
 
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
+            status_text.text("Đã tải xong! 100%")
+            time.sleep(0.5)
+            status_text.empty()
+            progress_bar.empty()
 
     # Tab 2: Chọn số lượng dữ liệu
     with tab_load:
