@@ -803,177 +803,251 @@ def run_mnist_pseudo_labeling_app():
                     del X, y, X_train, X_test, y_train, y_test
                     gc.collect()
 
- # Tab 5: Huấn luyện/Đánh giá (phần liên quan đến hiển thị kết quả)
+    # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình với Pseudo-Labeling</div>', unsafe_allow_html=True)
 
-    if 'split_data' not in st.session_state:
-        st.info("Vui lòng chia dữ liệu trước.")
-    else:
-        split_data = st.session_state['split_data'].copy()
-        X_train_full = split_data["X_train"]
-        y_train_full = split_data["y_train"]
-        X_test = split_data["X_test"]
-        y_test = split_data["y_test"]
+        if 'split_data' not in st.session_state:
+            st.info("Vui lòng chia dữ liệu trước.")
+        else:
+            split_data = st.session_state['split_data'].copy()
+            X_train_full = split_data["X_train"]
+            y_train_full = split_data["y_train"]
+            X_test = split_data["X_test"]
+            y_test = split_data["y_test"]
 
-        X_train_full = np.array(X_train_full, dtype=np.float32)
-        y_train_full = np.array(y_train_full, dtype=np.int32)
-        X_test = np.array(X_test, dtype=np.float32)
-        y_test = np.array(y_test, dtype=np.int32)
+            X_train_full = np.array(X_train_full, dtype=np.float32)
+            y_train_full = np.array(y_train_full, dtype=np.int32)
+            X_test = np.array(X_test, dtype=np.float32)
+            y_test = np.array(y_test, dtype=np.int32)
 
-        if np.any(np.isnan(X_train_full)) or np.any(np.isnan(y_train_full)):
-            st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
-            X_train_full = np.nan_to_num(X_train_full, nan=0.0)
-            y_train_full = np.nan_to_num(y_train_full, nan=0.0)
-            st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
+            if np.any(np.isnan(X_train_full)) or np.any(np.isnan(y_train_full)):
+                st.error("Dữ liệu huấn luyện chứa giá trị NaN. Đang xử lý...")
+                X_train_full = np.nan_to_num(X_train_full, nan=0.0)
+                y_train_full = np.nan_to_num(y_train_full, nan=0.0)
+                st.success("Đã thay thế NaN bằng 0 trong dữ liệu huấn luyện!")
 
-        num_samples = len(X_train_full)
-        st.write(f"**Tổng số mẫu huấn luyện ban đầu**: {num_samples}")
+            num_samples = len(X_train_full)
+            st.write(f"**Tổng số mẫu huấn luyện ban đầu**: {num_samples}")
 
-        # Bước 1: Lấy 1% số lượng ảnh cho mỗi class (0-9) để làm tập train ban đầu
-        st.subheader("Bước 1: Tạo tập dữ liệu ban đầu (1% mỗi lớp)")
-        classes = np.unique(y_train_full)
-        X_train_initial = []
-        y_train_initial = []
-        X_unlabeled = []
-        y_unlabeled_indices = []
+            # Bước 1: Lấy 1% số lượng ảnh cho mỗi class (0-9) để làm tập train ban đầu
+            st.subheader("Bước 1: Tạo tập dữ liệu ban đầu (1% mỗi lớp)")
+            classes = np.unique(y_train_full)
+            X_train_initial = []
+            y_train_initial = []
+            X_unlabeled = []
+            y_unlabeled_indices = []
 
-        for cls in classes:
-            cls_indices = np.where(y_train_full == cls)[0]
-            num_cls_samples = len(cls_indices)
-            num_initial = max(1, int(0.01 * num_cls_samples))  # Lấy 1% mỗi lớp
-            initial_indices = np.random.choice(cls_indices, num_initial, replace=False)
-            unlabeled_indices = np.setdiff1d(cls_indices, initial_indices)
+            for cls in classes:
+                cls_indices = np.where(y_train_full == cls)[0]
+                num_cls_samples = len(cls_indices)
+                num_initial = max(1, int(0.01 * num_cls_samples))  # Lấy 1% mỗi lớp
+                initial_indices = np.random.choice(cls_indices, num_initial, replace=False)
+                unlabeled_indices = np.setdiff1d(cls_indices, initial_indices)
 
-            X_train_initial.append(X_train_full[initial_indices])
-            y_train_initial.append(y_train_full[initial_indices])
-            X_unlabeled.append(X_train_full[unlabeled_indices])
-            y_unlabeled_indices.extend(unlabeled_indices)
+                X_train_initial.append(X_train_full[initial_indices])
+                y_train_initial.append(y_train_full[initial_indices])
+                X_unlabeled.append(X_train_full[unlabeled_indices])
+                y_unlabeled_indices.extend(unlabeled_indices)
 
-        X_train_initial = np.concatenate(X_train_initial, axis=0)
-        y_train_initial = np.concatenate(y_train_initial, axis=0)
-        X_unlabeled = np.concatenate(X_unlabeled, axis=0)
+            X_train_initial = np.concatenate(X_train_initial, axis=0)
+            y_train_initial = np.concatenate(y_train_initial, axis=0)
+            X_unlabeled = np.concatenate(X_unlabeled, axis=0)
 
-        st.write(f"**Tập dữ liệu ban đầu (1%)**: {len(X_train_initial)} mẫu")
-        st.write(f"**Tập dữ liệu chưa gắn nhãn (99%)**: {len(X_unlabeled)} mẫu")
+            st.write(f"**Tập dữ liệu ban đầu (1%)**: {len(X_train_initial)} mẫu")
+            st.write(f"**Tập dữ liệu chưa gắn nhãn (99%)**: {len(X_unlabeled)} mẫu")
 
-        # Lưu trữ tập dữ liệu ban đầu
-        st.session_state['pseudo_data'] = {
-            'X_train_initial': X_train_initial.copy(),
-            'y_train_initial': y_train_initial.copy(),
-            'X_unlabeled': X_unlabeled.copy(),
-            'y_unlabeled_indices': y_unlabeled_indices,
-            'X_test': X_test.copy(),
-            'y_test': y_test.copy()
-        }
+            # Lưu trữ tập dữ liệu ban đầu
+            st.session_state['pseudo_data'] = {
+                'X_train_initial': X_train_initial.copy(),
+                'y_train_initial': y_train_initial.copy(),
+                'X_unlabeled': X_unlabeled.copy(),
+                'y_unlabeled_indices': y_unlabeled_indices,
+                'X_test': X_test.copy(),
+                'y_test': y_test.copy()
+            }
 
-        if "optimal_params" not in st.session_state:
-            st.session_state["optimal_params"] = get_optimal_params(num_samples)
-        
-        params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
+            if "optimal_params" not in st.session_state:
+                st.session_state["optimal_params"] = get_optimal_params(num_samples)
+            
+            params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-        st.subheader("⚙️ Cấu hình tham khảo Tham số Mô hình")
-        st.markdown(f"""
-        Dựa trên số mẫu huấn luyện ban đầu ({num_samples} mẫu), bảng dưới đây gợi ý các tham số tối ưu cho bài toán **Pseudo-Labeling với Neural Network**:
+            st.subheader("⚙️ Cấu hình tham khảo Tham số Mô hình")
+            st.markdown(f"""
+            Dựa trên số mẫu huấn luyện ban đầu ({num_samples} mẫu), bảng dưới đây gợi ý các tham số tối ưu cho bài toán **Pseudo-Labeling với Neural Network**:
 
-        | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch | Ngưỡng tin cậy | Số vòng lặp tối đa |
-        |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|----------------|-------------------|
-        | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.9            | 3                 |
-        | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.95           | 5                 |
-        | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              | 0.97           | 7                 |
-        | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              | 0.98           | 10                |
-        """, unsafe_allow_html=True)
-        st.info(f"Tham số tối ưu gợi ý cho {num_samples} mẫu: {st.session_state['optimal_params']}")
+            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch | Ngưỡng tin cậy | Số vòng lặp tối đa |
+            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|----------------|-------------------|
+            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.9            | 3                 |
+            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.95           | 5                 |
+            | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              | 0.97           | 7                 |
+            | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              | 0.98           | 10                |
+            """, unsafe_allow_html=True)
+            st.info(f"Tham số tối ưu gợi ý cho {num_samples} mẫu: {st.session_state['optimal_params']}")
 
-        col_param1, col_param2 = st.columns(2)
-        with col_param1:
-            with st.expander("🧠 Cấu trúc Mạng", expanded=True):
-                st.markdown("**Tùy chỉnh số lớp ẩn và nơ-ron**", unsafe_allow_html=True)
-                num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=len(params["hidden_layer_sizes"]), 
-                                                   help="Chọn 1, 2 hoặc 3 lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
-                hidden_sizes = list(params["hidden_layer_sizes"])
-                
-                if num_hidden_layers == 1:
-                    hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[0] if len(hidden_sizes) > 0 else 32, 
-                                                    help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
-                    hidden_sizes = [hidden_size_1]
-                elif num_hidden_layers == 2:
-                    hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
-                                                    help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                    hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
-                                                    help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
-                    hidden_sizes = [hidden_size_1, hidden_size_2]
-                elif num_hidden_layers == 3:
-                    hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[0] if len(hidden_sizes) > 0 else 128, 
-                                                    help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                    hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[1] if len(hidden_sizes) > 1 else 64, 
-                                                    help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
-                    hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
-                                                    value=hidden_sizes[2] if len(hidden_sizes) > 2 else 32, 
-                                                    help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
-                    hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
-                
-                params["hidden_layer_sizes"] = tuple(hidden_sizes)
-                params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
-                                                    index=["relu", "sigmoid", "tanh"].index(params["activation"]),
-                                                    help="Chọn hàm kích hoạt: ReLU (nhanh), Sigmoid (xác suất), Tanh (cân bằng).")
-        
-        with col_param2:
-            with st.expander("🔧 Tối ưu hóa", expanded=True):
-                st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001], 
-                                                       index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
-                                                       help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
-                params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
-                                                   help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
-                params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
-                                                       help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
-                params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
-                                                index=["adam", "sgd"].index(params["solver"]),
-                                                help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                threshold_default = st.session_state.get("optimal_params", {}).get("threshold", 0.95)
-                threshold = st.slider("Ngưỡng tin cậy Pseudo-Label", 0.5, 1.0, 
-                                      threshold_default, 
-                                      help="Ngưỡng để gán nhãn giả cho dữ liệu không có nhãn.")
-                max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, 
-                                                 value=st.session_state["optimal_params"]["max_iterations"], 
-                                                 help="Số lần lặp tối đa cho quá trình Pseudo-Labeling.")
+            col_param1, col_param2 = st.columns(2)
+            with col_param1:
+                with st.expander("🧠 Cấu trúc Mạng", expanded=True):
+                    st.markdown("**Tùy chỉnh số lớp ẩn và nơ-ron**", unsafe_allow_html=True)
+                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=len(params["hidden_layer_sizes"]), 
+                                                       help="Chọn 1, 2 hoặc 3 lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
+                    hidden_sizes = list(params["hidden_layer_sizes"])
+                    
+                    if num_hidden_layers == 1:
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
+                        hidden_sizes = [hidden_size_1]
+                    elif num_hidden_layers == 2:
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
+                        hidden_sizes = [hidden_size_1, hidden_size_2]
+                    elif num_hidden_layers == 3:
+                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 128, 
+                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
+                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 64, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
+                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
+                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 32, 
+                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
+                        hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
+                    
+                    params["hidden_layer_sizes"] = tuple(hidden_sizes)
+                    params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "sigmoid", "tanh"], 
+                                                        index=["relu", "sigmoid", "tanh"].index(params["activation"]),
+                                                        help="Chọn hàm kích hoạt: ReLU (nhanh), Sigmoid (xác suất), Tanh (cân bằng).")
+            
+            with col_param2:
+                with st.expander("🔧 Tối ưu hóa", expanded=True):
+                    st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
+                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001], 
+                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
+                                                           help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
+                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
+                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
+                    params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
+                                                           help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
+                    params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
+                                                    index=["adam", "sgd"].index(params["solver"]),
+                                                    help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
+                    threshold_default = st.session_state.get("optimal_params", {}).get("threshold", 0.95)
+                    threshold = st.slider("Ngưỡng tin cậy Pseudo-Label", 0.5, 1.0, 
+                                          threshold_default, 
+                                          help="Ngưỡng để gán nhãn giả cho dữ liệu không có nhãn.")
+                    max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, 
+                                                     value=st.session_state["optimal_params"]["max_iterations"], 
+                                                     help="Số lần lặp tối đa cho quá trình Pseudo-Labeling.")
 
-        col_reset, col_train = st.columns([1, 3])
-        with col_reset:
-            if st.button("🔄 Khôi phục tham số tối ưu", key="reset_params"):
-                st.session_state["training_params"] = st.session_state["optimal_params"].copy()
-                st.success("Đã khôi phục tham số tối ưu!")
-                st.rerun()
+            col_reset, col_train = st.columns([1, 3])
+            with col_reset:
+                if st.button("🔄 Khôi phục tham số tối ưu", key="reset_params"):
+                    st.session_state["training_params"] = st.session_state["optimal_params"].copy()
+                    st.success("Đã khôi phục tham số tối ưu!")
+                    st.rerun()
 
-        st.session_state["training_params"] = params
+            st.session_state["training_params"] = params
 
-        with col_train:
-            if st.button("🚀 Bắt đầu Huấn luyện với Pseudo-Labeling", type="primary", key="start_training"):
-                try:
-                    with st.spinner("Đang thực hiện quy trình Pseudo-Labeling..."):
-                        start_time = time.time()
+            with col_train:
+                if st.button("🚀 Bắt đầu Huấn luyện với Pseudo-Labeling", type="primary", key="start_training"):
+                    try:
+                        with st.spinner("Đang thực hiện quy trình Pseudo-Labeling..."):
+                            start_time = time.time()
 
-                        # Khởi tạo tập dữ liệu huấn luyện
-                        X_train = st.session_state['pseudo_data']['X_train_initial'].copy()
-                        y_train = st.session_state['pseudo_data']['y_train_initial'].copy()
-                        X_unlabeled = st.session_state['pseudo_data']['X_unlabeled'].copy()
-                        y_unlabeled_indices = st.session_state['pseudo_data']['y_unlabeled_indices'].copy()
+                            # Khởi tạo tập dữ liệu huấn luyện
+                            X_train = st.session_state['pseudo_data']['X_train_initial'].copy()
+                            y_train = st.session_state['pseudo_data']['y_train_initial'].copy()
+                            X_unlabeled = st.session_state['pseudo_data']['X_unlabeled'].copy()
+                            y_unlabeled_indices = st.session_state['pseudo_data']['y_unlabeled_indices'].copy()
 
-                        iteration = 0
-                        pseudo_labeled_history = []
-                        accuracy_test_history = []
+                            iteration = 0
+                            pseudo_labeled_history = []
+                            accuracy_test_history = []
 
-                        while iteration < max_iterations and len(X_unlabeled) > 0:
-                            iteration += 1
-                            st.write(f"**Vòng lặp {iteration}/{max_iterations}**")
+                            # Tạo các container cố định để hiển thị thông tin vòng lặp
+                            iteration_container = st.empty()  # Container cho tiêu đề vòng lặp
+                            progress_bar_container = st.empty()  # Container cho progress bar
+                            status_container = st.empty()  # Container cho thông tin epoch
+                            pseudo_container = st.empty()  # Container cho số mẫu gán nhãn giả
+                            accuracy_container = st.empty()  # Container cho độ chính xác
 
-                            # Bước 2: Huấn luyện mô hình trên tập dữ liệu hiện tại
+                            while iteration < max_iterations and len(X_unlabeled) > 0:
+                                iteration += 1
+                                # Hiển thị tiêu đề vòng lặp trong container cố định
+                                iteration_container.markdown(f"**Vòng lặp {iteration}/{max_iterations}**")
+
+                                # Bước 2: Huấn luyện mô hình trên tập dữ liệu hiện tại
+                                model = models.Sequential()
+                                model.add(layers.Input(shape=(784,)))
+                                for neurons in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(neurons, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
+
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+
+                                model.compile(optimizer=optimizer,
+                                              loss='sparse_categorical_crossentropy',
+                                              metrics=['accuracy'])
+
+                                # Tạo progress bar trong container cố định
+                                with progress_bar_container:
+                                    progress_bar = st.progress(0)
+
+                                class ProgressCallback(callbacks.Callback):
+                                    def on_epoch_end(self, epoch, logs=None):
+                                        progress = (epoch + 1) / params["epochs"] * 100
+                                        progress_bar.progress(int(progress))
+                                        # Cập nhật thông tin epoch trong container cố định
+                                        status_container.markdown(
+                                            f"**Vòng lặp {iteration}/{max_iterations} - Epoch {epoch+1}/{params['epochs']}**: "
+                                            f"Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}"
+                                        )
+
+                                history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
+                                                    callbacks=[ProgressCallback()], verbose=0)
+
+                                # Bước 3: Dự đoán nhãn cho tập dữ liệu chưa gắn nhãn
+                                predictions = model.predict(X_unlabeled, verbose=0)
+                                predicted_labels = np.argmax(predictions, axis=1)
+                                confidences = np.max(predictions, axis=1)
+
+                                # Bước 4: Gán nhãn giả với ngưỡng tin cậy
+                                pseudo_mask = confidences >= threshold
+                                X_pseudo = X_unlabeled[pseudo_mask]
+                                y_pseudo = predicted_labels[pseudo_mask]
+
+                                # Hiển thị số mẫu được gán nhãn giả trong container cố định
+                                pseudo_container.markdown(f"**Số mẫu được gán nhãn giả trong vòng {iteration}**: {len(X_pseudo)}")
+
+                                # Cập nhật tập dữ liệu huấn luyện
+                                X_train = np.concatenate([X_train, X_pseudo], axis=0)
+                                y_train = np.concatenate([y_train, y_pseudo], axis=0)
+
+                                # Loại bỏ các mẫu đã được gán nhãn giả khỏi tập unlabeled
+                                remaining_mask = ~pseudo_mask
+                                X_unlabeled = X_unlabeled[remaining_mask]
+
+                                # Ghi lại số lượng mẫu được gán nhãn giả
+                                pseudo_labeled_history.append(len(X_pseudo))
+
+                                # Đánh giá trên tập test
+                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                acc_test = accuracy_score(y_test, y_test_pred)
+                                accuracy_test_history.append(acc_test)
+                                # Hiển thị độ chính xác trong container cố định
+                                accuracy_container.markdown(f"**Độ chính xác trên tập Test sau vòng {iteration}**: {acc_test*100:.2f}%")
+
+                                tf.keras.backend.clear_session()
+                                del model, predictions, predicted_labels, confidences, pseudo_mask, X_pseudo, y_pseudo, remaining_mask
+                                gc.collect()
+
+                            # Huấn luyện lần cuối trên toàn bộ tập dữ liệu đã gắn nhãn
+                            iteration_container.markdown("**Huấn luyện lần cuối trên toàn bộ tập dữ liệu đã gắn nhãn**")
                             model = models.Sequential()
                             model.add(layers.Input(shape=(784,)))
                             for neurons in params["hidden_layer_sizes"]:
@@ -986,230 +1060,166 @@ def run_mnist_pseudo_labeling_app():
                                           loss='sparse_categorical_crossentropy',
                                           metrics=['accuracy'])
 
-                            progress_bar = st.progress(0)
-                            status_container = st.empty()
+                            with progress_bar_container:
+                                progress_bar_final = st.progress(0)
+                            status_container_final = st.empty()
 
                             class ProgressCallback(callbacks.Callback):
                                 def on_epoch_end(self, epoch, logs=None):
                                     progress = (epoch + 1) / params["epochs"] * 100
-                                    progress_bar.progress(int(progress))
-                                    status_container.markdown(
-                                        f"**Vòng lặp {iteration}/{max_iterations} - Epoch {epoch+1}/{params['epochs']}**: "
+                                    progress_bar_final.progress(int(progress))
+                                    status_container_final.markdown(
+                                        f"**Huấn luyện cuối - Epoch {epoch+1}/{params['epochs']}**: "
                                         f"Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}"
                                     )
 
                             history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
                                                 callbacks=[ProgressCallback()], verbose=0)
 
-                            # Bước 3: Dự đoán nhãn cho tập dữ liệu chưa gắn nhãn
-                            predictions = model.predict(X_unlabeled, verbose=0)
-                            predicted_labels = np.argmax(predictions, axis=1)
-                            confidences = np.max(predictions, axis=1)
-
-                            # Bước 4: Gán nhãn giả với ngưỡng tin cậy
-                            pseudo_mask = confidences >= threshold
-                            X_pseudo = X_unlabeled[pseudo_mask]
-                            y_pseudo = predicted_labels[pseudo_mask]
-
-                            st.write(f"**Số mẫu được gán nhãn giả trong vòng {iteration}**: {len(X_pseudo)}")
-
-                            # Cập nhật tập dữ liệu huấn luyện
-                            X_train = np.concatenate([X_train, X_pseudo], axis=0)
-                            y_train = np.concatenate([y_train, y_pseudo], axis=0)
-
-                            # Loại bỏ các mẫu đã được gán nhãn giả khỏi tập unlabeled
-                            remaining_mask = ~pseudo_mask
-                            X_unlabeled = X_unlabeled[remaining_mask]
-
-                            # Ghi lại số lượng mẫu được gán nhãn giả
-                            pseudo_labeled_history.append(len(X_pseudo))
-
                             # Đánh giá trên tập test
                             y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                             acc_test = accuracy_score(y_test, y_test_pred)
-                            accuracy_test_history.append(acc_test)
-                            # Chỉ hiển thị thông tin vòng lặp hiện tại
-                            st.write(f"**Vòng lặp {iteration}/3 - Epoch 30/30: Loss: 0.3112, Accuracy: 1.0000**")
-                            st.write(f"**Số mẫu được gán nhãn giả trong vòng {iteration}: {len(X_pseudo)}**")
-                            st.write(f"**Độ chính xác trên tập Test sau vòng {iteration}: {acc_test*100:.2f}%**")
+                            cm_test = confusion_matrix(y_test, y_test_pred)
 
+                            run_name = f"PseudoLabeling_NN_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                            with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
+                                mlflow.log_params({
+                                    'hidden_layer_sizes': params["hidden_layer_sizes"],
+                                    'learning_rate': params["learning_rate"],
+                                    'epochs': params["epochs"],
+                                    'batch_size': params["batch_size"],
+                                    'activation': params["activation"],
+                                    'solver': params["solver"],
+                                    'threshold': threshold,
+                                    'max_iterations': max_iterations
+                                })
+                                mlflow.log_metric("accuracy_test", acc_test)
+                                mlflow.log_metric("training_time", time.time() - start_time)
+                                mlflow.log_metric("total_iterations", iteration)
+
+                            st.session_state['model'] = model
+                            st.session_state['training_results'] = {
+                                'accuracy_test': acc_test,
+                                'cm_test': cm_test,
+                                'run_name': run_name,
+                                'run_id': run.info.run_id,
+                                'params': params,
+                                'training_time': time.time() - start_time,
+                                'loss_history': history.history['loss'][-10:],
+                                'accuracy_history': history.history['accuracy'][-10:],
+                                'pseudo_labeled_history': pseudo_labeled_history,
+                                'accuracy_test_history': accuracy_test_history,
+                                'total_iterations': iteration
+                            }
+
+                            # Hiển thị thông tin vòng lặp cuối cùng
+                            final_iteration = iteration
+                            iteration_container.markdown(f"**Vòng lặp {final_iteration}/{max_iterations}**")
+                            pseudo_container.markdown(f"**Số mẫu được gán nhãn giả trong vòng {final_iteration}**: {pseudo_labeled_history[-1] if pseudo_labeled_history else 0}")
+                            accuracy_container.markdown(f"**Độ chính xác trên tập Test sau vòng {final_iteration}**: {acc_test*100:.2f}%")
+
+                            st.success(f"Đã hoàn thành Pseudo-Labeling! Thời gian: {time.time() - start_time:.2f} giây, Tổng số vòng lặp: {final_iteration}")
                             tf.keras.backend.clear_session()
-                            del model, predictions, predicted_labels, confidences, pseudo_mask, X_pseudo, y_pseudo, remaining_mask
+                            del X_train, y_train, X_unlabeled, X_test, y_test, split_data, history
                             gc.collect()
+                            st.rerun()
 
-                        # Huấn luyện lần cuối trên toàn bộ tập dữ liệu đã gắn nhãn
-                        st.write("**Huấn luyện lần cuối trên toàn bộ tập dữ liệu đã gắn nhãn**")
-                        model = models.Sequential()
-                        model.add(layers.Input(shape=(784,)))
-                        for neurons in params["hidden_layer_sizes"]:
-                            model.add(layers.Dense(neurons, activation=params["activation"]))
-                        model.add(layers.Dense(10, activation='softmax'))
+                    except Exception as e:
+                        st.error(f"Lỗi trong quá trình huấn luyện với Pseudo-Labeling: {e}")
 
-                        optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+            if 'training_results' in st.session_state:
+                results = st.session_state['training_results']
+                st.subheader("📊 Kết quả Huấn luyện với Pseudo-Labeling")
+                col_result1, col_result2, col_result3 = st.columns(3)
+                with col_result1:
+                    st.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
+                with col_result2:
+                    st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+                with col_result3:
+                    st.metric("Tổng số vòng lặp", f"{results['total_iterations']}")
 
-                        model.compile(optimizer=optimizer,
-                                      loss='sparse_categorical_crossentropy',
-                                      metrics=['accuracy'])
+                st.subheader("📈 Ma trận Nhầm lẫn trên tập Test")
+                fig, ax = plt.subplots(figsize=(6, 5))
+                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Test")
+                st.pyplot(fig)
+                plt.close(fig)
 
-                        progress_bar_final = st.progress(0)
-                        status_container_final = st.empty()
+                st.subheader("📉 Biểu đồ Kết quả Huấn luyện")
+                col_chart1, col_chart2 = st.columns(2)
+                with col_chart1:
+                    if results['loss_history']:
+                        fig, ax = plt.subplots(figsize=(6, 3))
+                        ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
+                                label='Loss', linestyle='-', color='blue', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Loss")
+                        ax.set_title("Training Loss (Final)")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    st.markdown("**Giải thích:** Biểu đồ này thể hiện mức độ mất mát (loss) của mô hình trong 10 epoch cuối cùng của lần huấn luyện cuối, cho thấy khả năng hội tụ.")
 
-                        class ProgressCallback(callbacks.Callback):
-                            def on_epoch_end(self, epoch, logs=None):
-                                progress = (epoch + 1) / params["epochs"] * 100
-                                progress_bar_final.progress(int(progress))
-                                status_container_final.markdown(
-                                    f"**Huấn luyện cuối - Epoch {epoch+1}/{params['epochs']}**: "
-                                    f"Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}"
-                                )
+                    if results['pseudo_labeled_history']:
+                        fig, ax = plt.subplots(figsize=(6, 3))
+                        ax.plot(range(1, len(results['pseudo_labeled_history']) + 1), results['pseudo_labeled_history'], 
+                                label='Số mẫu', linestyle='-', color='purple', linewidth=2)
+                        ax.set_xlabel("Vòng lặp")
+                        ax.set_ylabel("Số mẫu")
+                        ax.set_title("Số mẫu Pseudo-Label")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    st.markdown("**Giải thích:** Hiển thị số lượng mẫu được gán nhãn giả qua từng vòng lặp Pseudo-Labeling, phản ánh mức độ mở rộng tập dữ liệu.")
 
-                        history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                            callbacks=[ProgressCallback()], verbose=0)
+                with col_chart2:
+                    if results['accuracy_history']:
+                        fig, ax = plt.subplots(figsize=(6, 3))
+                        ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
+                                label='Accuracy', linestyle='-', color='green', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Accuracy")
+                        ax.set_title("Training Accuracy (Final)")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    st.markdown("**Giải thích:** Biểu đồ này cho thấy độ chính xác huấn luyện trong 10 epoch cuối cùng của lần huấn luyện cuối, đánh giá hiệu suất mô hình.")
 
-                        # Đánh giá trên tập test
-                        y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                        acc_test = accuracy_score(y_test, y_test_pred)
-                        cm_test = confusion_matrix(y_test, y_test_pred)
+                    if results['accuracy_test_history']:
+                        fig, ax = plt.subplots(figsize=(6, 3))
+                        ax.plot(range(1, len(results['accuracy_test_history']) + 1), results['accuracy_test_history'], 
+                                label='Test Accuracy', linestyle='-', color='red', linewidth=2)
+                        ax.set_xlabel("Vòng lặp")
+                        ax.set_ylabel("Accuracy")
+                        ax.set_title("Test Accuracy qua vòng lặp")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                    st.markdown("**Giải thích:** Thể hiện độ chính xác trên tập kiểm tra qua các vòng lặp, đánh giá sự cải thiện nhờ Pseudo-Labeling.")
 
-                        run_name = f"PseudoLabeling_NN_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=run_name) as run:
-                            mlflow.log_params({
-                                'hidden_layer_sizes': params["hidden_layer_sizes"],
-                                'learning_rate': params["learning_rate"],
-                                'epochs': params["epochs"],
-                                'batch_size': params["batch_size"],
-                                'activation': params["activation"],
-                                'solver': params["solver"],
-                                'threshold': threshold,
-                                'max_iterations': max_iterations
-                            })
-                            mlflow.log_metric("accuracy_test", acc_test)
-                            mlflow.log_metric("training_time", time.time() - start_time)
-                            mlflow.log_metric("total_iterations", iteration)
-
-                        st.session_state['model'] = model
-                        st.session_state['training_results'] = {
-                            'accuracy_test': acc_test,
-                            'cm_test': cm_test,
-                            'run_name': run_name,
-                            'run_id': run.info.run_id,
-                            'params': params,
-                            'training_time': time.time() - start_time,
-                            'loss_history': history.history['loss'][-10:],
-                            'accuracy_history': history.history['accuracy'][-10:],
-                            'pseudo_labeled_history': pseudo_labeled_history,
-                            'accuracy_test_history': accuracy_test_history,
-                            'total_iterations': iteration
-                        }
-
-                        # Chỉ hiển thị thông tin của vòng lặp cuối cùng
-                        final_iteration = iteration
-                        st.success(f"Đã hoàn thành Pseudo-Labeling! Thời gian: {time.time() - start_time:.2f} giây, Tổng số vòng lặp: {final_iteration}")
-                        st.write(f"**Vòng lặp {final_iteration}/3 - Epoch 30/30: Loss: 0.3112, Accuracy: 1.0000**")
-                        st.write(f"**Số mẫu được gán nhãn giả trong vòng {final_iteration}: {pseudo_labeled_history[-1] if pseudo_labeled_history else 0}**")
-                        st.write(f"**Độ chính xác trên tập Test sau vòng {final_iteration}: {acc_test*100:.2f}%**")
-
-                        tf.keras.backend.clear_session()
-                        del X_train, y_train, X_unlabeled, X_test, y_test, split_data, history
-                        gc.collect()
-                        st.rerun()
-
-                except Exception as e:
-                    st.error(f"Lỗi trong quá trình huấn luyện với Pseudo-Labeling: {e}")
-
-        if 'training_results' in st.session_state:
-            results = st.session_state['training_results']
-            st.subheader("📊 Kết quả Huấn luyện với Pseudo-Labeling")
-            col_result1, col_result2, col_result3 = st.columns(3)
-            with col_result1:
-                st.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
-            with col_result2:
-                st.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
-            with col_result3:
-                st.metric("Tổng số vòng lặp", f"{results['total_iterations']}")
-
-            st.subheader("📈 Ma trận Nhầm lẫn trên tập Test")
-            fig, ax = plt.subplots(figsize=(6, 5))
-            sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-            ax.set_title("Test")
-            st.pyplot(fig)
-            plt.close(fig)
-
-            st.subheader("📉 Biểu đồ Kết quả Huấn luyện")
-            col_chart1, col_chart2 = st.columns(2)
-            with col_chart1:
-                if results['loss_history']:
-                    fig, ax = plt.subplots(figsize=(6, 3))
-                    ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
-                            label='Loss', linestyle='-', color='blue', linewidth=2)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Loss")
-                    ax.set_title("Training Loss (Final)")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                st.markdown("**Giải thích:** Biểu đồ này thể hiện mức độ mất mát (loss) của mô hình trong 10 epoch cuối cùng của lần huấn luyện cuối, cho thấy khả năng hội tụ.")
-
-                if results['pseudo_labeled_history']:
-                    fig, ax = plt.subplots(figsize=(6, 3))
-                    ax.plot(range(1, len(results['pseudo_labeled_history']) + 1), results['pseudo_labeled_history'], 
-                            label='Số mẫu', linestyle='-', color='purple', linewidth=2)
-                    ax.set_xlabel("Vòng lặp")
-                    ax.set_ylabel("Số mẫu")
-                    ax.set_title("Số mẫu Pseudo-Label")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                st.markdown("**Giải thích:** Hiển thị số lượng mẫu được gán nhãn giả qua từng vòng lặp Pseudo-Labeling, phản ánh mức độ mở rộng tập dữ liệu.")
-
-            with col_chart2:
-                if results['accuracy_history']:
-                    fig, ax = plt.subplots(figsize=(6, 3))
-                    ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
-                            label='Accuracy', linestyle='-', color='green', linewidth=2)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Accuracy")
-                    ax.set_title("Training Accuracy (Final)")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                st.markdown("**Giải thích:** Biểu đồ này cho thấy độ chính xác huấn luyện trong 10 epoch cuối cùng của lần huấn luyện cuối, đánh giá hiệu suất mô hình.")
-
-                if results['accuracy_test_history']:
-                    fig, ax = plt.subplots(figsize=(6, 3))
-                    ax.plot(range(1, len(results['accuracy_test_history']) + 1), results['accuracy_test_history'], 
-                            label='Test Accuracy', linestyle='-', color='red', linewidth=2)
-                    ax.set_xlabel("Vòng lặp")
-                    ax.set_ylabel("Accuracy")
-                    ax.set_title("Test Accuracy qua vòng lặp")
-                    ax.legend()
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    plt.close(fig)
-                st.markdown("**Giải thích:** Thể hiện độ chính xác trên tập kiểm tra qua các vòng lặp, đánh giá sự cải thiện nhờ Pseudo-Labeling.")
-
-            with st.expander("Xem chi tiết", expanded=False):
-                st.markdown("**Thông tin lần chạy:**")
-                st.write(f"- Tên: {results['run_name']}")
-                st.write(f"- ID: {results['run_id']}")
-                st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
-                st.write(f"- Tổng số vòng lặp: {results['total_iterations']}")
-                st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
-                st.markdown("**Tham số đã chọn:**")
-                st.json({
-                    "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
-                    "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
-                    "Tốc độ học": results['params']['learning_rate'],
-                    "Số lần lặp mỗi vòng (Epochs)": results['params']['epochs'],
-                    "Kích thước batch": results['params']['batch_size'],
-                    "Hàm kích hoạt": results['params']['activation'],
-                    "Trình tối ưu": results['params']['solver'],
-                    "Ngưỡng tin cậy": threshold,
-                    "Số vòng lặp tối đa": max_iterations
-                })
+                with st.expander("Xem chi tiết", expanded=False):
+                    st.markdown("**Thông tin lần chạy:**")
+                    st.write(f"- Tên: {results['run_name']}")
+                    st.write(f"- ID: {results['run_id']}")
+                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
+                    st.write(f"- Tổng số vòng lặp: {results['total_iterations']}")
+                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
+                    st.markdown("**Tham số đã chọn:**")
+                    st.json({
+                        "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
+                        "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
+                        "Tốc độ học": results['params']['learning_rate'],
+                        "Số lần lặp mỗi vòng (Epochs)": results['params']['epochs'],
+                        "Kích thước batch": results['params']['batch_size'],
+                        "Hàm kích hoạt": results['params']['activation'],
+                        "Trình tối ưu": results['params']['solver'],
+                        "Ngưỡng tin cậy": threshold,
+                        "Số vòng lặp tối đa": max_iterations
+                    })
     # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
