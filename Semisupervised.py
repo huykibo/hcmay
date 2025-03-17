@@ -614,31 +614,26 @@ def run_mnist_pseudo_labeling_app():
                 - Yêu cầu điều chỉnh ngưỡng tin cậy để cân bằng giữa chất lượng và số lượng nhãn giả.
                 """, unsafe_allow_html=True)
 
-                st.subheader("⚙️ Các tham số huấn luyện trong Pseudo-Labeling với Neural Network")
+                st.subheader("⚙️ Các tham số của Pseudo-Labeling trong Huấn luyện")
                 st.markdown("""
-                Các tham số sau được sử dụng trong quá trình huấn luyện để tối ưu hóa mô hình Neural Network kết hợp Pseudo-Labeling:
+                Trong quá trình huấn luyện bài toán phân loại MNIST với Pseudo-Labeling, các tham số sau được sử dụng để điều khiển kỹ thuật học bán giám sát này:
 
-                | **Tham số**            | **Mô tả**                                                                 | **Giá trị mặc định**       |
-                |------------------------|---------------------------------------------------------------------------|----------------------------|
-                | **Số lớp ẩn**          | Số lượng lớp ẩn trong Neural Network, ảnh hưởng đến độ sâu của mô hình.   | 1-3 (tùy số mẫu)          |
-                | **Kích thước lớp ẩn**  | Số nơ-ron trong mỗi lớp ẩn, quyết định khả năng biểu diễn của mô hình.    | (32), (64, 32), ...       |
-                | **Tốc độ học**         | Tốc độ cập nhật trọng số trong quá trình tối ưu hóa.                      | 0.001 - 0.0001            |
-                | **Số lần lặp (Epochs)**| Số lần mô hình lặp qua toàn bộ dữ liệu huấn luyện trong mỗi vòng.         | 30 - 100                  |
-                | **Hàm kích hoạt**      | Hàm phi tuyến áp dụng cho mỗi nơ-ron (ReLU, Sigmoid, Tanh).               | ReLU                      |
-                | **Trình tối ưu**       | Phương pháp tối ưu hóa trọng số (Adam, SGD).                              | Adam                      |
-                | **Kích thước batch**   | Số mẫu xử lý trong mỗi lần cập nhật trọng số.                             | 32 - 256                  |
-                | **Ngưỡng tin cậy**     | Độ tin cậy tối thiểu để gán nhãn giả cho dữ liệu không có nhãn.           | 0.95                      |
-                | **Số vòng lặp tối đa** | Số lần lặp tối đa của quy trình Pseudo-Labeling.                          | 5                         |
+                | **Tham số**            | **Mô tả**                                                                 | **Giá trị mặc định** | **Phạm vi điều chỉnh** |
+                |-----------------------|---------------------------------------------------------------------------|----------------------|-----------------------|
+                | **Ngưỡng tin cậy**    | Mức độ tin cậy tối thiểu để gán nhãn giả cho dữ liệu không có nhãn.       | 0.95                | 0.5 - 1.0            |
+                | **Số vòng lặp tối đa**| Số lần lặp tối đa của quy trình Pseudo-Labeling để gắn nhãn và huấn luyện.| 5                   | 1 - 10               |
 
-                **Ghi chú:**
-                - Các giá trị mặc định thay đổi dựa trên số lượng mẫu dữ liệu (xem chi tiết trong tab "Huấn luyện/Đánh giá").
-                - Điều chỉnh tham số cần cân nhắc giữa hiệu suất và thời gian huấn luyện.
-                """, unsafe_allow_html=True)
+                **Chi tiết:**
+                - **Ngưỡng tin cậy (threshold)**:  
+                - Công thức: Nếu độ tin cậy dự đoán $P(y|x) \geq \text{threshold}$, mẫu sẽ được gán nhãn giả.  
+                - Ví dụ: Với threshold = 0.95, chỉ các dự đoán có độ tin cậy ≥ 95% được chấp nhận.  
+                - Tác động: Giá trị cao đảm bảo chất lượng nhãn giả nhưng giảm số lượng mẫu được gắn nhãn; giá trị thấp tăng số lượng mẫu nhưng có thể gây nhiễu.
 
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
+                - **Số vòng lặp tối đa (max_iterations)**:  
+                - Quy định số lần mô hình dự đoán nhãn giả và huấn luyện lại trên dữ liệu mới.  
+                - Điều kiện dừng: Quy trình kết thúc khi hết dữ liệu không có nhãn hoặc đạt số vòng lặp tối đa.  
+                - Tác động: Giá trị lớn tăng cơ hội khai thác dữ liệu không nhãn nhưng kéo dài thời gian huấn luyện.
+""", unsafe_allow_html=True)
 
     # Tab 2: Chọn dữ liệu
     with tab_load:
