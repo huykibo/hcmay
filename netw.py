@@ -271,11 +271,88 @@ def run_mnist_neural_network_app():
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                 """, unsafe_allow_html=True)
 
+                st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
+                st.markdown("""
+                #### **Ưu điểm:**
+                - **Khả năng học phi tuyến tính**: Neural Network có thể học các mối quan hệ phức tạp, phi tuyến tính trong dữ liệu mà các mô hình tuyến tính không làm được.
+                - **Khả năng mở rộng**: Có thể xử lý dữ liệu lớn và nhiều chiều (như ảnh, âm thanh) khi được huấn luyện đúng cách.
+                - **Tính linh hoạt**: Có thể áp dụng cho nhiều bài toán khác nhau (phân loại, hồi quy, nhận diện hình ảnh, v.v.).
+                - **Tự động học đặc trưng**: Không cần trích xuất đặc trưng thủ công, mạng tự động học từ dữ liệu thô.
+
+                #### **Nhược điểm:**
+                - **Đòi hỏi tài nguyên lớn**: Cần nhiều dữ liệu và sức mạnh tính toán (CPU/GPU) để huấn luyện hiệu quả.
+                - **Khó giải thích**: Mạng hoạt động như "hộp đen", khó hiểu tại sao lại đưa ra dự đoán cụ thể.
+                - **Dễ bị overfitting**: Nếu không được điều chỉnh tốt (ví dụ: thiếu dữ liệu hoặc không dùng regularization), mô hình có thể học quá mức dữ liệu huấn luyện.
+                - **Thời gian huấn luyện lâu**: Đặc biệt với mạng sâu hoặc dữ liệu lớn.
+                """, unsafe_allow_html=True)
+
                 st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
                 st.markdown("""
                 - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
                 - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
                 - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
+                st.markdown("""
+                Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
+
+                1. **Số lớp ẩn (Number of Hidden Layers):**
+                   - **Ý nghĩa**: Quyết định độ sâu của mạng, ảnh hưởng đến khả năng học các đặc trưng phức tạp.
+                   - **Hoạt động**: Tăng số lớp ẩn giúp mạng học được các đặc trưng cấp cao hơn, nhưng quá nhiều lớp có thể gây khó hội tụ hoặc overfitting.
+                   - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm (trong ứng dụng này: từ 1 đến 5).
+
+                2. **Số nơ-ron mỗi lớp ẩn (Number of Neurons per Layer):**
+                   - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là khả năng biểu diễn thông tin trong mỗi lớp.
+                   - **Hoạt động**: Nhiều nơ-ron hơn giúp mạng học được nhiều đặc trưng hơn, nhưng cũng tăng chi phí tính toán.
+                   - **Công thức**: Không có, thường là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa phần cứng.
+
+                3. **Tốc độ học (Learning Rate - η):**
+                   - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số trong mỗi lần cập nhật.
+                   - **Hoạt động**: Giá trị nhỏ (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định; giá trị lớn (ví dụ: 0.01) học nhanh hơn nhưng dễ vượt qua điểm tối ưu.
+                   - **Công thức**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                     Trong đó: $W_t$ là trọng số tại bước $t$, $L$ là hàm mất mát.
+
+                4. **Số lần lặp (Epochs):**
+                   - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng.
+                   - **Hoạt động**: Tăng số lần lặp giúp mạng học tốt hơn, nhưng quá nhiều có thể dẫn đến overfitting.
+                   - **Công thức**: Không có, là tham số người dùng chọn (trong ứng dụng này: 10-200).
+
+                5. **Kích thước batch (Batch Size):**
+                   - **Ý nghĩa**: Số mẫu được xử lý trước khi cập nhật trọng số.
+                   - **Hoạt động**: Batch nhỏ (ví dụ: 16) giúp cập nhật thường xuyên hơn nhưng chậm; batch lớn (ví dụ: 512) nhanh hơn nhưng cần nhiều bộ nhớ.
+                   - **Công thức**: Không có, thường là lũy thừa của 2 để tối ưu hóa tính toán.
+
+                6. **Hàm kích hoạt (Activation Function):**
+                   - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào.
+                   - **Hoạt động**: Chuyển đổi đầu ra tuyến tính thành phi tuyến để mạng học được các đặc trưng phức tạp.
+                   - **Chi tiết các hàm kích hoạt phổ biến:**
+                     - **ReLU (Rectified Linear Unit):**
+                       - **Ý nghĩa**: Đơn giản, nhanh, tránh vấn đề biến mất gradient.
+                       - **Hoạt động**: Chỉ cho phép các giá trị dương đi qua, đặt giá trị âm về 0.
+                       - **Công thức**:  
+                         $$ f(x) = \\max(0, x) $$
+                     - **Tanh (Hyperbolic Tangent):**
+                       - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm/dương.
+                       - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient với mạng sâu.
+                       - **Công thức**:  
+                         $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$
+                     - **Softmax:**
+                       - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi thành xác suất cho phân loại đa lớp.
+                       - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp dự đoán lớp có xác suất cao nhất.
+                       - **Công thức**:  
+                         $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                         Trong đó: $x_i$ là đầu vào của nơ-ron thứ $i$, $k$ là số lớp.
+
+                7. **Trình tối ưu (Optimizer):**
+                   - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.
+                   - **Hoạt động**: Quyết định cách mạng hội tụ đến điểm tối ưu.
+                   - **Ví dụ phổ biến:**
+                     - **Adam**: Kết hợp động lượng và RMSProp, thích nghi với tốc độ học, nhanh và hiệu quả.
+                     - **SGD (Stochastic Gradient Descent)**: Cập nhật trọng số dựa trên gradient, đơn giản nhưng chậm hơn Adam.
+                   - **Công thức (SGD)**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$
                 """, unsafe_allow_html=True)
 
                 st.subheader("🔧 Quy trình hoạt động")
@@ -286,9 +363,7 @@ def run_mnist_neural_network_app():
                 st.subheader("1. Khởi tạo mô hình")
                 st.markdown("""
                 - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
-                - **Tham số liên quan**:  
-                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
-                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
+                - **Tham số liên quan**: Số lớp ẩn, số nơ-ron mỗi lớp.
                 - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.
                 """, unsafe_allow_html=True)
                 try:
@@ -353,7 +428,7 @@ def run_mnist_neural_network_app():
 
                 st.subheader("6. Lặp lại")
                 st.markdown("""
-                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
+                - Lặp lại từ bước 2 qua nhiều **epoch** cho đến khi mất mát $L$ hội tụ.  
                 - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.
                 """, unsafe_allow_html=True)
                 try:
@@ -532,35 +607,14 @@ def run_mnist_neural_network_app():
             with col_param1:
                 with st.expander("🧠 Cấu trúc Mạng", expanded=True):
                     st.markdown("**Tùy chỉnh số lớp ẩn và nơ-ron**", unsafe_allow_html=True)
-                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, max_value=3, value=len(params["hidden_layer_sizes"]), 
-                                                       help="Chọn 1, 2 hoặc 3 lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
-                    hidden_sizes = list(params["hidden_layer_sizes"])
-                    
-                    if num_hidden_layers == 1:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn duy nhất (16-128).")
-                        hidden_sizes = [hidden_size_1]
-                    elif num_hidden_layers == 2:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
-                        hidden_sizes = [hidden_size_1, hidden_size_2]
-                    elif num_hidden_layers == 3:
-                        hidden_size_1 = st.number_input("Số nơ-ron lớp ẩn 1", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[0] if len(hidden_sizes) > 0 else 128, 
-                                                        help="Số nơ-ron cho lớp ẩn đầu tiên (16-128).")
-                        hidden_size_2 = st.number_input("Số nơ-ron lớp ẩn 2", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[1] if len(hidden_sizes) > 1 else 64, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ hai (16-128).")
-                        hidden_size_3 = st.number_input("Số nơ-ron lớp ẩn 3", min_value=16, max_value=128, 
-                                                        value=hidden_sizes[2] if len(hidden_sizes) > 2 else 32, 
-                                                        help="Số nơ-ron cho lớp ẩn thứ ba (16-128).")
-                        hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
-                    
+                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, value=len(params["hidden_layer_sizes"]), 
+                                                       help="Chọn số lớp ẩn để điều chỉnh độ phức tạp của mô hình.")
+                    hidden_sizes = []
+                    for i in range(num_hidden_layers):
+                        default_value = params["hidden_layer_sizes"][i] if i < len(params["hidden_layer_sizes"]) else 32
+                        hidden_size = st.number_input(f"Số nơ-ron lớp ẩn {i+1}", min_value=1, value=default_value, 
+                                                      help=f"Số nơ-ron cho lớp ẩn thứ {i+1}.")
+                        hidden_sizes.append(hidden_size)
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
                     params["activation"] = st.selectbox("Hàm kích hoạt (lớp ẩn)", ["relu", "tanh", "softmax"], 
                                                         index=["relu", "tanh", "softmax"].index(params["activation"]) if params["activation"] in ["relu", "tanh", "softmax"] else 0,
@@ -569,13 +623,12 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                    params["learning_rate"] = st.selectbox("Tốc độ học", [0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001], 
-                                                           index=[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001].index(params["learning_rate"]),
-                                                           help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
-                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=10, max_value=100, value=params["epochs"], 
-                                                       help="Số lần lặp qua toàn bộ dữ liệu (10-100).")
-                    params["batch_size"] = st.number_input("Kích thước batch", min_value=32, max_value=256, value=params["batch_size"], 
-                                                           help="Số mẫu mỗi lần cập nhật trọng số (32-256).")
+                    params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.0, value=params["learning_rate"], step=0.0001, 
+                                                              help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
+                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=1, value=params["epochs"], 
+                                                       help="Số lần lặp qua toàn bộ dữ liệu.")
+                    params["batch_size"] = st.number_input("Kích thước batch", min_value=1, value=params["batch_size"], 
+                                                           help="Số mẫu mỗi lần cập nhật trọng số.")
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
@@ -592,10 +645,11 @@ def run_mnist_neural_network_app():
             st.session_state["training_params"] = params
 
             # Đặt tên mô hình trước nút huấn luyện
+            st.subheader("🚀 Huấn luyện mô hình")
             model_name = st.text_input("Đặt tên cho mô hình:", value=f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
             with col_train:
-                if st.button("🚀 Bắt đầu Huấn luyện", type="primary", key="start_training"):
+                if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
                     try:
                         with st.spinner("Đang huấn luyện mô hình..."):
                             start_time = time.time()
@@ -699,56 +753,61 @@ def run_mnist_neural_network_app():
                     plt.close(fig)
 
                 st.subheader("📉 Biểu đồ Kết quả Huấn luyện")
-                if results['loss_history']:
-                    epochs = list(range(1, len(results['loss_history']) + 1))
-                    fig, ax = plt.subplots(figsize=(8, 4))
-                    ax.bar(epochs, [int(loss * 100) for loss in results['loss_history']], label='Training Loss', color='blue')
-                    if results['val_loss_history']:
-                        ax.bar(epochs, [int(val_loss * 100) for val_loss in results['val_loss_history']], label='Validation Loss', color='orange', alpha=0.5)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Loss (x100)")
-                    ax.set_xticks(epochs)
-                    ax.set_title("Loss qua các Epoch")
-                    ax.legend()
-                    st.pyplot(fig)
-                    plt.close(fig)
-
-                if results['accuracy_history']:
-                    epochs = list(range(1, len(results['accuracy_history']) + 1))
-                    fig, ax = plt.subplots(figsize=(8, 4))
-                    ax.bar(epochs, [int(acc * 100) for acc in results['accuracy_history']], label='Training Accuracy', color='green')
-                    if results['val_accuracy_history']:
-                        ax.bar(epochs, [int(val_acc * 100) for val_acc in results['val_accuracy_history']], label='Validation Accuracy', color='red', alpha=0.5)
-                    ax.set_xlabel("Epochs")
-                    ax.set_ylabel("Accuracy (%)")
-                    ax.set_xticks(epochs)
-                    ax.set_title("Accuracy qua các Epoch")
-                    ax.legend()
-                    st.pyplot(fig)
-                    plt.close(fig)
+                st.markdown("""
+                - **Biểu đồ Loss**: Thể hiện giá trị hàm mất mát qua các epoch, giúp đánh giá mức độ hội tụ của mô hình. Loss giảm đều cho thấy mô hình học tốt.
+                - **Biểu đồ Accuracy**: Thể hiện độ chính xác qua các epoch, phản ánh khả năng phân loại của mô hình trên tập huấn luyện và validation.
+                """, unsafe_allow_html=True)
+                col_loss, col_acc = st.columns(2)
+                with col_loss:
+                    if results['loss_history']:
+                        epochs = list(range(1, len(results['loss_history']) + 1))
+                        fig, ax = plt.subplots(figsize=(6, 4))
+                        ax.plot(epochs, results['loss_history'], label='Training Loss', color='blue', linewidth=2)
+                        if results['val_loss_history']:
+                            ax.plot(epochs, results['val_loss_history'], label='Validation Loss', color='orange', linestyle='--', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Loss")
+                        ax.set_title("Loss qua các Epoch")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
+                with col_acc:
+                    if results['accuracy_history']:
+                        epochs = list(range(1, len(results['accuracy_history']) + 1))
+                        fig, ax = plt.subplots(figsize=(6, 4))
+                        ax.plot(epochs, results['accuracy_history'], label='Training Accuracy', color='green', linewidth=2)
+                        if results['val_accuracy_history']:
+                            ax.plot(epochs, results['val_accuracy_history'], label='Validation Accuracy', color='red', linestyle='--', linewidth=2)
+                        ax.set_xlabel("Epochs")
+                        ax.set_ylabel("Accuracy")
+                        ax.set_title("Accuracy qua các Epoch")
+                        ax.legend()
+                        ax.grid(True)
+                        st.pyplot(fig)
+                        plt.close(fig)
 
                 st.subheader("📋 Tóm tắt Kết quả Huấn luyện")
-                mid_idx = len(results['loss_history']) // 2 - 1
-                summary_data = {
-                    "Epoch": [1, mid_idx + 1, len(results['loss_history'])],
-                    "Loss": [results['loss_history'][0], results['loss_history'][mid_idx], results['loss_history'][-1]],
-                    "Accuracy": [results['accuracy_history'][0], results['accuracy_history'][mid_idx], results['accuracy_history'][-1]],
+                full_data = {
+                    "Epoch": list(range(1, len(results['loss_history']) + 1)),
+                    "Loss": results['loss_history'],
+                    "Accuracy": results['accuracy_history'],
                 }
                 if results['val_loss_history']:
-                    summary_data["Val Loss"] = [results['val_loss_history'][0], results['val_loss_history'][mid_idx], results['val_loss_history'][-1]]
-                    summary_data["Val Accuracy"] = [results['val_accuracy_history'][0], results['val_accuracy_history'][mid_idx], results['val_accuracy_history'][-1]]
-                st.table(pd.DataFrame(summary_data))
+                    full_data["Val Loss"] = results['val_loss_history']
+                    full_data["Val Accuracy"] = results['val_accuracy_history']
+                df_full = pd.DataFrame(full_data)
 
-                if st.button("Xem thêm"):
-                    full_data = {
-                        "Epoch": list(range(1, len(results['loss_history']) + 1)),
-                        "Loss": results['loss_history'],
-                        "Accuracy": results['accuracy_history'],
-                    }
-                    if results['val_loss_history']:
-                        full_data["Val Loss"] = results['val_loss_history']
-                        full_data["Val Accuracy"] = results['val_accuracy_history']
-                    st.table(pd.DataFrame(full_data))
+                if len(results['loss_history']) > 5 and st.session_state.get('summary_collapsed', False):
+                    st.write("**5 epoch đầu tiên:**")
+                    st.table(df_full.head(5))
+                else:
+                    st.table(df_full)
+
+                if len(results['loss_history']) > 5:
+                    if st.button("Thu gọn/Hiện toàn bộ", key="toggle_summary"):
+                        st.session_state['summary_collapsed'] = not st.session_state.get('summary_collapsed', False)
+                        st.rerun()
 
                 with st.expander("Xem chi tiết", expanded=False):
                     st.markdown("**Thông tin lần chạy:**")
@@ -983,29 +1042,17 @@ def run_mnist_neural_network_app():
                     st.json(selected_run.data.metrics, expanded=True)
 
                     st.subheader("📈 Lịch sử Huấn luyện")
-                    history_metrics = client.get_metric_history(selected_run_id, "loss")
-                    if history_metrics:
-                        epochs = range(1, len(history_metrics) + 1)
-                        loss_values = [metric.value for metric in history_metrics]
-                        fig, ax = plt.subplots(figsize=(10, 5))
-                        ax.plot(epochs, loss_values, label='Training Loss', linestyle='-', color='blue', linewidth=2)
-                        ax.set_xlabel("Epochs")
-                        ax.set_ylabel("Loss")
-                        ax.set_title("Lịch sử Mất mát")
-                        ax.legend()
-                        ax.grid(True)
-                        st.pyplot(fig)
-                        plt.close(fig)
-                    else:
+                    col_loss, col_acc = st.columns(2)
+                    with col_loss:
                         if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
                             results = st.session_state['training_results']
                             if results['loss_history']:
-                                fig, ax = plt.subplots(figsize=(10, 5))
+                                fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
-                                        label='Training Loss', linestyle='-', color='blue', linewidth=2)
+                                        label='Training Loss', color='blue', linewidth=2)
                                 if results['val_loss_history']:
                                     ax.plot(range(1, len(results['val_loss_history']) + 1), results['val_loss_history'], 
-                                            label='Validation Loss', linestyle='--', color='orange', linewidth=2)
+                                            label='Validation Loss', color='orange', linestyle='--', linewidth=2)
                                 ax.set_xlabel("Epochs")
                                 ax.set_ylabel("Loss")
                                 ax.set_title("Lịch sử Mất mát")
@@ -1013,30 +1060,16 @@ def run_mnist_neural_network_app():
                                 ax.grid(True)
                                 st.pyplot(fig)
                                 plt.close(fig)
-
-                    history_accuracy = client.get_metric_history(selected_run_id, "accuracy")
-                    if history_accuracy:
-                        epochs = range(1, len(history_accuracy) + 1)
-                        accuracy_values = [metric.value for metric in history_accuracy]
-                        fig, ax = plt.subplots(figsize=(10, 5))
-                        ax.plot(epochs, accuracy_values, label='Training Accuracy', linestyle='-', color='green', linewidth=2)
-                        ax.set_xlabel("Epochs")
-                        ax.set_ylabel("Accuracy")
-                        ax.set_title("Lịch sử Độ chính xác")
-                        ax.legend()
-                        ax.grid(True)
-                        st.pyplot(fig)
-                        plt.close(fig)
-                    else:
+                    with col_acc:
                         if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
                             results = st.session_state['training_results']
                             if results['accuracy_history']:
-                                fig, ax = plt.subplots(figsize=(10, 5))
+                                fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
-                                        label='Training Accuracy', linestyle='-', color='green', linewidth=2)
+                                        label='Training Accuracy', color='green', linewidth=2)
                                 if results['val_accuracy_history']:
                                     ax.plot(range(1, len(results['val_accuracy_history']) + 1), results['val_accuracy_history'], 
-                                            label='Validation Accuracy', linestyle='--', color='red', linewidth=2)
+                                            label='Validation Accuracy', color='red', linestyle='--', linewidth=2)
                                 ax.set_xlabel("Epochs")
                                 ax.set_ylabel("Accuracy")
                                 ax.set_title("Lịch sử Độ chính xác")
@@ -1044,7 +1077,11 @@ def run_mnist_neural_network_app():
                                 ax.grid(True)
                                 st.pyplot(fig)
                                 plt.close(fig)
-                                
+
+                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+                    st.markdown("---")
+                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
+
                     st.subheader("So sánh các Run")
                     selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
                     if selected_runs:
@@ -1063,12 +1100,6 @@ def run_mnist_neural_network_app():
                             }
                             comparison_data.append(run_data)
                         st.table(pd.DataFrame(comparison_data))
-
-                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
-                    st.markdown("---")
-                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
-
-                    
 
         except Exception as e:
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
