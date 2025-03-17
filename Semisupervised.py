@@ -28,7 +28,9 @@ def get_optimal_params(num_samples):
             "epochs": 30,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 32
+            "batch_size": 32,
+            "threshold": 0.9,  # Ngưỡng tin cậy thấp hơn vì ít dữ liệu
+            "max_iterations": 3  # Ít vòng lặp hơn vì dữ liệu nhỏ
         }
     elif num_samples <= 10000:
         return {
@@ -37,7 +39,9 @@ def get_optimal_params(num_samples):
             "epochs": 50,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 64
+            "batch_size": 64,
+            "threshold": 0.95,  # Ngưỡng trung bình
+            "max_iterations": 5  # Số vòng lặp trung bình
         }
     elif num_samples <= 50000:
         return {
@@ -46,7 +50,9 @@ def get_optimal_params(num_samples):
             "epochs": 70,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 128
+            "batch_size": 128,
+            "threshold": 0.97,  # Ngưỡng cao hơn để đảm bảo chất lượng
+            "max_iterations": 7  # Tăng số vòng lặp
         }
     else:  # > 50,000
         return {
@@ -55,7 +61,9 @@ def get_optimal_params(num_samples):
             "epochs": 100,
             "activation": "relu",
             "solver": "adam",
-            "batch_size": 256
+            "batch_size": 256,
+            "threshold": 0.98,  # Ngưỡng rất cao cho dữ liệu lớn
+            "max_iterations": 10  # Số vòng lặp tối đa
         }
 
 def run_mnist_pseudo_labeling_app():
@@ -868,12 +876,12 @@ def run_mnist_pseudo_labeling_app():
             st.markdown(f"""
             Dựa trên số mẫu huấn luyện ban đầu ({num_samples} mẫu), bảng dưới đây gợi ý các tham số tối ưu cho bài toán **Pseudo-Labeling với Neural Network**:
 
-            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
-            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               |
-            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               |
-            | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              |
-            | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              |
+            | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch | Ngưỡng tin cậy | Số vòng lặp tối đa |
+            |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|----------------|-------------------|
+            | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               | 0.9            | 3                 |
+            | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               | 0.95           | 5                 |
+            | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              | 0.97           | 7                 |
+            | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              | 0.98           | 10                |
             """, unsafe_allow_html=True)
             st.info(f"Tham số tối ưu gợi ý cho {num_samples} mẫu: {st.session_state['optimal_params']}")
 
@@ -928,8 +936,11 @@ def run_mnist_pseudo_labeling_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                    threshold = st.slider("Ngưỡng tin cậy Pseudo-Label", 0.5, 1.0, 0.95, help="Ngưỡng để gán nhãn giả cho dữ liệu không có nhãn.")
-                    max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, value=5, 
+                    threshold = st.slider("Ngưỡng tin cậy Pseudo-Label", 0.5, 1.0, 
+                                          st.session_state["optimal_params"]["threshold"], 
+                                          help="Ngưỡng để gán nhãn giả cho dữ liệu không có nhãn.")
+                    max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, max_value=10, 
+                                                     value=st.session_state["optimal_params"]["max_iterations"], 
                                                      help="Số lần lặp tối đa cho quá trình Pseudo-Labeling.")
 
             col_reset, col_train = st.columns([1, 3])
@@ -975,13 +986,16 @@ def run_mnist_pseudo_labeling_app():
                                               metrics=['accuracy'])
 
                                 progress_bar = st.progress(0)
-                                status_text = st.empty()
+                                status_container = st.empty()  # Container cố định để hiển thị trạng thái mới nhất
 
                                 class ProgressCallback(callbacks.Callback):
                                     def on_epoch_end(self, epoch, logs=None):
                                         progress = (epoch + 1) / params["epochs"] * 100
                                         progress_bar.progress(int(progress))
-                                        status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}")
+                                        status_container.markdown(
+                                            f"**Vòng lặp {iteration}/{max_iterations} - Epoch {epoch+1}/{params['epochs']}**: "
+                                            f"Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}"
+                                        )
 
                                 history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
                                                     callbacks=[ProgressCallback()], verbose=0)
@@ -1032,6 +1046,18 @@ def run_mnist_pseudo_labeling_app():
                             model.compile(optimizer=optimizer,
                                           loss='sparse_categorical_crossentropy',
                                           metrics=['accuracy'])
+
+                            progress_bar_final = st.progress(0)
+                            status_container_final = st.empty()  # Container riêng cho lần huấn luyện cuối
+
+                            class ProgressCallback(callbacks.Callback):
+                                def on_epoch_end(self, epoch, logs=None):
+                                    progress = (epoch + 1) / params["epochs"] * 100
+                                    progress_bar_final.progress(int(progress))
+                                    status_container_final.markdown(
+                                        f"**Huấn luyện cuối - Epoch {epoch+1}/{params['epochs']}**: "
+                                        f"Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}"
+                                    )
 
                             history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
                                                 callbacks=[ProgressCallback()], verbose=0)
@@ -1174,7 +1200,6 @@ def run_mnist_pseudo_labeling_app():
                         "Ngưỡng tin cậy": threshold,
                         "Số vòng lặp tối đa": max_iterations
                     })
-
     # Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
