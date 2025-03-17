@@ -854,8 +854,8 @@ def run_mnist_pseudo_labeling_app():
             y_train_initial = np.concatenate(y_train_initial, axis=0)
             X_unlabeled = np.concatenate(X_unlabeled, axis=0)
 
-            st.write(f"**Tập dữ liệu ban đầu (1%)**: {len(X_train_initial)} mẫu")
-            st.write(f"**Tập dữ liệu chưa gắn nhãn (99%)**: {len(X_unlabeled)} mẫu")
+            st.write(f"**Tập dữ liệu huấn luyện ban đầu lấy (1%)**: {len(X_train_initial)} mẫu")
+            st.write(f"**Tập dữ liệu huấn luyện chưa gắn nhãn (99%)**: {len(X_unlabeled)} mẫu")
 
             # Lưu trữ tập dữ liệu ban đầu
             st.session_state['pseudo_data'] = {
