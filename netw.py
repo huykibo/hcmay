@@ -658,8 +658,9 @@ def run_mnist_neural_network_app():
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
                     st.markdown("**Cấu hình huấn luyện**", unsafe_allow_html=True)
-                    params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.0, step=0.0001, value=params["learning_rate"], 
-                                                              help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
+                    # Sửa lỗi tốc độ học bị cố định
+                    params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.00001, max_value=1.0, value=float(params["learning_rate"]), 
+                                                              step=0.0001, format="%.5f", help="Tốc độ học càng nhỏ càng ổn định nhưng chậm.")
                     params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=1, value=params["epochs"], 
                                                        help="Số lần lặp qua toàn bộ dữ liệu.")
                     params["batch_size"] = st.number_input("Kích thước batch", min_value=1, value=params["batch_size"], 
@@ -689,13 +690,18 @@ def run_mnist_neural_network_app():
                                            help="Đặt tên trước khi huấn luyện để lưu trữ trên MLflow.")
                 st.session_state['model_name'] = model_name  # Cập nhật session_state khi người dùng nhập tên
 
-                # Thêm nút hủy huấn luyện
+                # Thêm biến theo dõi trạng thái huấn luyện
+                if 'training_in_progress' not in st.session_state:
+                    st.session_state['training_in_progress'] = False
+
+                # Thêm biến hủy huấn luyện
                 if 'cancel_training' not in st.session_state:
                     st.session_state['cancel_training'] = False
 
                 col_train, col_cancel = st.columns([1, 1])
                 with col_train:
                     if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
+                        st.session_state['training_in_progress'] = True
                         st.session_state['cancel_training'] = False  # Reset trạng thái hủy
                         try:
                             with st.spinner("Đang huấn luyện mô hình..."):
@@ -770,11 +776,15 @@ def run_mnist_neural_network_app():
 
                         except Exception as e:
                             st.error(f"Lỗi trong quá trình huấn luyện: {e}")
+                        finally:
+                            st.session_state['training_in_progress'] = False
 
                 with col_cancel:
-                    if st.button("Hủy huấn luyện", key="cancel_training_button"):
-                        st.session_state['cancel_training'] = True
-                        st.warning("Yêu cầu hủy huấn luyện đã được gửi. Đang dừng...")
+                    # Chỉ hiển thị nút "Hủy huấn luyện" khi huấn luyện đang chạy
+                    if st.session_state['training_in_progress']:
+                        if st.button("Hủy huấn luyện", key="cancel_training_button"):
+                            st.session_state['cancel_training'] = True
+                            st.warning("Yêu cầu hủy huấn luyện đã được gửi. Đang dừng...")
 
             # Kết quả huấn luyện
             if 'training_results' in st.session_state:
