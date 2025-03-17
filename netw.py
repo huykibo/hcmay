@@ -667,7 +667,7 @@ def run_mnist_neural_network_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=False, 
+                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
                                                  help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
 
             col_reset, col_empty = st.columns([1, 3])
@@ -835,15 +835,19 @@ def run_mnist_neural_network_app():
                         full_data["Val Accuracy"] = results['val_accuracy_history']
                     df_full = pd.DataFrame(full_data)
 
-                    if len(results['loss_history']) > 5 and st.session_state.get('summary_collapsed', False):
-                        st.write("**5 epoch đầu tiên:**")
-                        st.table(df_full.head(5))
-                    else:
-                        st.table(df_full)
+                    if 'display_epochs' not in st.session_state:
+                        st.session_state['display_epochs'] = 5
 
-                    if len(results['loss_history']) > 5:
-                        if st.button("Thu gọn/Hiện toàn bộ", key="toggle_summary"):
-                            st.session_state['summary_collapsed'] = not st.session_state.get('summary_collapsed', False)
+                    st.table(df_full.head(st.session_state['display_epochs']))
+
+                    if len(results['loss_history']) > st.session_state['display_epochs']:
+                        if st.button("Xem thêm 10 epoch", key="show_more"):
+                            st.session_state['display_epochs'] += 10
+                            st.rerun()
+
+                    if st.session_state['display_epochs'] > 5:
+                        if st.button("Thu gọn", key="collapse"):
+                            st.session_state['display_epochs'] = 5
                             st.rerun()
 
                     with st.expander("Xem chi tiết", expanded=False):
@@ -881,12 +885,13 @@ def run_mnist_neural_network_app():
             if model_options:
                 selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()))
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
-                model_uri = f"runs:/{selected_run_id}/model"
-                try:
-                    model = mlflow.keras.load_model(model_uri)
-                except Exception as e:
-                    st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
-                    model = None
+                with st.spinner("Đang tải mô hình..."):
+                    model_uri = f"runs:/{selected_run_id}/model"
+                    try:
+                        model = mlflow.keras.load_model(model_uri)
+                    except Exception as e:
+                        st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
+                        model = None
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
@@ -990,7 +995,7 @@ def run_mnist_neural_network_app():
 
                     canvas_result = st_canvas(
                         fill_color="rgba(255, 165, 0, 0.3)",
-                        stroke_width=20,
+                        stroke_width=20,  # Tăng stroke_width để vẽ mượt hơn
                         stroke_color="#FFFFFF",
                         background_color="#000000",
                         height=280,
@@ -1111,7 +1116,10 @@ def run_mnist_neural_network_app():
                                 st.pyplot(fig)
                                 plt.close(fig)
 
-                    
+                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+                    st.markdown("---")
+                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
+
                     st.subheader("So sánh các Run")
                     selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
                     if selected_runs:
@@ -1133,10 +1141,6 @@ def run_mnist_neural_network_app():
 
         except Exception as e:
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
-            
-        mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
-        st.markdown("---")
-        st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
