@@ -1183,4 +1183,4 @@ def run_mnist_neural_network_app():
         st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()
+    run_mnist_neural_network_app()#
