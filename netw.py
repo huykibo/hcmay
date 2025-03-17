@@ -181,7 +181,6 @@ def run_mnist_neural_network_app():
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
                 "Neural Network – Mạng nơ-ron nhân tạo",
-                "Công thức đánh giá độ chính xác (Accuracy)"
             ],
             label_visibility="collapsed",
             help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
@@ -514,18 +513,6 @@ def run_mnist_neural_network_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📘 4. Công thức đánh giá độ chính xác (Accuracy)")
-                st.markdown("""
-                - Độ chính xác (**Accuracy**) đo tỷ lệ dự đoán đúng:  
-                  $$ \\text{Accuracy} = \\frac{\\text{Số mẫu dự đoán đúng}}{\\text{Tổng số mẫu}} $$  
-                - **Giải thích**:  
-                  - $\\text{Số mẫu dự đoán đúng}$: Số lần mô hình dự đoán nhãn chính xác so với nhãn thực tế.  
-                  - $\\text{Tổng số mẫu}$: Tổng số mẫu trong tập dữ liệu kiểm tra.  
-                - **Ví dụ**: Dự đoán đúng $92/100$ ảnh → $\\text{Accuracy} = 0.92$ (tức $92\%$).  
-                - Mục đích: Đo lường khả năng phân loại đúng các chữ số của Neural Network dựa trên đặc trưng pixel học được.
-                """, unsafe_allow_html=True)
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
 
