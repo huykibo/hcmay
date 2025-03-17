@@ -190,8 +190,6 @@ def run_mnist_neural_network_app():
                 "Ứng dụng này là gì và mục tiêu của nó?",
                 "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
                 "Neural Network – Mạng nơ-ron nhân tạo",
-                "Giải thích về Adam Optimizer",
-                "Các hàm kích hoạt: ReLU, Tanh, Softmax",
             ],
             label_visibility="collapsed",
             help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
@@ -276,7 +274,7 @@ def run_mnist_neural_network_app():
                 st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
                 st.markdown("""
                 - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
-                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến (sử dụng hàm kích hoạt).  
+                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
                 - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
                 """, unsafe_allow_html=True)
 
@@ -304,15 +302,7 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
                   $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
-                  $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
-                - **Giải thích**:  
-                  - $X$: Ma trận đầu vào, kích thước $N \\times 784$ ($N$ là số mẫu).  
-                  - $A^{(l-1)}$: Đầu ra của lớp trước, với $A^{(0)} = X$.  
-                  - $W^{(l)}$: Ma trận trọng số của lớp $l$, kích thước phụ thuộc số nơ-ron của lớp $l-1$ và $l$.  
-                  - $b^{(l)}$: Vector bias của lớp $l$.  
-                  - $Z^{(l)}$: Tổng trọng số tuyến tính của lớp $l$.  
-                  - $\\sigma$: Hàm kích hoạt (ví dụ: ReLU, Tanh).  
-                  - $\\hat{Y}$: Đầu ra cuối cùng, kích thước $N \\times 10$ (10 lớp).  
+                  $$ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $$  
                 - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.
                 """, unsafe_allow_html=True)
                 try:
@@ -326,12 +316,6 @@ def run_mnist_neural_network_app():
                 st.markdown("""
                 - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
                   $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
-                - **Giải thích**:  
-                  - $N$: Số mẫu trong tập dữ liệu.  
-                  - $y_{ij}$: Nhãn thực tế (one-hot encoded), $1$ nếu mẫu $i$ thuộc lớp $j$, $0$ nếu không.  
-                  - $\\hat{y}_{ij}$: Xác suất dự đoán mẫu $i$ thuộc lớp $j$.  
-                  - $\\sum_{i=1}^{N}$: Tổng trên tất cả mẫu.  
-                  - $\\sum_{j=0}^{9}$: Tổng trên tất cả lớp (0 đến 9).  
                 - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.
                 """, unsafe_allow_html=True)
                 try:
@@ -343,22 +327,7 @@ def run_mnist_neural_network_app():
 
                 st.subheader("4. Lan truyền ngược (Backpropagation)")
                 st.markdown("""
-                - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$:  
-                  - Lớp đầu ra:  
-                    $$ \\delta^{(L)} = \\hat{Y} - Y $$  
-                  - Lớp ẩn:  
-                    $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
-                  - Đạo hàm:  
-                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
-                    $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$  
-                - **Giải thích**:  
-                  - $\\delta^{(L)}$: Sai số tại lớp đầu ra.  
-                  - $\\delta^{(l)}$: Sai số tại lớp $l$, lan truyền ngược từ lớp sau.  
-                  - $(W^{(l+1)})^T$: Ma trận chuyển vị của trọng số lớp tiếp theo.  
-                  - $\\odot$: Nhân từng phần tử (Hadamard product).  
-                  - $\\sigma'(Z^{(l)})$: Đạo hàm của hàm kích hoạt tại $Z^{(l)}$ (ví dụ: ReLU: $ \\sigma'(z) = 1 $ nếu $ z > 0 $, 0 nếu $ z \leq 0 $).  
-                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
-                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
+                - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$ nhằm giảm sai số dự đoán.  
                 - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.
                 """, unsafe_allow_html=True)
                 try:
@@ -373,10 +342,6 @@ def run_mnist_neural_network_app():
                 - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
                   $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
                   $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
-                - **Giải thích**:  
-                  - $\\eta$: Tốc độ học (learning rate), điều chỉnh kích thước bước cập nhật.  
-                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
-                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
                 - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.
                 """, unsafe_allow_html=True)
                 try:
@@ -398,217 +363,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
-                st.subheader("⚙️ Các tham số chính và ứng dụng")
-                st.markdown("""
-                Các tham số được sử dụng trong tab **Huấn luyện/Đánh giá** ảnh hưởng trực tiếp đến hiệu suất của Neural Network. Dưới đây là mô tả chi tiết từng tham số:
-                """, unsafe_allow_html=True)
-
-                st.subheader("1. Số lớp ẩn")
-                st.markdown("""
-                - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
-                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$ trong giao diện huấn luyện.  
-                - **Công thức liên quan**:  
-                  $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
-                - **Giải thích**:  
-                  - $L_h$: Số lớp ẩn, quyết định số lần biến đổi phi tuyến.  
-                  - $A^{(l)}$: Đầu ra của lớp $l$.  
-                  - $W^{(l)}$: Trọng số của lớp $l$.  
-                  - $b^{(l)}$: Bias của lớp $l$.  
-                  - $\\sigma$: Hàm kích hoạt.  
-                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("2. Số nơ-ron mỗi lớp")
-                st.markdown("""
-                - Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
-                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $128$.  
-                - **Công thức liên quan**:  
-                  $$ W^{(l)} \in \mathbb{R}^{n_{l-1} \times n_l} $$  
-                - **Giải thích**:  
-                  - $n_{l-1}$: Số nơ-ron của lớp trước.  
-                  - $n_l$: Số nơ-ron của lớp hiện tại.  
-                  - $W^{(l)}$: Ma trận trọng số giữa lớp $l-1$ và $l$.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("3. Tốc độ học (Learning Rate)")
-                st.markdown("""
-                - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001]$.  
-                - **Công thức liên quan**:  
-                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                - **Giải thích**:  
-                  - $\\eta$: Tốc độ học.  
-                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của hàm mất mát theo trọng số.  
-                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0001$ học chậm nhưng ổn định.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("4. Số lần lặp (Max Iterations)")
-                st.markdown("""
-                - Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
-                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $100$.  
-                - **Công thức liên quan**:  
-                  $$ \text{Tổng cập nhật} = E \\cdot \\frac{N}{B} $$  
-                - **Giải thích**:  
-                  - $E$: Số epoch.  
-                  - $N$: Số mẫu.  
-                  - $B$: Kích thước batch.  
-                - **Chú thích**: Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("5. Hàm kích hoạt")
-                st.markdown("""
-                - Hàm phi tuyến áp dụng trên mỗi nơ-ron, giúp mạng học các mối quan hệ phi tuyến.  
-                - **Phạm vi/Giá trị mặc định**: ReLU, Tanh (lớp ẩn), Softmax (lớp đầu ra).  
-                - **Công thức liên quan**:  
-                  - ReLU: $$ \\sigma(z) = \max(0, z) $$  
-                  - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
-                  - Softmax: $$ \\sigma(z)_i = \\frac{e^{z_i}}{\\sum_{j=1}^{10} e^{z_j}} $$  
-                - **Giải thích**:  
-                  - $\\sigma(z)$: Đầu ra của hàm kích hoạt ứng với đầu vào $z$.  
-                - **Chú thích**: ReLU tránh gradient vanishing, Tanh cân bằng âm/dương, Softmax cho phân phối xác suất.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("6. Kích thước batch")
-                st.markdown("""
-                - Số mẫu xử lý cùng lúc trong mỗi lần cập nhật trọng số, ảnh hưởng đến hiệu suất và độ ổn định.  
-                - **Phạm vi/Giá trị mặc định**: Từ $32$ đến $256$.  
-                - **Công thức liên quan**:  
-                  $$ \\frac{\\partial L}{\\partial W^{(l)}} = \\frac{1}{B} \\sum_{i=1}^{B} \\frac{\\partial L_i}{\\partial W^{(l)}} $$  
-                - **Giải thích**:  
-                  - $B$: Kích thước batch.  
-                  - $\\frac{\\partial L_i}{\\partial W^{(l)}}$: Gradient của mất mát cho mẫu $i$.  
-                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("7. Trình tối ưu (Solver)")
-                st.markdown("""
-                - Phương pháp tối ưu hóa trọng số, ảnh hưởng đến tốc độ và hiệu quả hội tụ.  
-                - **Phạm vi/Giá trị mặc định**: Adam, SGD.  
-                - **Công thức liên quan**:  
-                  - SGD: $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                  - Adam:  
-                    $$ m_t = \\beta_1 m_{t-1} + (1 - \\beta_1) \\cdot g_t $$  
-                    $$ v_t = \\beta_2 v_{t-1} + (1 - \\beta_2) \\cdot g_t^2 $$  
-                    $$ W^{(l)}_{t+1} = W^{(l)}_t - \\eta \\cdot \\frac{m_t}{\\sqrt{v_t} + \epsilon} $$  
-                - **Giải thích**:  
-                  - $g_t$: Gradient tại bước $t$.  
-                  - $m_t$: Động lượng (momentum).  
-                  - $v_t$: Bình phương gradient (RMSProp).  
-                  - $\\beta_1, \\beta_2$: Hằng số điều chỉnh (thường là $0.9$ và $0.999$).  
-                  - $\\epsilon$: Giá trị nhỏ tránh chia cho $0$ (thường là $10^{-8}$).  
-                - **Chú thích**: Adam nhanh và hiệu quả với dữ liệu lớn, SGD đơn giản nhưng chậm với dữ liệu phức tạp.  
-                """, unsafe_allow_html=True)
-
-                st.subheader("🟪 Ưu điểm và nhược điểm")
-                st.markdown("""
-                - **✅ Ưu điểm**:  
-                  - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
-                  - Linh hoạt với nhiều tham số để tối ưu hóa.  
-                - **❌ Nhược điểm**:  
-                  - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
-                  - Yêu cầu điều chỉnh tham số cẩn thận để đạt hiệu quả tối ưu.  
-                """, unsafe_allow_html=True)
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
-
-        elif info_option == "Giải thích về Adam Optimizer":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 101, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải thông tin... {i}%")
-                    time.sleep(0.05)
-                st.subheader("📊 4. Giải thích về Adam Optimizer")
-                st.markdown("""
-                **Adam (Adaptive Moment Estimation)** là một thuật toán tối ưu hóa phổ biến trong huấn luyện mạng nơ-ron, kết hợp ưu điểm của Momentum và RMSProp để cập nhật trọng số một cách hiệu quả và nhanh chóng.
-
-                **Cách hoạt động của Adam:**
-
-                - **Bước 1: Tính gradient**  
-                  Tính đạo hàm của hàm mất mát $L$ theo các tham số (trọng số $W$ và bias $b$) tại bước $t$:  
-                  $$ g_t = \\frac{\\partial L}{\\partial W_t} $$
-
-                - **Bước 2: Cập nhật moment bậc nhất (động lượng)**  
-                  Ước lượng trung bình động của gradient:  
-                  $$ m_t = \\beta_1 m_{t-1} + (1 - \\beta_1) g_t $$  
-                  Trong đó:  
-                  - $m_t$: Moment bậc nhất tại bước $t$.  
-                  - $\\beta_1$: Hằng số làm mịn (thường là 0.9).  
-                  - $m_{t-1}$: Giá trị moment trước đó.
-
-                - **Bước 3: Cập nhật moment bậc hai (phương sai)**  
-                  Ước lượng trung bình động của bình phương gradient:  
-                  $$ v_t = \\beta_2 v_{t-1} + (1 - \\beta_2) g_t^2 $$  
-                  Trong đó:  
-                  - $v_t$: Moment bậc hai tại bước $t$.  
-                  - $\\beta_2$: Hằng số làm mịn (thường là 0.999).  
-                  - $g_t^2$: Bình phương gradient.
-
-                - **Bước 4: Hiệu chỉnh sai lệch (bias correction)**  
-                  Để tránh sai lệch khi khởi tạo $m_0 = 0$ và $v_0 = 0$:  
-                  $$ \\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t} $$  
-                  $$ \\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t} $$
-
-                - **Bước 5: Cập nhật tham số**  
-                  Sử dụng các ước lượng đã hiệu chỉnh để điều chỉnh trọng số:  
-                  $$ W_{t+1} = W_t - \\eta \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon} $$  
-                  Trong đó:  
-                  - $\\eta$: Tốc độ học (learning rate).  
-                  - $\\epsilon$: Hằng số nhỏ (thường là $10^{-8}$) để tránh chia cho 0.
-
-                **Ý nghĩa và công dụng:**  
-                - **Tăng tốc độ hội tụ**: Adam sử dụng động lượng để đẩy nhanh quá trình tối ưu hóa ở các vùng gradient lớn.  
-                - **Ổn định hơn**: Điều chỉnh tốc độ học riêng cho từng tham số dựa trên phương sai gradient.  
-                - **Hiệu quả với dữ liệu lớn**: Phù hợp với các bài toán như MNIST nhờ khả năng xử lý gradient phức tạp.
-                """, unsafe_allow_html=True)
-                status_text.text("Đã tải xong! 100%")
-                time.sleep(0.5)
-                status_text.empty()
-                progress_bar.empty()
-
-        elif info_option == "Các hàm kích hoạt: ReLU, Tanh, Softmax":
-            with st.spinner("Đang tải thông tin..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                for i in range(0, 101, 10):
-                    progress_bar.progress(i)
-                    status_text.text(f"Đang tải thông tin... {i}%")
-                    time.sleep(0.05)
-                st.subheader("📊 5. Các hàm kích hoạt: ReLU, Tanh, Softmax")
-                st.markdown("""
-                **Hàm kích hoạt** là các hàm phi tuyến được sử dụng trong mạng nơ-ron để giúp mô hình học được các mối quan hệ phức tạp trong dữ liệu. Dưới đây là giải thích về các hàm kích hoạt được sử dụng trong ứng dụng này:
-
-                - **ReLU (Rectified Linear Unit)**  
-                  - **Công thức**: $$ f(x) = \\max(0, x) $$  
-                  - **Vai trò**: Giới thiệu phi tuyến tính, giúp mạng học các đặc trưng phức tạp từ dữ liệu.  
-                  - **Ý nghĩa**: Chỉ giữ lại các giá trị dương, đặt các giá trị âm về 0.  
-                  - **Công dụng**:  
-                    - Tăng tốc độ tính toán (đơn giản, không dùng hàm mũ).  
-                    - Giảm vấn đề vanishing gradient (đạo hàm không bị co lại quá nhỏ).  
-                  - **Nhược điểm**: Có thể gây "dead neurons" (nơ-ron chết) nếu đầu vào luôn âm.
-
-                - **Tanh**  
-                  - **Công thức**: $$ f(x) = \\tanh(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
-                  - **Vai trò**: Ánh xạ đầu vào sang khoảng (-1, 1), giúp cân bằng dữ liệu giữa giá trị âm và dương.  
-                  - **Ý nghĩa**: Đầu ra có thể âm, hỗ trợ biểu diễn các đặc trưng đối xứng.  
-                  - **Công dụng**:  
-                    - Tốt cho các bài toán cần dữ liệu cân bằng quanh 0.  
-                    - Hữu ích trong các lớp ẩn để tránh thiên lệch.  
-                  - **Nhược điểm**: Có thể gặp vanishing gradient với mạng sâu (đạo hàm nhỏ khi $|x|$ lớn).
-
-                - **Softmax**  
-                  - **Công thức**: $$ \\sigma(z)_i = \\frac{e^{z_i}}{\\sum_{j=1}^K e^{z_j}} $$ (với $K = 10$ lớp trong MNIST).  
-                  - **Vai trò**: Chuyển đổi đầu ra thành phân phối xác suất, tổng các xác suất bằng 1.  
-                  - **Ý nghĩa**: Đưa ra xác suất cho mỗi lớp, phù hợp với bài toán phân loại nhiều lớp.  
-                  - **Công dụng**:  
-                    - Được dùng ở lớp đầu ra để dự đoán nhãn.  
-                    - Dễ dàng diễn giải kết quả (ví dụ: xác suất chữ số là 7).  
-                  - **Chú ý**: Không dùng ở lớp ẩn, chỉ áp dụng cho lớp cuối.
-                """, unsafe_allow_html=True)
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
@@ -623,10 +377,14 @@ def run_mnist_neural_network_app():
             "1000 mẫu (Thử nghiệm nhanh)": 1000,
             "10,000 mẫu (Kiểm tra cơ bản)": 10000,
             "50,000 mẫu (Cân bằng hiệu suất)": 50000,
-            "70,000 mẫu (Huấn luyện chuyên sâu)": 70000
+            "70,000 mẫu (Huấn luyện chuyên sâu)": 70000,
+            "Tùy chỉnh": "custom"
         }
-        selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()), help="Chọn số lượng mẫu có sẵn")
-        num_samples = min(sample_options[selected_option], len(X_full))
+        selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()), help="Chọn số lượng mẫu có sẵn hoặc nhập tùy chỉnh")
+        if selected_option == "Tùy chỉnh":
+            num_samples = st.number_input("Nhập số lượng mẫu:", min_value=1, max_value=len(X_full), value=1000)
+        else:
+            num_samples = sample_options[selected_option]
 
         if st.button("Xác nhận số lượng", type="primary"):
             with st.spinner(f"Đang lấy {num_samples} mẫu..."):
@@ -804,9 +562,9 @@ def run_mnist_neural_network_app():
                         hidden_sizes = [hidden_size_1, hidden_size_2, hidden_size_3]
                     
                     params["hidden_layer_sizes"] = tuple(hidden_sizes)
-                    params["activation"] = st.selectbox("Hàm kích hoạt (lớp ẩn)", ["relu", "tanh"], 
-                                                        index=["relu", "tanh"].index(params["activation"]),
-                                                        help="ReLU: nhanh, tránh vanishing gradient; Tanh: cân bằng âm/dương.")
+                    params["activation"] = st.selectbox("Hàm kích hoạt (lớp ẩn)", ["relu", "tanh", "softmax"], 
+                                                        index=["relu", "tanh", "softmax"].index(params["activation"]) if params["activation"] in ["relu", "tanh", "softmax"] else 0,
+                                                        help="Chọn hàm kích hoạt cho lớp ẩn.")
             
             with col_param2:
                 with st.expander("🔧 Tối ưu hóa", expanded=True):
@@ -833,7 +591,7 @@ def run_mnist_neural_network_app():
 
             st.session_state["training_params"] = params
 
-            # Đặt tên mô hình
+            # Đặt tên mô hình trước nút huấn luyện
             model_name = st.text_input("Đặt tên cho mô hình:", value=f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
             with col_train:
@@ -1029,7 +787,11 @@ def run_mnist_neural_network_app():
                 selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()))
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
                 model_uri = f"runs:/{selected_run_id}/model"
-                model = mlflow.keras.load_model(model_uri)
+                try:
+                    model = mlflow.keras.load_model(model_uri)
+                except Exception as e:
+                    st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
+                    model = None
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
@@ -1307,7 +1069,7 @@ def run_mnist_neural_network_app():
                         st.table(pd.DataFrame(comparison_data))
 
         except Exception as e:
-            st.error(f"Lỗi khi tải thông tin huấn luyện: {e}")
+            st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
