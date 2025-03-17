@@ -1044,11 +1044,7 @@ def run_mnist_neural_network_app():
                                 ax.grid(True)
                                 st.pyplot(fig)
                                 plt.close(fig)
-
-                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
-                    st.markdown("---")
-                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
-
+                                
                     st.subheader("So sánh các Run")
                     selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
                     if selected_runs:
@@ -1067,6 +1063,12 @@ def run_mnist_neural_network_app():
                             }
                             comparison_data.append(run_data)
                         st.table(pd.DataFrame(comparison_data))
+
+                    mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+                    st.markdown("---")
+                    st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
+
+                    
 
         except Exception as e:
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
