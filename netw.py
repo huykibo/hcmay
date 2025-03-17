@@ -667,7 +667,7 @@ def run_mnist_neural_network_app():
                     params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
                                                     index=["adam", "sgd"].index(params["solver"]),
                                                     help="Adam (nhanh, hiệu quả), SGD (đơn giản, chậm hơn).")
-                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=True, 
+                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=False, 
                                                  help="Dừng huấn luyện nếu không cải thiện trên tập validation sau 10 epochs.")
 
             col_reset, col_empty = st.columns([1, 3])
@@ -682,8 +682,13 @@ def run_mnist_neural_network_app():
             # Phần huấn luyện
             st.subheader("🚀 Huấn luyện Mô hình")
             with st.container():
-                model_name = st.text_input("Đặt tên cho mô hình:", value=f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
+                # Lưu tên mô hình trong session_state
+                if 'model_name' not in st.session_state:
+                    st.session_state['model_name'] = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                model_name = st.text_input("Đặt tên cho mô hình:", value=st.session_state['model_name'], 
                                            help="Đặt tên trước khi huấn luyện để lưu trữ trên MLflow.")
+                st.session_state['model_name'] = model_name  # Cập nhật session_state khi người dùng nhập tên
+
                 if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
                     try:
                         with st.spinner("Đang huấn luyện mô hình..."):
@@ -933,8 +938,7 @@ def run_mnist_neural_network_app():
                                 ax.bar(range(10), prediction * 100, color='blue')
                                 ax.set_xlabel("Chữ số")
                                 ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân phối Xác suất")
-                                ax.set_xticks(range(10))
+                                ax.set_title("Phân bố xác suất")
                                 st.pyplot(fig)
                                 plt.close(fig)
                                 st.success("Dự đoán hoàn tất!")
@@ -978,8 +982,7 @@ def run_mnist_neural_network_app():
                                 ax.bar(range(10), prediction * 100, color='blue')
                                 ax.set_xlabel("Chữ số")
                                 ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân phối Xác suất")
-                                ax.set_xticks(range(10))
+                                ax.set_title("Phân bố xác suất")
                                 st.pyplot(fig)
                                 plt.close(fig)
                                 st.success("Dự đoán hoàn tất!")
@@ -1027,8 +1030,7 @@ def run_mnist_neural_network_app():
                                     ax.bar(range(10), prediction * 100, color='blue')
                                     ax.set_xlabel("Chữ số")
                                     ax.set_ylabel("Xác suất (%)")
-                                    ax.set_title("Phân phối Xác suất")
-                                    ax.set_xticks(range(10))
+                                    ax.set_title("Phân bố xác suất")
                                     st.pyplot(fig)
                                     plt.close(fig)
                                     st.success("Dự đoán hoàn tất!")
