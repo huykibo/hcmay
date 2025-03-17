@@ -255,11 +255,249 @@ def run_mnist_pseudo_labeling_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📊 Neural Network – Mạng nơ-ron nhân tạo")
+                st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                 """, unsafe_allow_html=True)
-                # ... (Giữ nguyên nội dung Neural Network như trước, lược bỏ để gọn) ...
+
+                st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
+                st.markdown("""
+                - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
+                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến (sử dụng hàm kích hoạt).  
+                - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔧 Quy trình hoạt động")
+                st.markdown("""
+                Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
+                """, unsafe_allow_html=True)
+
+                st.subheader("1. Khởi tạo mô hình")
+                st.markdown("""
+                - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
+                - **Tham số liên quan**:  
+                  - **Số lớp ẩn**: Được chọn từ $1$ đến $2$ trong giao diện huấn luyện.  
+                  - **Số nơ-ron mỗi lớp**: Có thể điều chỉnh từ $16$ đến $128$.  
+                - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("2. Lan truyền thuận (Feedforward)")
+                st.markdown("""
+                - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
+                  $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
+                  $$ A^{(l)} = \\sigma(Z^{(l)}) $$  
+                - **Giải thích**:  
+                  - $X$: Ma trận đầu vào, kích thước $N \\times 784$ ($N$ là số mẫu).  
+                  - $A^{(l-1)}$: Đầu ra của lớp trước, với $A^{(0)} = X$.  
+                  - $W^{(l)}$: Ma trận trọng số của lớp $l$, kích thước phụ thuộc số nơ-ron của lớp $l-1$ và $l$.  
+                  - $b^{(l)}$: Vector bias của lớp $l$.  
+                  - $Z^{(l)}$: Tổng trọng số tuyến tính của lớp $l$.  
+                  - $\\sigma$: Hàm kích hoạt (ví dụ: ReLU, Sigmoid, Tanh).  
+                  - $\\hat{Y}$: Đầu ra cuối cùng, kích thước $N \\times 10$ (10 lớp).  
+                - **Ví dụ với Sigmoid**:  
+                  $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
+                - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("3. Tính hàm mất mát (Loss Function)")
+                st.markdown("""
+                - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
+                  $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+                - **Giải thích**:  
+                  - $N$: Số mẫu trong tập dữ liệu.  
+                  - $y_{ij}$: Nhãn thực tế (one-hot encoded), $1$ nếu mẫu $i$ thuộc lớp $j$, $0$ nếu không.  
+                  - $\\hat{y}_{ij}$: Xác suất dự đoán mẫu $i$ thuộc lớp $j$.  
+                  - $\\sum_{i=1}^{N}$: Tổng trên tất cả mẫu.  
+                  - $\\sum_{j=0}^{9}$: Tổng trên tất cả lớp (0 đến 9).  
+                - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("4. Lan truyền ngược (Backpropagation)")
+                st.markdown("""
+                - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$:  
+                  - Lớp đầu ra:  
+                    $$ \\delta^{(L)} = \\hat{Y} - Y $$  
+                  - Lớp ẩn:  
+                    $$ \\delta^{(l)} = (\\delta^{(l+1)} \\cdot (W^{(l+1)})^T) \\odot \\sigma'(Z^{(l)}) $$  
+                  - Đạo hàm:  
+                    $$ \\frac{\\partial L}{\\partial W^{(l)}} = (A^{(l-1)})^T \\cdot \\delta^{(l)} $$  
+                    $$ \\frac{\\partial L}{\\partial b^{(l)}} = \\sum_{i=1}^{N} \\delta^{(l)}_i $$  
+                - **Giải thích**:  
+                  - $\\delta^{(L)}$: Sai số tại lớp đầu ra.  
+                  - $\\delta^{(l)}$: Sai số tại lớp $l$, lan truyền ngược từ lớp sau.  
+                  - $(W^{(l+1)})^T$: Ma trận chuyển vị của trọng số lớp tiếp theo.  
+                  - $\\odot$: Nhân từng phần tử (Hadamard product).  
+                  - $\\sigma'(Z^{(l)})$: Đạo hàm của hàm kích hoạt tại $Z^{(l)}$ (ví dụ: Sigmoid: $\\sigma'(z) = \\sigma(z) \\cdot (1 - \\sigma(z))$).  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
+                - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("5. Cập nhật tham số (Gradient Descent)")
+                st.markdown("""
+                - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+                - **Giải thích**:  
+                  - $\\eta$: Tốc độ học (learning rate), điều chỉnh kích thước bước cập nhật.  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của mất mát theo trọng số.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của mất mát theo bias.  
+                - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("6. Lặp lại")
+                st.markdown("""
+                - Lặp lại từ bước 2 qua nhiều **epoch** (số lần lặp tối đa, từ $10$ đến $100$) cho đến khi mất mát $L$ hội tụ.  
+                - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("⚙️ Các tham số chính và ứng dụng")
+                st.markdown("""
+                Các tham số được sử dụng trong tab **Huấn luyện/Đánh giá** ảnh hưởng trực tiếp đến hiệu suất của Neural Network. Dưới đây là mô tả chi tiết từng tham số:
+                """, unsafe_allow_html=True)
+
+                st.subheader("1. Số lớp ẩn")
+                st.markdown("""
+                - Quy định số lượng lớp ẩn trong mạng, ảnh hưởng đến độ sâu và khả năng học các đặc trưng phức tạp.  
+                - **Phạm vi/Giá trị mặc định**: Từ $1$ đến $2$ trong giao diện huấn luyện.  
+                - **Công thức liên quan**:  
+                  $$ A^{(l)} = \\sigma(W^{(l)} \\cdot A^{(l-1)} + b^{(l)}), \quad l = 1, 2, ..., L_h $$  
+                - **Giải thích**:  
+                  - $L_h$: Số lớp ẩn, quyết định số lần biến đổi phi tuyến.  
+                  - $A^{(l)}$: Đầu ra của lớp $l$.  
+                  - $W^{(l)}$: Trọng số của lớp $l$.  
+                  - $b^{(l)}$: Bias của lớp $l$.  
+                  - $\\sigma$: Hàm kích hoạt.  
+                - **Chú thích**: Giá trị $1$ phù hợp cho dữ liệu đơn giản, $2$ tăng khả năng học các mẫu phức tạp như MNIST.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("2. Số nơ-ron mỗi lớp")
+                st.markdown("""
+                - Số đơn vị xử lý (nơ-ron) trong mỗi lớp ẩn, ảnh hưởng đến dung lượng biểu diễn của mạng.  
+                - **Phạm vi/Giá trị mặc định**: Từ $16$ đến $128$.  
+                - **Công thức liên quan**:  
+                  $$ W^{(l)} \in \mathbb{R}^{n_{l-1} \times n_l} $$  
+                - **Giải thích**:  
+                  - $n_{l-1}$: Số nơ-ron của lớp trước.  
+                  - $n_l$: Số nơ-ron của lớp hiện tại.  
+                  - $W^{(l)}$: Ma trận trọng số giữa lớp $l-1$ và $l$.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $128$) tăng khả năng học nhưng có thể dẫn đến overfitting.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("3. Tốc độ học (Learning Rate)")
+                st.markdown("""
+                - Tốc độ cập nhật trọng số trong Gradient Descent, kiểm soát bước nhảy khi tối ưu hóa mất mát.  
+                - **Phạm vi/Giá trị mặc định**: $[0.01, 0.005, 0.001, 0.0005, 0.0003, 0.0001]$.  
+                - **Công thức liên quan**:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                - **Giải thích**:  
+                  - $\\eta$: Tốc độ học.  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của hàm mất mát theo trọng số.  
+                - **Chú thích**: $\\eta = 0.01$ học nhanh nhưng dễ vượt qua cực trị, $\\eta = 0.0001$ học chậm nhưng ổn định.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("4. Số lần lặp (Max Iterations)")
+                st.markdown("""
+                - Số epoch tối đa để huấn luyện, quyết định số vòng lặp tối ưu hóa mất mát.  
+                - **Phạm vi/Giá trị mặc định**: Từ $10$ đến $100$.  
+                - **Công thức liên quan**:  
+                  $$ \text{Tổng cập nhật} = E \\cdot \\frac{N}{B} $$  
+                - **Giải thích**:  
+                  - $E$: Số epoch.  
+                  - $N$: Số mẫu.  
+                  - $B$: Kích thước batch.  
+                - **Chú thích**: Giá trị lớn (ví dụ: $100$) tăng cơ hội hội tụ nhưng tốn thời gian.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("5. Hàm kích hoạt")
+                st.markdown("""
+                - Hàm phi tuyến áp dụng trên mỗi nơ-ron, giúp mạng học các mối quan hệ phi tuyến.  
+                - **Phạm vi/Giá trị mặc định**: ReLU, Sigmoid, Tanh.  
+                - **Công thức liên quan**:  
+                  - ReLU: $$ \\sigma(z) = \max(0, z) $$  
+                  - Sigmoid: $$ \\sigma(z) = \\frac{1}{1 + e^{-z}} $$  
+                  - Tanh: $$ \\sigma(z) = \\tanh(z) $$  
+                - **Giải thích**:  
+                  - $\\sigma(z)$: Đầu ra của hàm kích hoạt ứng với đầu vào $z$.  
+                - **Chú thích**: ReLU tránh gradient vanishing, Sigmoid phù hợp với đầu ra xác suất, Tanh cân bằng âm/dương.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("6. Kích thước batch")
+                st.markdown("""
+                - Số mẫu xử lý cùng lúc trong mỗi lần cập nhật trọng số, ảnh hưởng đến hiệu suất và độ ổn định.  
+                - **Phạm vi/Giá trị mặc định**: Từ $32$ đến $256$.  
+                - **Công thức liên quan**:  
+                  $$ \\frac{\\partial L}{\\partial W^{(l)}} = \\frac{1}{B} \\sum_{i=1}^{B} \\frac{\\partial L_i}{\\partial W^{(l)}} $$  
+                - **Giải thích**:  
+                  - $B$: Kích thước batch.  
+                  - $\\frac{\\partial L_i}{\\partial W^{(l)}}$: Gradient của mất mát cho mẫu $i$.  
+                - **Chú thích**: $B = 32$ giảm nhiễu nhưng chậm, $B = 256$ nhanh nhưng ít ổn định.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("7. Trình tối ưu (Solver)")
+                st.markdown("""
+                - Phương pháp tối ưu hóa trọng số, ảnh hưởng đến tốc độ và hiệu quả hội tụ.  
+                - **Phạm vi/Giá trị mặc định**: Adam, SGD.  
+                - **Công thức liên quan**:  
+                  - SGD: $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  - Adam:  
+                    $$ m_t = \\beta_1 m_{t-1} + (1 - \\beta_1) \\cdot g_t $$  
+                    $$ v_t = \\beta_2 v_{t-1} + (1 - \\beta_2) \\cdot g_t^2 $$  
+                    $$ W^{(l)}_{t+1} = W^{(l)}_t - \\eta \\cdot \\frac{m_t}{\\sqrt{v_t} + \epsilon} $$  
+                - **Giải thích**:  
+                  - $g_t$: Gradient tại bước $t$.  
+                  - $m_t$: Động lượng (momentum).  
+                  - $v_t$: Bình phương gradient (RMSProp).  
+                  - $\\beta_1, \\beta_2$: Hằng số điều chỉnh (thường là $0.9$ và $0.999$).  
+                  - $\\epsilon$: Giá trị nhỏ tránh chia cho $0$ (thường là $10^{-8}$).  
+                - **Chú thích**: Adam nhanh và hiệu quả với dữ liệu lớn, SGD đơn giản nhưng chậm với dữ liệu phức tạp.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🟪 Ưu điểm và nhược điểm")
+                st.markdown("""
+                - **✅ Ưu điểm**:  
+                  - Học được các đặc trưng phức tạp từ dữ liệu hình ảnh như MNIST.  
+                  - Linh hoạt với nhiều tham số để tối ưu hóa.  
+                - **❌ Nhược điểm**:  
+                  - Tốn thời gian huấn luyện nếu số mẫu lớn hoặc cấu trúc mạng phức tạp.  
+                  - Yêu cầu điều chỉnh tham số cẩn thận để đạt hiệu quả tối ưu.  
+                """, unsafe_allow_html=True)
                 status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
