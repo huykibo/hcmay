@@ -887,16 +887,16 @@ def run_mnist_neural_network_app():
             runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''", order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags['mlflow.runName'] for run in runs if 'mlflow.runName' in run.data.tags}
             
-            # Tự động chọn mô hình mới nhất nếu chưa chọn
-            if model_options and 'selected_model_id' not in st.session_state:
-                st.session_state['selected_model_id'] = runs[0].info.run_id  # Mô hình mới nhất
-            
+            # Tự động chọn mô hình mới nhất nếu chưa có lựa chọn trước đó
             if model_options:
-                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=list(model_options.keys()).index(st.session_state['selected_model_id']))
+                if 'selected_model_id' not in st.session_state:
+                    st.session_state['selected_model_id'] = runs[0].info.run_id  # Mô hình mới nhất được chọn mặc định
+                default_index = list(model_options.keys()).index(st.session_state['selected_model_id'])
+                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=default_index)
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
                 
-                # Chỉ tải lại mô hình khi người dùng thay đổi lựa chọn
-                if selected_run_id != st.session_state['selected_model_id'] or 'model' not in st.session_state:
+                # Chỉ tải lại mô hình khi người dùng thay đổi lựa chọn hoặc mô hình chưa được tải
+                if selected_run_id != st.session_state.get('selected_model_id') or 'model' not in st.session_state:
                     st.session_state['selected_model_id'] = selected_run_id
                     with st.spinner("Đang tải mô hình..."):
                         model_uri = f"runs:/{selected_run_id}/model"
