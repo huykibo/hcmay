@@ -294,7 +294,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
+                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
                 except Exception as e:
@@ -314,7 +314,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
+                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
                 except Exception as e:
@@ -332,7 +332,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
+                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
                 except Exception as e:
@@ -347,7 +347,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
+                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
                 except Exception as e:
@@ -365,7 +365,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
+                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
                 except Exception as e:
@@ -379,7 +379,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=600)
+                    st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=700)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
