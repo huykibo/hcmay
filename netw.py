@@ -60,7 +60,6 @@ def get_optimal_params(num_samples):
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
-    # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
@@ -171,9 +170,6 @@ def run_mnist_neural_network_app():
                 border: 1px solid #ddd;
                 border-radius: 5px;
             }
-            div[data-testid="stAlertContainer"] {
-                display: none;
-            }
         </style>
     """, unsafe_allow_html=True)
 
@@ -254,7 +250,7 @@ def run_mnist_neural_network_app():
                     mnist_image = Image.open("mnist.png")
                     st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy file `mnist.png`. Bạn có thể bỏ qua phần này hoặc tải ảnh minh họa từ nguồn khác.")
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
@@ -299,7 +295,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 1. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -319,7 +315,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 2. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -337,7 +333,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 3. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -352,7 +348,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 4. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -370,7 +366,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 5. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -384,7 +380,7 @@ def run_mnist_neural_network_app():
                 try:
                     st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa cho Bước 6. Bạn có thể bỏ qua hoặc cung cấp ảnh minh họa.")
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -1026,18 +1022,12 @@ def run_mnist_neural_network_app():
                     st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
                     st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
-                    # Khởi tạo canvas_key nếu chưa có
                     if 'canvas_key' not in st.session_state:
                         st.session_state['canvas_key'] = 0
 
-                    # Khởi tạo trạng thái canvas nếu chưa có
-                    if 'canvas_data' not in st.session_state:
-                        st.session_state['canvas_data'] = None
-
-                    # Container cho canvas
+                    # Sử dụng container để quản lý canvas
                     canvas_container = st.container()
                     with canvas_container:
-                        # Tạo canvas với key duy nhất
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 165, 0, 0.3)",
                             stroke_width=20,
@@ -1046,17 +1036,11 @@ def run_mnist_neural_network_app():
                             height=280,
                             width=280,
                             drawing_mode="freedraw",
-                            key=f"canvas_{st.session_state['canvas_key']}",
-                            update_streamlit=False  # Tắt cập nhật tự động để tránh lỗi
+                            key=f"canvas_{st.session_state['canvas_key']}"
                         )
 
-                        # Lưu dữ liệu canvas vào session_state
-                        if canvas_result.image_data is not None:
-                            st.session_state['canvas_data'] = canvas_result.image_data
-
-                    # Kiểm tra nếu có dữ liệu canvas để xử lý
-                    if st.session_state['canvas_data'] is not None:
-                        image = Image.fromarray(st.session_state['canvas_data'].astype('uint8'), 'RGBA').convert('L')
+                    if canvas_result.image_data is not None:
+                        image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
                         image_resized = image.resize((28, 28))
 
                         col_pred, col_clear = st.columns([2, 1])
@@ -1087,8 +1071,6 @@ def run_mnist_neural_network_app():
 
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
-                                # Xóa dữ liệu canvas và tăng key để tạo canvas mới
-                                st.session_state['canvas_data'] = None
                                 st.session_state['canvas_key'] += 1
                                 st.rerun()
 
@@ -1195,7 +1177,3 @@ def run_mnist_neural_network_app():
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
-
-
-
-    # sau khi huấn luyen song thì báo lỗi thông báo lỗi Bad message format: 'setIn' cannot be called on an ElementNode
