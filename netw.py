@@ -1096,21 +1096,6 @@ def run_mnist_neural_network_app():
                                 else:
                                     st.warning("Vui lòng vẽ trước khi dự đoán!")
 
-                        with col_clear:
-                            if st.button("Xóa bản vẽ", key="clear_button"):
-                                st.session_state['canvas_result'] = None
-                                # Xóa canvas bằng JavaScript
-                                st.markdown(
-                                    """
-                                    <script>
-                                        var canvas = document.querySelector('canvas');
-                                        var ctx = canvas.getContext('2d');
-                                        ctx.fillStyle = '#000000';
-                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                    </script>
-                                    """,
-                                    unsafe_allow_html=True
-                                )
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
 
