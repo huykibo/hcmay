@@ -1007,7 +1007,9 @@ def run_mnist_neural_network_app():
                     if 'canvas_key' not in st.session_state:
                         st.session_state['canvas_key'] = 0
 
-                    canvas_result = st_canvas(
+                    # Sử dụng container để quản lý canvas
+                    canvas_container = st.empty()
+                    canvas_result = canvas_container.canvas(
                         fill_color="rgba(255, 165, 0, 0.3)",
                         stroke_width=20,
                         stroke_color="#FFFFFF",
@@ -1051,7 +1053,17 @@ def run_mnist_neural_network_app():
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
                                 st.session_state['canvas_key'] += 1
-                                st.rerun()
+                                # Tạo canvas mới thay vì reruns
+                                canvas_result = canvas_container.canvas(
+                                    fill_color="rgba(255, 165, 0, 0.3)",
+                                    stroke_width=20,
+                                    stroke_color="#FFFFFF",
+                                    background_color="#000000",
+                                    height=280,
+                                    width=280,
+                                    drawing_mode="freedraw",
+                                    key=f"canvas_{st.session_state['canvas_key']}"
+                                )
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
