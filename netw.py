@@ -536,7 +536,6 @@ def run_mnist_neural_network_app():
                         st.success("Đã xử lý dữ liệu!")
                         del X, y, X_norm
                         gc.collect()
-                        st.rerun()
             with col2:
                 st.markdown("""
                     <div class="tooltip">? (Norm)
@@ -675,7 +674,6 @@ def run_mnist_neural_network_app():
                 if st.button("🔄 Khôi phục tham số tối ưu", key="reset_params"):
                     st.session_state["training_params"] = st.session_state["optimal_params"].copy()
                     st.success("Đã khôi phục tham số tối ưu!")
-                    st.rerun()
 
             st.session_state["training_params"] = params
 
@@ -847,15 +845,15 @@ def run_mnist_neural_network_app():
 
                     st.table(df_full.head(st.session_state['display_epochs']))
 
-                    if len(results['loss_history']) > st.session_state['display_epochs']:
-                        if st.button("Xem thêm 10 epoch", key="show_more"):
-                            st.session_state['display_epochs'] += 10
-                            st.rerun()
-
-                    if st.session_state['display_epochs'] > 5:
-                        if st.button("Thu gọn", key="collapse"):
-                            st.session_state['display_epochs'] = 5
-                            st.rerun()
+                    col_show_more, col_collapse = st.columns([1, 1])
+                    with col_show_more:
+                        if len(results['loss_history']) > st.session_state['display_epochs']:
+                            if st.button("Xem thêm 10 epoch", key="show_more"):
+                                st.session_state['display_epochs'] += 10
+                    with col_collapse:
+                        if st.session_state['display_epochs'] > 5:
+                            if st.button("Thu gọn", key="collapse"):
+                                st.session_state['display_epochs'] = 5
 
                     with st.expander("Xem chi tiết", expanded=False):
                         st.markdown("**Thông tin lần chạy:**")
@@ -890,20 +888,16 @@ def run_mnist_neural_network_app():
             runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''", order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags['mlflow.runName'] for run in runs if 'mlflow.runName' in run.data.tags}
             
-            # Nếu có kết quả huấn luyện mới, ưu tiên chọn mô hình vừa huấn luyện
             if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] in model_options:
                 st.session_state['selected_model_id'] = st.session_state['training_results']['run_id']
-            # Nếu không có mô hình được chọn trước đó, chọn mô hình mới nhất
             elif 'selected_model_id' not in st.session_state and model_options:
                 st.session_state['selected_model_id'] = runs[0].info.run_id
 
             if model_options:
-                # Tạo danh sách các mô hình và chọn mặc định là mô hình mới nhất hoặc vừa huấn luyện
                 selected_run_id = st.session_state.get('selected_model_id', runs[0].info.run_id)
                 default_index = list(model_options.keys()).index(selected_run_id) if selected_run_id in model_options else 0
                 selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=default_index, key="model_selector")
 
-                # Cập nhật selected_model_id khi người dùng thay đổi lựa chọn
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
                 if selected_run_id != st.session_state.get('selected_model_id'):
                     st.session_state['selected_model_id'] = selected_run_id
@@ -1022,12 +1016,13 @@ def run_mnist_neural_network_app():
                     st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
                     st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
+                    # Khởi tạo canvas_key nếu chưa có
                     if 'canvas_key' not in st.session_state:
                         st.session_state['canvas_key'] = 0
 
                     # Sử dụng container để quản lý canvas
-                    canvas_container = st.container()
-                    with canvas_container:
+                    canvas_placeholder = st.empty()
+                    with canvas_placeholder.container():
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 165, 0, 0.3)",
                             stroke_width=20,
@@ -1039,14 +1034,13 @@ def run_mnist_neural_network_app():
                             key=f"canvas_{st.session_state['canvas_key']}"
                         )
 
-                    if canvas_result.image_data is not None:
-                        image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
-                        image_resized = image.resize((28, 28))
-
-                        col_pred, col_clear = st.columns([2, 1])
-                        with col_pred:
-                            if st.button("Dự đoán", key="predict_button"):
+                    col_pred, col_clear = st.columns([2, 1])
+                    with col_pred:
+                        if st.button("Dự đoán", key="predict_button"):
+                            if canvas_result.image_data is not None and np.any(canvas_result.image_data):
                                 with st.spinner("Đang xử lý hình vẽ..."):
+                                    image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
+                                    image_resized = image.resize((28, 28))
                                     image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
                                     image_processed = preprocess_input(image_array, is_normalized)
                                     prediction = model.predict(image_processed, verbose=0)[0]
@@ -1068,11 +1062,13 @@ def run_mnist_neural_network_app():
                                     st.success("Dự đoán hoàn tất!")
                                     del image, image_resized, image_array, image_processed, prediction
                                     gc.collect()
+                            else:
+                                st.warning("Vui lòng vẽ một chữ số trước khi dự đoán!")
 
-                        with col_clear:
-                            if st.button("Xóa bản vẽ", key="clear_button"):
-                                st.session_state['canvas_key'] += 1
-                                st.rerun()
+                    with col_clear:
+                        if st.button("Xóa bản vẽ", key="clear_button"):
+                            st.session_state['canvas_key'] += 1
+                            canvas_placeholder.empty()  # Xóa canvas cũ trước khi render lại
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
@@ -1094,13 +1090,11 @@ def run_mnist_neural_network_app():
                     if st.button("Cập nhật tên"):
                         client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
                         st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
-                        st.rerun()
 
                     st.subheader("Xóa Run")
                     if st.button("Xóa lần chạy"):
                         client.delete_run(selected_run_id)
                         st.success(f"Đã xóa: {selected_run_name}")
-                        st.rerun()
 
                     st.subheader("Thông tin chi tiết")
                     st.write(f"**Tên:** {selected_run_name}")
