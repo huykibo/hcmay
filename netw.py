@@ -902,25 +902,36 @@ def run_mnist_neural_network_app():
             model_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs if 'mlflow.runName' in run.data.tags}
 
             if model_options:
-                # Chọn mô hình mới nhất mặc định nếu có trong st.session_state
-                default_run_id = st.session_state.get('latest_run_id', list(model_options.keys())[0])
-                default_model_name = model_options.get(default_run_id, list(model_options.values())[0])
+                # Khởi tạo giá trị mặc định cho selected_run_id nếu chưa có trong session_state
+                if 'selected_run_id' not in st.session_state:
+                    st.session_state['selected_run_id'] = st.session_state.get('latest_run_id', list(model_options.keys())[0])
+                default_model_name = model_options.get(st.session_state['selected_run_id'], list(model_options.values())[0])
+
+                # Chọn mô hình
                 selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=list(model_options.values()).index(default_model_name))
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
-                with st.spinner("Đang tải mô hình..."):
-                    model_uri = f"runs:/{selected_run_id}/model"
-                    try:
-                        model = mlflow.keras.load_model(model_uri)
-                    except Exception as e:
-                        st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
-                        model = None
+
+                # Chỉ tải mô hình khi selected_run_id thay đổi hoặc chưa có model trong session_state
+                if 'model' not in st.session_state or st.session_state.get('selected_run_id') != selected_run_id:
+                    with st.spinner("Đang tải mô hình..."):
+                        model_uri = f"runs:/{selected_run_id}/model"
+                        try:
+                            st.session_state['model'] = mlflow.keras.load_model(model_uri)
+                            st.session_state['selected_run_id'] = selected_run_id
+                            st.success(f"Đã tải mô hình: {selected_model_name}")
+                        except Exception as e:
+                            st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
+                            st.session_state['model'] = None
+                else:
+                    st.write(f"**Mô hình hiện tại**: {selected_model_name}")
+
+                model = st.session_state.get('model')
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
 
             if model is not None:
                 st.write(f"**Mô hình hiện tại**: {selected_model_name}")
-
                 input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
                 is_normalized = 'data_processed' in st.session_state
 
