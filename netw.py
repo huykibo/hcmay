@@ -379,7 +379,7 @@ def run_mnist_neural_network_app():
                 - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.  
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
+                    st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=600)
                 except FileNotFoundError:
                     st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                 except Exception as e:
