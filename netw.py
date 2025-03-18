@@ -445,16 +445,29 @@ def run_mnist_neural_network_app():
 
                 7. **Trình tối ưu (Optimizer):**  
                    - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.  
-                   - **Hoạt động**: Quyết định cách mạng hội tụ đến điểm tối ưu.  
+                   - **Hoạt động**: Dùng gradient để cập nhật tham số, với cách tiếp cận khác nhau tùy thuật toán.  
                    - **Ví dụ phổ biến:**  
-                     - **Adam**: Kết hợp động lượng và RMSProp, thích nghi với tốc độ học, nhanh và hiệu quả.  
-                     - **SGD (Stochastic Gradient Descent)**: Cập nhật trọng số dựa trên gradient, đơn giản nhưng chậm hơn Adam.  
-                   - **Công thức (SGD)**:  
-                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                     - $W_{t+1}$: Trọng số sau khi cập nhật.  
-                     - $W_t$: Trọng số tại bước hiện tại.  
-                     - $\\eta$: Tốc độ học.  
-                     - $\\frac{\\partial L}{\\partial W_t}$: Gradient của mất mát theo trọng số.  
+                     - **SGD (Stochastic Gradient Descent):**  
+                       - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu/mini-batch.  
+                       - **Công thức**:  
+                         $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                         - $W_t$: Trọng số hiện tại.  
+                         - $\\eta$: Tốc độ học.  
+                         - $\\frac{\\partial L}{\\partial W_t}$: Gradient.  
+                       - **Ưu điểm**: Đơn giản, nhanh với dữ liệu lớn.  
+                       - **Nhược điểm**: Dao động, hội tụ chậm.  
+                     - **Adam (Adaptive Moment Estimation):**  
+                       - **Ý nghĩa**: Kết hợp động lượng và RMSProp, thích nghi tốc độ học cho từng tham số.  
+                       - **Công thức**:  
+                         1. $m_t = \\beta_1 \\cdot m_{t-1} + (1 - \\beta_1) \\cdot g_t$ (moment bậc 1).  
+                         2. $v_t = \\beta_2 \\cdot v_{t-1} + (1 - \\beta_2) \\cdot g_t^2$ (moment bậc 2).  
+                         3. $\\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t}, \\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t}$ (hiệu chỉnh).  
+                         4. $W_{t+1} = W_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$.  
+                         - $g_t$: Gradient.  
+                         - $\\beta_1 \\approx 0.9, \\beta_2 \\approx 0.999, \\epsilon \\approx 10^{-8}$.  
+                       - **Ưu điểm**: Nhanh, ổn định, hiệu quả.  
+                       - **Nhược điểm**: Phức tạp, đôi khi kém trên hàm không lồi.  
+                   - **So sánh**: SGD chậm, dao động; Adam nhanh, ổn định.  
                 """, unsafe_allow_html=True)
 
                 st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
