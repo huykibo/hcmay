@@ -18,7 +18,6 @@ import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc
-import keras_tuner as kt
 
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
@@ -115,7 +114,7 @@ def run_mnist_neural_network_app():
             .tooltip .tooltiptext {
                 visibility: hidden;
                 width: 400px;
-                background-color: #f9f9f9;
+                background-color: #f9f9fa;
                 color: #333;
                 text-align: left;
                 border-radius: 6px;
@@ -688,113 +687,85 @@ def run_mnist_neural_network_app():
                 st.session_state['model_name'] = model_name
 
                 if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
-                    st.markdown("### Xác nhận Tham số Huấn luyện")
-                    st.write(f"- Số lớp ẩn: {len(params['hidden_layer_sizes'])}")
-                    st.write(f"- Số nơ-ron mỗi lớp: {params['hidden_layer_sizes']}")
-                    st.write(f"- Tốc độ học: {params['learning_rate']}")
-                    st.write(f"- Số lần lặp: {params['epochs']}")
-                    st.write(f"- Kích thước batch: {params['batch_size']}")
-                    if st.button("Xác nhận và Huấn luyện"):
-                        with training_container.container():
-                            with st.spinner("Đang huấn luyện mô hình..."):
-                                start_time = time.time()
-                                model = models.Sequential()
-                                model.add(layers.Input(shape=(784,)))
-                                for neurons in params["hidden_layer_sizes"]:
-                                    model.add(layers.Dense(neurons, activation=params["activation"]))
-                                model.add(layers.Dense(10, activation='softmax'))
+                    # Kiểm tra tham số trước khi huấn luyện
+                    if params["batch_size"] > len(X_train):
+                        st.error(f"Kích thước batch ({params['batch_size']}) lớn hơn số mẫu huấn luyện ({len(X_train)}). Vui lòng giảm batch size.")
+                        st.stop()
+                    if params["learning_rate"] > 0.1:
+                        st.warning("Tốc độ học quá lớn có thể gây khó hội tụ. Đề xuất: 0.0001 - 0.01")
 
-                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+                    with training_container.container():
+                        with st.spinner("Đang huấn luyện mô hình..."):
+                            start_time = time.time()
+                            model = models.Sequential()
+                            model.add(layers.Input(shape=(784,)))
+                            for neurons in params["hidden_layer_sizes"]:
+                                model.add(layers.Dense(neurons, activation=params["activation"]))
+                            model.add(layers.Dense(10, activation='softmax'))
 
-                                progress_bar = st.progress(0)
-                                status_text = st.empty()
+                            optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                            model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-                                class ProgressCallback(callbacks.Callback):
-                                    def on_epoch_end(self, epoch, logs=None):
-                                        progress = (epoch + 1) / params["epochs"]
-                                        progress_bar.progress(min(progress, 1.0))
-                                        status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
 
-                                callbacks_list = [ProgressCallback()]
-                                if early_stopping:
-                                    callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
+                            class ProgressCallback(callbacks.Callback):
+                                def on_epoch_end(self, epoch, logs=None):
+                                    progress = (epoch + 1) / params["epochs"]
+                                    progress_bar.progress(min(progress, 1.0))
+                                    status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
 
-                                history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                                    validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
+                            callbacks_list = [ProgressCallback()]
+                            if early_stopping:
+                                callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
 
-                                # Sau khi huấn luyện kết thúc
-                                y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                acc_valid = accuracy_score(y_valid, y_valid_pred)
-                                acc_test = accuracy_score(y_test, y_test_pred)
-                                cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                                cm_test = confusion_matrix(y_test, y_test_pred)
+                            history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
+                                                validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
 
-                                with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
-                                    mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
-                                    mlflow.log_metric("accuracy_val", acc_valid)
-                                    mlflow.log_metric("accuracy_test", acc_test)
-                                    mlflow.log_metric("training_time", time.time() - start_time)
-                                    mlflow.log_metric("n_iter_actual", len(history.history['loss']))
-                                    mlflow.keras.log_model(model, "model")
+                            # Sau khi huấn luyện kết thúc
+                            y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
+                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                            acc_valid = accuracy_score(y_valid, y_valid_pred)
+                            acc_test = accuracy_score(y_test, y_test_pred)
+                            cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                            cm_test = confusion_matrix(y_test, y_test_pred)
 
-                                st.session_state['model'] = model
-                                st.session_state['training_results'] = {
-                                    'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                    'cm_valid': cm_valid, 'cm_test': cm_test,
-                                    'run_name': model_name, 'run_id': run.info.run_id,
-                                    'params': params, 'training_time': time.time() - start_time,
-                                    'loss_history': history.history['loss'],
-                                    'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
-                                    'accuracy_history': history.history['accuracy'],
-                                    'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
-                                    'n_iter_actual': len(history.history['loss'])
-                                }
+                            with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
+                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
+                                mlflow.log_metric("accuracy_val", acc_valid)
+                                mlflow.log_metric("accuracy_test", acc_test)
+                                mlflow.log_metric("training_time", time.time() - start_time)
+                                mlflow.log_metric("n_iter_actual", len(history.history['loss']))
+                                mlflow.keras.log_model(model, "model")
 
-                                training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
-                                tf.keras.backend.clear_session()
-                                del model, history
-                                gc.collect()
+                            st.session_state['model'] = model
+                            st.session_state['training_results'] = {
+                                'accuracy_val': acc_valid, 'accuracy_test': acc_test,
+                                'cm_valid': cm_valid, 'cm_test': cm_test,
+                                'run_name': model_name, 'run_id': run.info.run_id,
+                                'params': params, 'training_time': time.time() - start_time,
+                                'loss_history': history.history['loss'],
+                                'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
+                                'accuracy_history': history.history['accuracy'],
+                                'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
+                                'n_iter_actual': len(history.history['loss'])
+                            }
 
-                                # Kiểm tra overfitting
-                                if 'training_results' in st.session_state:
-                                    results = st.session_state['training_results']
-                                    train_acc = results['accuracy_history'][-1]  # Độ chính xác huấn luyện cuối cùng
-                                    val_acc = results['val_accuracy_history'][-1] if results['val_accuracy_history'] else 0
-                                    if train_acc - val_acc > 0.1:  # Chênh lệch > 10%
-                                        st.warning("Cảnh báo: Mô hình có dấu hiệu overfitting. Độ chính xác huấn luyện cao hơn validation quá nhiều.")
+                            training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
+                            tf.keras.backend.clear_session()
+                            del model, history
+                            gc.collect()
+
+                            # Kiểm tra overfitting
+                            if 'training_results' in st.session_state:
+                                results = st.session_state['training_results']
+                                train_acc = results['accuracy_history'][-1]  # Độ chính xác huấn luyện cuối cùng
+                                val_acc = results['val_accuracy_history'][-1] if results['val_accuracy_history'] else 0
+                                if train_acc - val_acc > 0.1:  # Chênh lệch > 10%
+                                    st.warning("Cảnh báo: Mô hình có dấu hiệu overfitting. Độ chính xác huấn luyện cao hơn validation quá nhiều.")
 
                 else:
                     training_container.info("Chưa bắt đầu huấn luyện.")
-
-                # Thêm chế độ huấn luyện tự động (AutoML)
-                if st.button("Huấn luyện Tự động (AutoML)"):
-                    with st.spinner("Đang tìm kiếm tham số tối ưu..."):
-                        def build_model(hp):
-                            model = models.Sequential()
-                            model.add(layers.Input(shape=(784,)))
-                            for i in range(hp.Int('num_layers', 1, 3)):
-                                model.add(layers.Dense(units=hp.Int(f'units_{i}', min_value=32, max_value=128, step=32), activation='relu'))
-                            model.add(layers.Dense(10, activation='softmax'))
-                            model.compile(
-                                optimizer=tf.keras.optimizers.Adam(hp.Float('learning_rate', 1e-4, 1e-2, sampling='log')),
-                                loss='sparse_categorical_crossentropy',
-                                metrics=['accuracy']
-                            )
-                            return model
-
-                        tuner = kt.Hyperband(
-                            build_model,
-                            objective='val_accuracy',
-                            max_epochs=10,
-                            directory='tuner_dir',
-                            project_name='mnist_tuning'
-                        )
-                        tuner.search(X_train, y_train, epochs=10, validation_data=(X_valid, y_valid))
-                        best_model = tuner.get_best_models(num_models=1)[0]
-                        st.session_state['model'] = best_model
-                        st.success("Đã tìm thấy tham số tối ưu và huấn luyện xong!")
 
             # Kết quả huấn luyện
             if 'training_results' in st.session_state:
