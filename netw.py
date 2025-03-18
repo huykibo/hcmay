@@ -750,6 +750,9 @@ def run_mnist_neural_network_app():
                                 'n_iter_actual': len(history.history['loss'])
                             }
 
+                            # Cập nhật selected_model_id để tab Demo tự động chọn mô hình mới nhất
+                            st.session_state['selected_model_id'] = run.info.run_id
+
                             training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
                             tf.keras.backend.clear_session()
                             del model, history
@@ -887,16 +890,22 @@ def run_mnist_neural_network_app():
             runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''", order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags['mlflow.runName'] for run in runs if 'mlflow.runName' in run.data.tags}
             
-            # Tự động chọn mô hình mới nhất nếu chưa có lựa chọn trước đó
+            # Nếu có kết quả huấn luyện mới, ưu tiên chọn mô hình vừa huấn luyện
+            if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] in model_options:
+                st.session_state['selected_model_id'] = st.session_state['training_results']['run_id']
+            # Nếu không có mô hình được chọn trước đó, chọn mô hình mới nhất
+            elif 'selected_model_id' not in st.session_state and model_options:
+                st.session_state['selected_model_id'] = runs[0].info.run_id
+
             if model_options:
-                if 'selected_model_id' not in st.session_state:
-                    st.session_state['selected_model_id'] = runs[0].info.run_id  # Mô hình mới nhất được chọn mặc định
-                default_index = list(model_options.keys()).index(st.session_state['selected_model_id'])
-                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=default_index)
+                # Tạo danh sách các mô hình và chọn mặc định là mô hình mới nhất hoặc vừa huấn luyện
+                selected_run_id = st.session_state.get('selected_model_id', runs[0].info.run_id)
+                default_index = list(model_options.keys()).index(selected_run_id) if selected_run_id in model_options else 0
+                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=default_index, key="model_selector")
+
+                # Cập nhật selected_model_id khi người dùng thay đổi lựa chọn
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
-                
-                # Chỉ tải lại mô hình khi người dùng thay đổi lựa chọn hoặc mô hình chưa được tải
-                if selected_run_id != st.session_state.get('selected_model_id') or 'model' not in st.session_state:
+                if selected_run_id != st.session_state.get('selected_model_id'):
                     st.session_state['selected_model_id'] = selected_run_id
                     with st.spinner("Đang tải mô hình..."):
                         model_uri = f"runs:/{selected_run_id}/model"
@@ -904,10 +913,19 @@ def run_mnist_neural_network_app():
                             model = mlflow.keras.load_model(model_uri)
                             st.session_state['model'] = model
                         except Exception as e:
-                            st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
+                            st.error(f"Không thể tải mô hình từ MLflow: {e}")
                             model = None
                 else:
                     model = st.session_state.get('model', None)
+                    if model is None:
+                        with st.spinner("Đang tải mô hình..."):
+                            model_uri = f"runs:/{selected_run_id}/model"
+                            try:
+                                model = mlflow.keras.load_model(model_uri)
+                                st.session_state['model'] = model
+                            except Exception as e:
+                                st.error(f"Không thể tải mô hình từ MLflow: {e}")
+                                model = None
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
@@ -1008,17 +1026,18 @@ def run_mnist_neural_network_app():
                         st.session_state['canvas_key'] = 0
 
                     # Sử dụng container để quản lý canvas
-                    canvas_container = st.empty()
-                    canvas_result = canvas_container.canvas(
-                        fill_color="rgba(255, 165, 0, 0.3)",
-                        stroke_width=20,
-                        stroke_color="#FFFFFF",
-                        background_color="#000000",
-                        height=280,
-                        width=280,
-                        drawing_mode="freedraw",
-                        key=f"canvas_{st.session_state['canvas_key']}"
-                    )
+                    canvas_container = st.container()
+                    with canvas_container:
+                        canvas_result = st_canvas(
+                            fill_color="rgba(255, 165, 0, 0.3)",
+                            stroke_width=20,
+                            stroke_color="#FFFFFF",
+                            background_color="#000000",
+                            height=280,
+                            width=280,
+                            drawing_mode="freedraw",
+                            key=f"canvas_{st.session_state['canvas_key']}"
+                        )
 
                     if canvas_result.image_data is not None:
                         image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
@@ -1053,17 +1072,7 @@ def run_mnist_neural_network_app():
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
                                 st.session_state['canvas_key'] += 1
-                                # Tạo canvas mới thay vì reruns
-                                canvas_result = canvas_container.canvas(
-                                    fill_color="rgba(255, 165, 0, 0.3)",
-                                    stroke_width=20,
-                                    stroke_color="#FFFFFF",
-                                    background_color="#000000",
-                                    height=280,
-                                    width=280,
-                                    drawing_mode="freedraw",
-                                    key=f"canvas_{st.session_state['canvas_key']}"
-                                )
+                                st.rerun()
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
