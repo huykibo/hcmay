@@ -692,69 +692,99 @@ def run_mnist_neural_network_app():
                                            help="Đặt tên trước khi huấn luyện để lưu trữ trên MLflow.")
                 st.session_state['model_name'] = model_name
 
-                if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
-                    with training_container.container():
-                        with st.spinner("Đang huấn luyện mô hình..."):
-                            start_time = time.time()
-                            model = models.Sequential()
-                            model.add(layers.Input(shape=(784,)))
-                            for neurons in params["hidden_layer_sizes"]:
-                                model.add(layers.Dense(neurons, activation=params["activation"]))
-                            model.add(layers.Dense(10, activation='softmax'))
+                # Khởi tạo trạng thái huấn luyện nếu chưa có
+                if 'training_in_progress' not in st.session_state:
+                    st.session_state['training_in_progress'] = False
+                if 'cancel_training' not in st.session_state:
+                    st.session_state['cancel_training'] = False
 
-                            optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-                            model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+                col_train, col_cancel = st.columns([1, 1])
+                with col_train:
+                    if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
+                        st.session_state['training_in_progress'] = True
+                        st.session_state['cancel_training'] = False
+                        st.rerun()
+                with col_cancel:
+                    if st.session_state['training_in_progress']:
+                        if st.button("Hủy huấn luyện", key="cancel_training_button"):
+                            st.session_state['cancel_training'] = True
+                            # Cập nhật giao diện ngay lập tức
+                            training_container.warning("Đang hủy huấn luyện... Vui lòng đợi epoch hiện tại kết thúc.")
+                            st.rerun()
 
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
+                # Logic hiển thị quá trình huấn luyện
+                if st.session_state['training_in_progress']:
+                    if not st.session_state['cancel_training']:
+                        with training_container.container():
+                            with st.spinner("Đang huấn luyện mô hình..."):
+                                start_time = time.time()
+                                model = models.Sequential()
+                                model.add(layers.Input(shape=(784,)))
+                                for neurons in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(neurons, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
 
-                            class ProgressCallback(callbacks.Callback):
-                                def on_epoch_end(self, epoch, logs=None):
-                                    progress = (epoch + 1) / params["epochs"]
-                                    progress_bar.progress(min(progress, 1.0))
-                                    status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-                            callbacks_list = [ProgressCallback()]
-                            if early_stopping:
-                                callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
 
-                            history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                                validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
+                                class ProgressCallback(callbacks.Callback):
+                                    def on_epoch_end(self, epoch, logs=None):
+                                        if st.session_state['cancel_training']:
+                                            self.model.stop_training = True
+                                        progress = (epoch + 1) / params["epochs"]
+                                        progress_bar.progress(min(progress, 1.0))
+                                        status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
 
-                            # Sau khi huấn luyện kết thúc
-                            y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_valid = accuracy_score(y_valid, y_valid_pred)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                            cm_test = confusion_matrix(y_test, y_test_pred)
+                                callbacks_list = [ProgressCallback()]
+                                if early_stopping:
+                                    callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
 
-                            with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
-                                mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
-                                mlflow.log_metric("accuracy_val", acc_valid)
-                                mlflow.log_metric("accuracy_test", acc_test)
-                                mlflow.log_metric("training_time", time.time() - start_time)
-                                mlflow.log_metric("n_iter_actual", len(history.history['loss']))
-                                mlflow.keras.log_model(model, "model")
+                                history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
+                                                    validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
 
-                            st.session_state['model'] = model
-                            st.session_state['training_results'] = {
-                                'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                'cm_valid': cm_valid, 'cm_test': cm_test,
-                                'run_name': model_name, 'run_id': run.info.run_id,
-                                'params': params, 'training_time': time.time() - start_time,
-                                'loss_history': history.history['loss'],
-                                'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
-                                'accuracy_history': history.history['accuracy'],
-                                'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
-                                'n_iter_actual': len(history.history['loss'])
-                            }
+                                # Sau khi huấn luyện kết thúc
+                                st.session_state['training_in_progress'] = False
+                                if st.session_state['cancel_training']:
+                                    training_container.warning("Huấn luyện đã bị hủy!")
+                                else:
+                                    y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
+                                    y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                    acc_valid = accuracy_score(y_valid, y_valid_pred)
+                                    acc_test = accuracy_score(y_test, y_test_pred)
+                                    cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                                    cm_test = confusion_matrix(y_test, y_test_pred)
 
-                            training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
-                            tf.keras.backend.clear_session()
-                            del model, history
-                            gc.collect()
+                                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
+                                        mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
+                                        mlflow.log_metric("accuracy_val", acc_valid)
+                                        mlflow.log_metric("accuracy_test", acc_test)
+                                        mlflow.log_metric("training_time", time.time() - start_time)
+                                        mlflow.log_metric("n_iter_actual", len(history.history['loss']))
+                                        mlflow.keras.log_model(model, "model")
 
+                                    st.session_state['model'] = model
+                                    st.session_state['training_results'] = {
+                                        'accuracy_val': acc_valid, 'accuracy_test': acc_test,
+                                        'cm_valid': cm_valid, 'cm_test': cm_test,
+                                        'run_name': model_name, 'run_id': run.info.run_id,
+                                        'params': params, 'training_time': time.time() - start_time,
+                                        'loss_history': history.history['loss'],
+                                        'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
+                                        'accuracy_history': history.history['accuracy'],
+                                        'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
+                                        'n_iter_actual': len(history.history['loss'])
+                                    }
+
+                                    training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
+                                tf.keras.backend.clear_session()
+                                del model, history
+                                gc.collect()
+                    else:
+                        # Nếu đã yêu cầu hủy nhưng chưa dừng, giữ thông báo
+                        training_container.warning("Đang hủy huấn luyện... Vui lòng đợi epoch hiện tại kết thúc.")
                 else:
                     training_container.info("Chưa bắt đầu huấn luyện.")
 
