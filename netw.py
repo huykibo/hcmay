@@ -114,7 +114,7 @@ def run_mnist_neural_network_app():
             .tooltip .tooltiptext {
                 visibility: hidden;
                 width: 400px;
-                background-color: #f9f9fa;
+                background-color: #f9f9f9;
                 color: #333;
                 text-align: left;
                 border-radius: 6px;
@@ -504,6 +504,8 @@ def run_mnist_neural_network_app():
                 with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                     mlflow.log_param("num_samples", num_samples)
                 st.success(f"Đã chọn {num_samples} mẫu!")
+                del X_full, y_full, X_sampled, y_sampled
+                gc.collect()
 
     # Tab 3: Xử lý dữ liệu
     with tab_preprocess:
@@ -532,6 +534,8 @@ def run_mnist_neural_network_app():
                         X_norm = X / 255.0
                         st.session_state["data_processed"] = (X_norm.copy(), y.copy())
                         st.success("Đã xử lý dữ liệu!")
+                        del X, y, X_norm
+                        gc.collect()
                         st.rerun()
             with col2:
                 st.markdown("""
@@ -579,6 +583,8 @@ def run_mnist_neural_network_app():
                         "X_test": X_test.copy(), "y_test": y_test.copy()
                     }
                     st.success("Đã chia dữ liệu thành công!")
+                    del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
+                    gc.collect()
 
     # Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
@@ -687,13 +693,6 @@ def run_mnist_neural_network_app():
                 st.session_state['model_name'] = model_name
 
                 if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
-                    # Kiểm tra tham số trước khi huấn luyện
-                    if params["batch_size"] > len(X_train):
-                        st.error(f"Kích thước batch ({params['batch_size']}) lớn hơn số mẫu huấn luyện ({len(X_train)}). Vui lòng giảm batch size.")
-                        st.stop()
-                    if params["learning_rate"] > 0.1:
-                        st.warning("Tốc độ học quá lớn có thể gây khó hội tụ. Đề xuất: 0.0001 - 0.01")
-
                     with training_container.container():
                         with st.spinner("Đang huấn luyện mô hình..."):
                             start_time = time.time()
@@ -755,14 +754,6 @@ def run_mnist_neural_network_app():
                             tf.keras.backend.clear_session()
                             del model, history
                             gc.collect()
-
-                            # Kiểm tra overfitting
-                            if 'training_results' in st.session_state:
-                                results = st.session_state['training_results']
-                                train_acc = results['accuracy_history'][-1]  # Độ chính xác huấn luyện cuối cùng
-                                val_acc = results['val_accuracy_history'][-1] if results['val_accuracy_history'] else 0
-                                if train_acc - val_acc > 0.1:  # Chênh lệch > 10%
-                                    st.warning("Cảnh báo: Mô hình có dấu hiệu overfitting. Độ chính xác huấn luyện cao hơn validation quá nhiều.")
 
                 else:
                     training_container.info("Chưa bắt đầu huấn luyện.")
@@ -944,27 +935,26 @@ def run_mnist_neural_network_app():
                             with st.spinner("Đang xử lý ảnh..."):
                                 image_array = np.array(image, dtype=np.float32)
                                 image_array = image_array.reshape(1, 784)
-                                if np.sum(image_array > 50) < 50:  # Kiểm tra dữ liệu không hợp lệ
-                                    st.warning("Ảnh đầu vào có vẻ không chứa chữ số. Vui lòng thử lại.")
-                                else:
-                                    image_processed = preprocess_input(image_array, is_normalized)
-                                    prediction = model.predict(image_processed, verbose=0)[0]
-                                    predicted_class = np.argmax(prediction)
-                                    confidence = prediction[predicted_class] * 100
-                                    st.markdown(f"""
-                                        <div>
-                                            <strong>Dự đoán:</strong> {predicted_class}<br>
-                                            <strong>Độ tin cậy:</strong> {confidence:.2f}%
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    fig, ax = plt.subplots(figsize=(6, 4))
-                                    ax.bar(range(10), prediction * 100, color='blue')
-                                    ax.set_xlabel("Chữ số")
-                                    ax.set_ylabel("Xác suất (%)")
-                                    ax.set_title("Phân bố xác suất")
-                                    st.pyplot(fig)
-                                    plt.close(fig)
-                                    st.success("Dự đoán hoàn tất!")
+                                image_processed = preprocess_input(image_array, is_normalized)
+                                prediction = model.predict(image_processed, verbose=0)[0]
+                                predicted_class = np.argmax(prediction)
+                                confidence = prediction[predicted_class] * 100
+                                st.markdown(f"""
+                                    <div>
+                                        <strong>Dự đoán:</strong> {predicted_class}<br>
+                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                fig, ax = plt.subplots(figsize=(6, 4))
+                                ax.bar(range(10), prediction * 100, color='blue')
+                                ax.set_xlabel("Chữ số")
+                                ax.set_ylabel("Xác suất (%)")
+                                ax.set_title("Phân bố xác suất")
+                                st.pyplot(fig)
+                                plt.close(fig)
+                                st.success("Dự đoán hoàn tất!")
+                                del image, image_array, image_processed, prediction
+                                gc.collect()
 
                 elif input_method == "Dữ liệu Test":
                     st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
@@ -988,37 +978,31 @@ def run_mnist_neural_network_app():
                         if st.button("🔍 Dự đoán", key="predict_test"):
                             with st.spinner("Đang dự đoán..."):
                                 sample = X_test[idx].reshape(1, -1)
-                                if np.sum(sample > 50) < 50:  # Kiểm tra dữ liệu không hợp lệ
-                                    st.warning("Mẫu Test có vẻ không chứa chữ số. Vui lòng chọn mẫu khác.")
-                                else:
-                                    sample_processed = preprocess_input(sample, is_normalized)
-                                    prediction = model.predict(sample_processed, verbose=0)[0]
-                                    predicted_class = np.argmax(prediction)
-                                    confidence = prediction[predicted_class] * 100
-                                    st.markdown(f"""
-                                        <div class="prediction-box">
-                                            <strong>Dự đoán:</strong> {predicted_class}<br>
-                                            <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
-                                            <strong>Nhãn thực tế:</strong> {y_test[idx]}
-                                        </div>
-                                    """, unsafe_allow_html=True)
-                                    fig, ax = plt.subplots(figsize=(6, 4))
-                                    ax.bar(range(10), prediction * 100, color='blue')
-                                    ax.set_xlabel("Chữ số")
-                                    ax.set_ylabel("Xác suất (%)")
-                                    ax.set_title("Phân bố xác suất")
-                                    st.pyplot(fig)
-                                    plt.close(fig)
-                                    st.success("Dự đoán hoàn tất!")
+                                sample_processed = preprocess_input(sample, is_normalized)
+                                prediction = model.predict(sample_processed, verbose=0)[0]
+                                predicted_class = np.argmax(prediction)
+                                confidence = prediction[predicted_class] * 100
+                                st.markdown(f"""
+                                    <div class="prediction-box">
+                                        <strong>Dự đoán:</strong> {predicted_class}<br>
+                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
+                                        <strong>Nhãn thực tế:</strong> {y_test[idx]}
+                                    </div>
+                                """, unsafe_allow_html=True)
+                                fig, ax = plt.subplots(figsize=(6, 4))
+                                ax.bar(range(10), prediction * 100, color='blue')
+                                ax.set_xlabel("Chữ số")
+                                ax.set_ylabel("Xác suất (%)")
+                                ax.set_title("Phân bố xác suất")
+                                st.pyplot(fig)
+                                plt.close(fig)
+                                st.success("Dự đoán hoàn tất!")
+                                del sample, sample_processed, prediction
+                                gc.collect()
 
                 elif input_method == "Vẽ trực tiếp":
                     st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                    st.markdown("""
-                    **Hướng dẫn vẽ:**
-                    - Sử dụng chuột để vẽ chữ số từ 0-9.
-                    - Vẽ nét trắng trên nền đen, đảm bảo chữ số nằm ở trung tâm.
-                    - Nhấn "Dự đoán" để xem kết quả, hoặc "Xóa bản vẽ" để vẽ lại.
-                    """)
+                    st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
                     if 'canvas_key' not in st.session_state:
                         st.session_state['canvas_key'] = 0
@@ -1037,34 +1021,32 @@ def run_mnist_neural_network_app():
                     if canvas_result.image_data is not None:
                         image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
                         image_resized = image.resize((28, 28))
-                        st.image(image_resized, caption="Hình ảnh sau khi resize (28x28)", width=100)
 
                         col_pred, col_clear = st.columns([2, 1])
                         with col_pred:
                             if st.button("Dự đoán", key="predict_button"):
                                 with st.spinner("Đang xử lý hình vẽ..."):
                                     image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
-                                    if np.sum(image_array > 50) < 50:  # Kiểm tra dữ liệu không hợp lệ
-                                        st.warning("Hình vẽ có vẻ không chứa chữ số. Vui lòng thử lại.")
-                                    else:
-                                        image_processed = preprocess_input(image_array, is_normalized)
-                                        prediction = model.predict(image_processed, verbose=0)[0]
-                                        predicted_class = np.argmax(prediction)
-                                        confidence = prediction[predicted_class] * 100
-                                        st.markdown(f"""
-                                            <div>
-                                                <strong>Dự đoán:</strong> {predicted_class}<br>
-                                                <strong>Độ tin cậy:</strong> {confidence:.2f}%
-                                            </div>
-                                        """, unsafe_allow_html=True)
-                                        fig, ax = plt.subplots(figsize=(6, 4))
-                                        ax.bar(range(10), prediction * 100, color='blue')
-                                        ax.set_xlabel("Chữ số")
-                                        ax.set_ylabel("Xác suất (%)")
-                                        ax.set_title("Phân bố xác suất")
-                                        st.pyplot(fig)
-                                        plt.close(fig)
-                                        st.success("Dự đoán hoàn tất!")
+                                    image_processed = preprocess_input(image_array, is_normalized)
+                                    prediction = model.predict(image_processed, verbose=0)[0]
+                                    predicted_class = np.argmax(prediction)
+                                    confidence = prediction[predicted_class] * 100
+                                    st.markdown(f"""
+                                        <div>
+                                            <strong>Dự đoán:</strong> {predicted_class}<br>
+                                            <strong>Độ tin cậy:</strong> {confidence:.2f}%
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    fig, ax = plt.subplots(figsize=(6, 4))
+                                    ax.bar(range(10), prediction * 100, color='blue')
+                                    ax.set_xlabel("Chữ số")
+                                    ax.set_ylabel("Xác suất (%)")
+                                    ax.set_title("Phân bố xác suất")
+                                    st.pyplot(fig)
+                                    plt.close(fig)
+                                    st.success("Dự đoán hoàn tất!")
+                                    del image, image_resized, image_array, image_processed, prediction
+                                    gc.collect()
 
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
@@ -1151,21 +1133,20 @@ def run_mnist_neural_network_app():
                     selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
                     if selected_runs:
                         selected_run_ids = [k for k, v in run_options.items() if v in selected_runs]
-                        acc_tests = []
-                        run_names = []
+                        comparison_data = []
                         for run_id in selected_run_ids:
                             run = client.get_run(run_id)
-                            acc_test = run.data.metrics.get('accuracy_test', 0)
-                            acc_tests.append(acc_test * 100)
-                            run_names.append(run.data.tags.get('mlflow.runName', run_id))
-                        
-                        fig, ax = plt.subplots(figsize=(8, 5))
-                        ax.bar(run_names, acc_tests, color='skyblue')
-                        ax.set_ylabel("Độ chính xác Test (%)")
-                        ax.set_title("So sánh Độ chính xác Test giữa các Run")
-                        ax.set_xticklabels(run_names, rotation=45, ha='right')
-                        st.pyplot(fig)
-                        plt.close(fig)
+                            run_data = {
+                                "Tên": run.data.tags.get('mlflow.runName', run_id),
+                                "Accuracy Val": run.data.metrics.get('accuracy_val', 'N/A'),
+                                "Accuracy Test": run.data.metrics.get('accuracy_test', 'N/A'),
+                                "Thời gian": run.data.metrics.get('training_time', 'N/A'),
+                                "Số lớp ẩn": run.data.params.get('hidden_layer_sizes', 'N/A'),
+                                "Learning Rate": run.data.params.get('learning_rate', 'N/A'),
+                                "Epochs": run.data.params.get('epochs', 'N/A')
+                            }
+                            comparison_data.append(run_data)
+                        st.table(pd.DataFrame(comparison_data))
 
         except Exception as e:
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
