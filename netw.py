@@ -682,6 +682,9 @@ def run_mnist_neural_network_app():
             # Phần huấn luyện
             st.subheader("🚀 Huấn luyện Mô hình")
             with st.container():
+                # Placeholder cho quá trình huấn luyện
+                training_container = st.empty()
+
                 # Lưu tên mô hình trong session_state
                 if 'model_name' not in st.session_state:
                     st.session_state['model_name'] = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
@@ -700,91 +703,90 @@ def run_mnist_neural_network_app():
                     if st.button("Bắt đầu Huấn luyện", type="primary", key="start_training"):
                         st.session_state['training_in_progress'] = True
                         st.session_state['cancel_training'] = False
-                        st.rerun()  # Cập nhật giao diện để hiển thị nút "Hủy huấn luyện" ngay lập tức
+                        st.rerun()
                 with col_cancel:
                     if st.session_state['training_in_progress']:
                         if st.button("Hủy huấn luyện", key="cancel_training_button"):
                             st.session_state['cancel_training'] = True
-                            st.warning("Yêu cầu hủy huấn luyện đã được gửi. Đang dừng...")
+                            # Cập nhật giao diện ngay lập tức
+                            training_container.warning("Đang hủy huấn luyện... Vui lòng đợi epoch hiện tại kết thúc.")
                             st.rerun()
 
-                # Kiểm tra nếu huấn luyện đang diễn ra và không có yêu cầu hủy
-                if st.session_state['training_in_progress'] and not st.session_state['cancel_training']:
-                    try:
-                        with st.spinner("Đang huấn luyện mô hình..."):
-                            start_time = time.time()
+                # Logic hiển thị quá trình huấn luyện
+                if st.session_state['training_in_progress']:
+                    if not st.session_state['cancel_training']:
+                        with training_container.container():
+                            with st.spinner("Đang huấn luyện mô hình..."):
+                                start_time = time.time()
+                                model = models.Sequential()
+                                model.add(layers.Input(shape=(784,)))
+                                for neurons in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(neurons, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
 
-                            model = models.Sequential()
-                            model.add(layers.Input(shape=(784,)))
-                            for neurons in params["hidden_layer_sizes"]:
-                                model.add(layers.Dense(neurons, activation=params["activation"]))
-                            model.add(layers.Dense(10, activation='softmax'))
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
-                            optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                progress_bar = st.progress(0)
+                                status_text = st.empty()
 
-                            model.compile(optimizer=optimizer,
-                                          loss='sparse_categorical_crossentropy',
-                                          metrics=['accuracy'])
+                                class ProgressCallback(callbacks.Callback):
+                                    def on_epoch_end(self, epoch, logs=None):
+                                        if st.session_state['cancel_training']:
+                                            self.model.stop_training = True
+                                        progress = (epoch + 1) / params["epochs"]
+                                        progress_bar.progress(min(progress, 1.0))
+                                        status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
 
-                            progress_bar = st.progress(0)
-                            status_text = st.empty()
+                                callbacks_list = [ProgressCallback()]
+                                if early_stopping:
+                                    callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
 
-                            class ProgressCallback(callbacks.Callback):
-                                def on_epoch_end(self, epoch, logs=None):
-                                    if st.session_state['cancel_training']:
-                                        self.model.stop_training = True
-                                    progress = (epoch + 1) / params["epochs"]
-                                    progress_bar.progress(min(progress, 1.0))
-                                    status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}, Val Loss: {logs.get('val_loss', 'N/A'):.4f}, Val Accuracy: {logs.get('val_accuracy', 'N/A'):.4f}")
+                                history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
+                                                    validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
 
-                            callbacks_list = [ProgressCallback()]
-                            if early_stopping:
-                                callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
+                                # Sau khi huấn luyện kết thúc
+                                st.session_state['training_in_progress'] = False
+                                if st.session_state['cancel_training']:
+                                    training_container.warning("Huấn luyện đã bị hủy!")
+                                else:
+                                    y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
+                                    y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                    acc_valid = accuracy_score(y_valid, y_valid_pred)
+                                    acc_test = accuracy_score(y_test, y_test_pred)
+                                    cm_valid = confusion_matrix(y_valid, y_valid_pred)
+                                    cm_test = confusion_matrix(y_test, y_test_pred)
 
-                            history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                                validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
+                                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
+                                        mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
+                                        mlflow.log_metric("accuracy_val", acc_valid)
+                                        mlflow.log_metric("accuracy_test", acc_test)
+                                        mlflow.log_metric("training_time", time.time() - start_time)
+                                        mlflow.log_metric("n_iter_actual", len(history.history['loss']))
+                                        mlflow.keras.log_model(model, "model")
 
-                            if st.session_state['cancel_training']:
-                                st.warning("Huấn luyện đã bị hủy!")
-                            else:
-                                y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                acc_valid = accuracy_score(y_valid, y_valid_pred)
-                                acc_test = accuracy_score(y_test, y_test_pred)
-                                cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                                cm_test = confusion_matrix(y_test, y_test_pred)
+                                    st.session_state['model'] = model
+                                    st.session_state['training_results'] = {
+                                        'accuracy_val': acc_valid, 'accuracy_test': acc_test,
+                                        'cm_valid': cm_valid, 'cm_test': cm_test,
+                                        'run_name': model_name, 'run_id': run.info.run_id,
+                                        'params': params, 'training_time': time.time() - start_time,
+                                        'loss_history': history.history['loss'],
+                                        'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
+                                        'accuracy_history': history.history['accuracy'],
+                                        'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
+                                        'n_iter_actual': len(history.history['loss'])
+                                    }
 
-                                with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
-                                    mlflow.log_params({k: v for k, v in params.items() if k in ['hidden_layer_sizes', 'learning_rate', 'epochs', 'batch_size', 'activation', 'solver']})
-                                    mlflow.log_metric("accuracy_val", acc_valid)
-                                    mlflow.log_metric("accuracy_test", acc_test)
-                                    mlflow.log_metric("training_time", time.time() - start_time)
-                                    mlflow.log_metric("n_iter_actual", len(history.history['loss']))
-                                    mlflow.keras.log_model(model, "model")
-
-                                st.session_state['model'] = model
-                                st.session_state['training_results'] = {
-                                    'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                    'cm_valid': cm_valid, 'cm_test': cm_test,
-                                    'run_name': model_name, 'run_id': run.info.run_id,
-                                    'params': params, 'training_time': time.time() - start_time,
-                                    'loss_history': history.history['loss'],
-                                    'val_loss_history': history.history['val_loss'] if 'val_loss' in history.history else [],
-                                    'accuracy_history': history.history['accuracy'],
-                                    'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
-                                    'n_iter_actual': len(history.history['loss'])
-                                }
-
-                                st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
-                            tf.keras.backend.clear_session()
-                            del X_train, y_train, X_valid, y_valid, X_test, y_test, split_data, history
-                            gc.collect()
-                            st.rerun()
-
-                    except Exception as e:
-                        st.error(f"Lỗi trong quá trình huấn luyện: {e}")
-                    finally:
-                        st.session_state['training_in_progress'] = False
+                                    training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
+                                tf.keras.backend.clear_session()
+                                del model, history
+                                gc.collect()
+                    else:
+                        # Nếu đã yêu cầu hủy nhưng chưa dừng, giữ thông báo
+                        training_container.warning("Đang hủy huấn luyện... Vui lòng đợi epoch hiện tại kết thúc.")
+                else:
+                    training_container.info("Chưa bắt đầu huấn luyện.")
 
             # Kết quả huấn luyện
             if 'training_results' in st.session_state:
@@ -1183,4 +1185,4 @@ def run_mnist_neural_network_app():
         st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()#
+    run_mnist_neural_network_app()
