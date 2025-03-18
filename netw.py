@@ -94,10 +94,305 @@ def run_mnist_neural_network_app():
 
     tabs = st.tabs(["Thông tin", "Chọn dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
 
-    # Tab 1: Thông tin
-    with tabs[0]:
-        st.header("Giới thiệu")
-        st.write("Ứng dụng này phân loại chữ số viết tay từ tập dữ liệu MNIST bằng Neural Network.")
+        # Tab 1: Thông tin
+    with tab_info:
+        st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
+        st.markdown("""
+        Chào bạn! Đây là ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** bằng **Mạng nơ-ron nhân tạo (Neural Network)**. Hãy khám phá các tính năng và cách hoạt động của nó nhé!
+        """, unsafe_allow_html=True)
+
+        st.subheader("Chọn thông tin để xem")
+        info_option = st.selectbox(
+            "",
+            [
+                "Ứng dụng này là gì và mục tiêu của nó?",
+                "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa",
+                "Neural Network – Mạng nơ-ron nhân tạo",
+            ],
+            label_visibility="collapsed",
+            help="Chọn để xem chi tiết về ứng dụng, dữ liệu, hoặc mô hình."
+        )
+
+        if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+                st.subheader("📘 1. Ứng dụng này là gì và mục tiêu của nó?")
+                st.markdown("""
+                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, sử dụng **Mạng nơ-ron nhân tạo (Neural Network)**.  
+                - **MNIST**: Tập dữ liệu gồm $70,000$ ảnh chữ số từ $0$ đến $9$, mỗi ảnh kích thước $28 \\times 28$ pixel (tổng cộng $784$ đặc trưng).  
+                - **Mục tiêu**:  
+                  - Xây dựng và huấn luyện một mạng nơ-ron để nhận diện chính xác các chữ số.  
+                  - Cung cấp công cụ trực quan để học tập và đánh giá hiệu quả của thuật toán.  
+
+                **Thông tin cơ bản**:  
+                - **$784$ đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng vector $784$ chiều (giá trị pixel từ $0$ đến $255$).  
+                - **$70,000$ mẫu**: Tổng số ảnh, được chia thành tập huấn luyện và kiểm tra.  
+                - **Nhiệm vụ**: Dự đoán nhãn ($0$-$9$) dựa trên đặc trưng pixel.  
+                """, unsafe_allow_html=True)
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
+        elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+                st.subheader("📘 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+                st.markdown("""
+                **MNIST** là tập dữ liệu chuẩn trong học máy, được tạo bởi Yann LeCun và các cộng sự.  
+                - **Đặc điểm**:  
+                  - Gồm các ảnh chữ số viết tay từ học sinh trung học và nhân viên điều tra dân số Mỹ.  
+                  - Chuẩn hóa thành kích thước $28 \\times 28$ pixel, thang độ xám (giá trị từ $0$ đến $255$).  
+
+                **Ý nghĩa**:  
+                - Là bài toán cơ bản để kiểm tra khả năng phân loại của các mô hình học máy.  
+                - Đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt các lớp tương tự (ví dụ: "$4$" và "$9$").  
+                - Phù hợp cho cả người mới bắt đầu và nghiên cứu mô hình phức tạp.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("📷 Minh họa dữ liệu MNIST")
+                st.markdown("""
+                Dưới đây là ảnh minh họa $10$ chữ số từ $0$ đến $9$ từ tập dữ liệu MNIST để bạn hình dung. Mỗi chữ số được biểu diễn dưới dạng ma trận $28 \\times 28$ pixel.
+                """, unsafe_allow_html=True)
+                try:
+                    mnist_image = Image.open("mnist.png")
+                    st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
+        elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+                st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
+                st.markdown("""
+                **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
+                """, unsafe_allow_html=True)
+
+                st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
+                st.markdown("""
+                - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
+                - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
+                - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🔧 Quy trình hoạt động")
+                st.markdown("""
+                Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
+                """, unsafe_allow_html=True)
+
+                st.subheader("1. Khởi tạo mô hình")
+                st.markdown("""
+                - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
+                - **Tham số liên quan**: Số lớp ẩn, số nơ-ron mỗi lớp.  
+                - **Chú thích**:  
+                  - $W$: Ma trận trọng số (weights) kết nối các nơ-ron giữa các lớp.  
+                  - $b$: Vector bias (độ lệch) giúp điều chỉnh đầu ra của nơ-ron.  
+                - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("2. Lan truyền thuận (Feedforward)")
+                st.markdown("""
+                - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
+                  $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
+                  $$ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $$  
+                - **Chú thích**:  
+                  - $Z^{(l)}$: Tổng trọng số đầu vào tại lớp $l$ (trước khi áp dụng hàm kích hoạt).  
+                  - $A^{(l-1)}$: Đầu ra của lớp trước ($l-1$), là đầu vào của lớp $l$.  
+                  - $W^{(l)}$: Ma trận trọng số của lớp $l$.  
+                  - $b^{(l)}$: Vector bias của lớp $l$.  
+                  - $A^{(l)}$: Đầu ra của lớp $l$ sau khi áp dụng hàm kích hoạt.  
+                - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("3. Tính hàm mất mát (Loss Function)")
+                st.markdown("""
+                - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
+                  $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+                - **Chú thích**:  
+                  - $L$: Giá trị mất mát (loss) tổng thể của mô hình.  
+                  - $N$: Số lượng mẫu trong tập dữ liệu.  
+                  - $y_{ij}$: Giá trị thực tế (1 nếu mẫu $i$ thuộc lớp $j$, 0 nếu không).  
+                  - $\\hat{y}_{ij}$: Xác suất dự đoán bởi mô hình cho mẫu $i$ thuộc lớp $j$.  
+                - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("4. Lan truyền ngược (Backpropagation)")
+                st.markdown("""
+                - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$ nhằm giảm sai số dự đoán.  
+                - **Chú thích**:  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo trọng số $W^{(l)}$.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo bias $b^{(l)}$.  
+                - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("5. Cập nhật tham số (Gradient Descent)")
+                st.markdown("""
+                - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
+                  $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+                  $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+                - **Chú thích**:  
+                  - $\\eta$: Tốc độ học (learning rate), kiểm soát mức độ thay đổi của $W$ và $b$.  
+                  - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của $L$ theo $W^{(l)}$.  
+                  - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của $L$ theo $b^{(l)}$.  
+                - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("6. Lặp lại")
+                st.markdown("""
+                - Lặp lại từ bước 2 qua nhiều **epoch** cho đến khi mất mát $L$ hội tụ.  
+                - **Chú thích**:  
+                  - **Epoch**: Một lần lặp qua toàn bộ tập dữ liệu huấn luyện.  
+                - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.  
+                """, unsafe_allow_html=True)
+                try:
+                    st.image(os.path.join("plnw", "step6_repeat_improved.png"), caption="Minh họa: Lặp lại", width=600)
+                except FileNotFoundError:
+                    st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                except Exception as e:
+                    st.error(f"Lỗi khi tải ảnh: {e}")
+
+                st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
+                st.markdown("""
+                Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
+
+                1. **Số lớp ẩn (Number of Hidden Layers):**  
+                   - **Ý nghĩa**: Quyết định độ sâu của mạng, ảnh hưởng đến khả năng học các đặc trưng phức tạp.  
+                   - **Hoạt động**: Tăng số lớp ẩn giúp mạng học được các đặc trưng cấp cao hơn, nhưng quá nhiều lớp có thể gây khó hội tụ hoặc overfitting.  
+                   - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm (trong ứng dụng này: từ 1 đến 5).  
+
+                2. **Số nơ-ron mỗi lớp ẩn (Number of Neurons per Layer):**  
+                   - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là khả năng biểu diễn thông tin trong mỗi lớp.  
+                   - **Hoạt động**: Nhiều nơ-ron hơn giúp mạng học được nhiều đặc trưng hơn, nhưng cũng tăng chi phí tính toán.  
+                   - **Công thức**: Không có, thường là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa phần cứng.  
+
+                3. **Tốc độ học (Learning Rate - η):**  
+                   - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số trong mỗi lần cập nhật.  
+                   - **Hoạt động**: Giá trị nhỏ (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định; giá trị lớn (ví dụ: 0.01) học nhanh hơn nhưng dễ vượt qua điểm tối ưu.  
+                   - **Công thức**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                     - $W_{t+1}$: Trọng số sau khi cập nhật.  
+                     - $W_t$: Trọng số tại bước hiện tại.  
+                     - $\\eta$: Tốc độ học.  
+                     - $\\frac{\\partial L}{\\partial W_t}$: Gradient của mất mát theo trọng số.  
+
+                4. **Số lần lặp (Epochs):**  
+                   - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng.  
+                   - **Hoạt động**: Tăng số lần lặp giúp mạng học tốt hơn, nhưng quá nhiều có thể dẫn đến overfitting.  
+                   - **Công thức**: Không có, là tham số người dùng chọn (trong ứng dụng này: 10-200).  
+
+                5. **Kích thước batch (Batch Size):**  
+                   - **Ý nghĩa**: Số mẫu được xử lý trước khi cập nhật trọng số.  
+                   - **Hoạt động**: Batch nhỏ (ví dụ: 16) giúp cập nhật thường xuyên hơn nhưng chậm; batch lớn (ví dụ: 512) nhanh hơn nhưng cần nhiều bộ nhớ.  
+                   - **Công thức**: Không có, thường là lũy thừa của 2 để tối ưu hóa tính toán.  
+
+                6. **Hàm kích hoạt (Activation Function):**  
+                   - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào.  
+                   - **Hoạt động**: Chuyển đổi đầu ra tuyến tính thành phi tuyến để mạng học được các đặc trưng phức tạp.  
+                   - **Chi tiết các hàm kích hoạt phổ biến:**  
+                     - **ReLU (Rectified Linear Unit):**  
+                       - **Ý nghĩa**: Đơn giản, nhanh, tránh vấn đề biến mất gradient.  
+                       - **Hoạt động**: Chỉ cho phép các giá trị dương đi qua, đặt giá trị âm về 0.  
+                       - **Công thức**:  
+                         $$ f(x) = \\max(0, x) $$  
+                         - $x$: Đầu vào của hàm.  
+                     - **Tanh (Hyperbolic Tangent):**  
+                       - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm/dương.  
+                       - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient với mạng sâu.  
+                       - **Công thức**:  
+                         $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
+                         - $x$: Đầu vào của hàm.  
+                     - **Softmax:**  
+                       - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi thành xác suất cho phân loại đa lớp.  
+                       - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp dự đoán lớp có xác suất cao nhất.  
+                       - **Công thức**:  
+                         $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                         - $x_i$: Đầu vào của nơ-ron thứ $i$.  
+                         - $k$: Số lớp (ở đây là 10).  
+
+                7. **Trình tối ưu (Optimizer):**  
+                   - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.  
+                   - **Hoạt động**: Quyết định cách mạng hội tụ đến điểm tối ưu.  
+                   - **Ví dụ phổ biến:**  
+                     - **Adam**: Kết hợp động lượng và RMSProp, thích nghi với tốc độ học, nhanh và hiệu quả.  
+                     - **SGD (Stochastic Gradient Descent)**: Cập nhật trọng số dựa trên gradient, đơn giản nhưng chậm hơn Adam.  
+                   - **Công thức (SGD)**:  
+                     $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                     - $W_{t+1}$: Trọng số sau khi cập nhật.  
+                     - $W_t$: Trọng số tại bước hiện tại.  
+                     - $\\eta$: Tốc độ học.  
+                     - $\\frac{\\partial L}{\\partial W_t}$: Gradient của mất mát theo trọng số.  
+                """, unsafe_allow_html=True)
+
+                st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
+                st.markdown("""
+                #### **Ưu điểm:**  
+                - **Khả năng học phi tuyến tính**: Neural Network có thể học các mối quan hệ phức tạp, phi tuyến tính trong dữ liệu mà các mô hình tuyến tính không làm được.  
+                - **Khả năng mở rộng**: Có thể xử lý dữ liệu lớn và nhiều chiều (như ảnh, âm thanh) khi được huấn luyện đúng cách.  
+                - **Tính linh hoạt**: Có thể áp dụng cho nhiều bài toán khác nhau (phân loại, hồi quy, nhận diện hình ảnh, v.v.).  
+                - **Tự động học đặc trưng**: Không cần trích xuất đặc trưng thủ công, mạng tự động học từ dữ liệu thô.  
+
+                #### **Nhược điểm:**  
+                - **Đòi hỏi tài nguyên lớn**: Cần nhiều dữ liệu và sức mạnh tính toán (CPU/GPU) để huấn luyện hiệu quả.  
+                - **Khó giải thích**: Mạng hoạt động như "hộp đen", khó hiểu tại sao lại đưa ra dự đoán cụ thể.  
+                - **Dễ bị overfitting**: Nếu không được điều chỉnh tốt (ví dụ: thiếu dữ liệu hoặc không dùng regularization), mô hình có thể học quá mức dữ liệu huấn luyện.  
+                - **Thời gian huấn luyện lâu**: Đặc biệt với mạng sâu hoặc dữ liệu lớn.  
+                """, unsafe_allow_html=True)
+
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
 
     # Tab 2: Chọn dữ liệu
     with tabs[1]:
