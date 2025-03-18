@@ -897,153 +897,83 @@ def run_mnist_neural_network_app():
         if 'split_data' not in st.session_state:
             st.warning("⚠️ Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'!")
         else:
-            client = MlflowClient()
-            runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
-            model_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs if 'mlflow.runName' in run.data.tags}
+            # Khởi tạo client MLflow chỉ một lần
+            if 'mlflow_client' not in st.session_state:
+                st.session_state['mlflow_client'] = MlflowClient()
+
+            # Lấy danh sách runs một lần và lưu vào session_state
+            if 'model_options' not in st.session_state or st.button("Làm mới danh sách mô hình"):
+                with st.spinner("Đang tải danh sách mô hình..."):
+                    runs = st.session_state['mlflow_client'].search_runs(
+                        experiment_ids=[EXPERIMENT_ID], 
+                        order_by=["attributes.start_time DESC"]
+                    )
+                    st.session_state['model_options'] = {
+                        run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") 
+                        for run in runs if 'mlflow.runName' in run.data.tags
+                    }
+
+            model_options = st.session_state['model_options']
 
             if model_options:
-                # Khởi tạo giá trị mặc định cho selected_run_id nếu chưa có trong session_state
-                if 'selected_run_id' not in st.session_state:
-                    st.session_state['selected_run_id'] = st.session_state.get('latest_run_id', list(model_options.keys())[0])
-                default_model_name = model_options.get(st.session_state['selected_run_id'], list(model_options.values())[0])
-
+                # Tự động chọn model mới nhất sau khi huấn luyện
+                if 'latest_run_id' in st.session_state:
+                    default_run_id = st.session_state['latest_run_id']
+                else:
+                    default_run_id = list(model_options.keys())[0]
+                
+                default_model_name = model_options.get(default_run_id, list(model_options.values())[0])
+                
                 # Chọn mô hình
-                selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=list(model_options.values()).index(default_model_name))
+                selected_model_name = st.selectbox(
+                    "Chọn mô hình:", 
+                    list(model_options.values()), 
+                    index=list(model_options.values()).index(default_model_name),
+                    key="model_select"
+                )
                 selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
 
-                # Chỉ tải mô hình khi selected_run_id thay đổi hoặc chưa có model trong session_state
-                if 'model' not in st.session_state or st.session_state.get('selected_run_id') != selected_run_id:
+                # Tải mô hình một lần và lưu vào session_state
+                if 'selected_model' not in st.session_state or st.session_state['selected_run_id'] != selected_run_id:
                     with st.spinner("Đang tải mô hình..."):
                         model_uri = f"runs:/{selected_run_id}/model"
                         try:
-                            st.session_state['model'] = mlflow.keras.load_model(model_uri)
+                            model = mlflow.keras.load_model(model_uri)
+                            st.session_state['selected_model'] = model
                             st.session_state['selected_run_id'] = selected_run_id
-                            st.success(f"Đã tải mô hình: {selected_model_name}")
                         except Exception as e:
-                            st.error(f"Không thể tải mô hình từ MLflow: {e}. Vui lòng kiểm tra xem mô hình đã được lưu đúng cách chưa.")
-                            st.session_state['model'] = None
+                            st.error(f"Không thể tải mô hình từ MLflow: {e}")
+                            model = None
                 else:
+                    model = st.session_state['selected_model']
+
+                if model is not None:
                     st.write(f"**Mô hình hiện tại**: {selected_model_name}")
 
-                model = st.session_state.get('model')
-            else:
-                st.warning("Chưa có mô hình nào được lưu trong MLflow.")
-                model = None
-
-            if model is not None:
-                st.write(f"**Mô hình hiện tại**: {selected_model_name}")
-                input_method = st.selectbox("Chọn phương thức nhập liệu", ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"])
-                is_normalized = 'data_processed' in st.session_state
-
-                def preprocess_input(data, is_normalized):
-                    if not is_normalized:
-                        data = data / 255.0
-                    return data
-
-                if input_method == "Tải ảnh lên":
-                    st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
-                    uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
-                    if uploaded_file is not None:
-                        image = Image.open(uploaded_file).convert('L')
-                        image = image.resize((28, 28))
-                        st.image(image, caption="Hình ảnh đầu vào", width=100)
-
-                        if st.button("Dự đoán", key="predict_upload_button"):
-                            with st.spinner("Đang xử lý ảnh..."):
-                                image_array = np.array(image, dtype=np.float32)
-                                image_array = image_array.reshape(1, 784)
-                                image_processed = preprocess_input(image_array, is_normalized)
-                                prediction = model.predict(image_processed, verbose=0)[0]
-                                predicted_class = np.argmax(prediction)
-                                confidence = prediction[predicted_class] * 100
-                                st.markdown(f"""
-                                    <div>
-                                        <strong>Dự đoán:</strong> {predicted_class}<br>
-                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%
-                                    </div>
-                                """, unsafe_allow_html=True)
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), prediction * 100, color='blue')
-                                ax.set_xlabel("Chữ số")
-                                ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân bố xác suất")
-                                st.pyplot(fig)
-                                plt.close(fig)
-                                st.success("Dự đoán hoàn tất!")
-                                del image, image_array, image_processed, prediction
-                                gc.collect()
-
-                elif input_method == "Dữ liệu Test":
-                    st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
-                    X_test = st.session_state['split_data']["X_test"]
-                    y_test = st.session_state['split_data']["y_test"]
-                    if len(X_test) == 0:
-                        st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
-                    else:
-                        col_select, col_display = st.columns([3, 2])
-                        with col_select:
-                            idx = st.slider("Chọn mẫu Test", 0, min(len(X_test) - 1, 100), 0)
-                        with col_display:
-                            st.write("**Ảnh mẫu Test:**")
-                            fig, ax = plt.subplots(figsize=(2, 2))
-                            ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
-                            ax.axis('off')
-                            st.pyplot(fig)
-                            plt.close(fig)
-                            st.write(f"**Nhãn thực tế:** {y_test[idx]}")
-
-                        if st.button("🔍 Dự đoán", key="predict_test"):
-                            with st.spinner("Đang dự đoán..."):
-                                sample = X_test[idx].reshape(1, -1)
-                                sample_processed = preprocess_input(sample, is_normalized)
-                                prediction = model.predict(sample_processed, verbose=0)[0]
-                                predicted_class = np.argmax(prediction)
-                                confidence = prediction[predicted_class] * 100
-                                st.markdown(f"""
-                                    <div class="prediction-box">
-                                        <strong>Dự đoán:</strong> {predicted_class}<br>
-                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
-                                        <strong>Nhãn thực tế:</strong> {y_test[idx]}
-                                    </div>
-                                """, unsafe_allow_html=True)
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), prediction * 100, color='blue')
-                                ax.set_xlabel("Chữ số")
-                                ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân bố xác suất")
-                                st.pyplot(fig)
-                                plt.close(fig)
-                                st.success("Dự đoán hoàn tất!")
-                                del sample, sample_processed, prediction
-                                gc.collect()
-
-                elif input_method == "Vẽ trực tiếp":
-                    st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                    st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
-
-                    if 'canvas_key' not in st.session_state:
-                        st.session_state['canvas_key'] = 0
-
-                    canvas_result = st_canvas(
-                        fill_color="rgba(255, 165, 0, 0.3)",
-                        stroke_width=20,
-                        stroke_color="#FFFFFF",
-                        background_color="#000000",
-                        height=280,
-                        width=280,
-                        drawing_mode="freedraw",
-                        key=f"canvas_{st.session_state['canvas_key']}"
+                    input_method = st.selectbox(
+                        "Chọn phương thức nhập liệu", 
+                        ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"],
+                        key="input_method"
                     )
+                    is_normalized = 'data_processed' in st.session_state
 
-                    if canvas_result.image_data is not None:
-                        image = Image.fromarray(canvas_result.image_data.astype('uint8'), 'RGBA').convert('L')
-                        image_resized = image.resize((28, 28))
+                    def preprocess_input(data, is_normalized):
+                        if not is_normalized:
+                            data = data / 255.0
+                        return data
 
-                        col_pred, col_clear = st.columns([2, 1])
-                        with col_pred:
-                            if st.button("Dự đoán", key="predict_button"):
-                                with st.spinner("Đang xử lý hình vẽ..."):
-                                    image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
+                    if input_method == "Tải ảnh lên":
+                        st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
+                        uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
+                        if uploaded_file is not None:
+                            image = Image.open(uploaded_file).convert('L')
+                            image = image.resize((28, 28))
+                            st.image(image, caption="Hình ảnh đầu vào", width=100)
+
+                            if st.button("Dự đoán", key="predict_upload_button"):
+                                with st.spinner("Đang xử lý ảnh..."):
+                                    image_array = np.array(image, dtype=np.float32)
+                                    image_array = image_array.reshape(1, 784)
                                     image_processed = preprocess_input(image_array, is_normalized)
                                     prediction = model.predict(image_processed, verbose=0)[0]
                                     predicted_class = np.argmax(prediction)
@@ -1062,13 +992,127 @@ def run_mnist_neural_network_app():
                                     st.pyplot(fig)
                                     plt.close(fig)
                                     st.success("Dự đoán hoàn tất!")
-                                    del image, image_resized, image_array, image_processed, prediction
+                                    del image, image_array, image_processed, prediction
                                     gc.collect()
+
+                    elif input_method == "Dữ liệu Test":
+                        st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
+                        X_test = st.session_state['split_data']["X_test"]
+                        y_test = st.session_state['split_data']["y_test"]
+                        if len(X_test) == 0:
+                            st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
+                        else:
+                            col_select, col_display = st.columns([3, 2])
+                            with col_select:
+                                idx = st.slider("Chọn mẫu Test", 0, min(len(X_test) - 1, 100), 0)
+                            with col_display:
+                                st.write("**Ảnh mẫu Test:**")
+                                fig, ax = plt.subplots(figsize=(2, 2))
+                                ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
+                                ax.axis('off')
+                                st.pyplot(fig)
+                                plt.close(fig)
+                                st.write(f"**Nhãn thực tế:** {y_test[idx]}")
+
+                            if st.button("🔍 Dự đoán", key="predict_test"):
+                                with st.spinner("Đang dự đoán..."):
+                                    sample = X_test[idx].reshape(1, -1)
+                                    sample_processed = preprocess_input(sample, is_normalized)
+                                    prediction = model.predict(sample_processed, verbose=0)[0]
+                                    predicted_class = np.argmax(prediction)
+                                    confidence = prediction[predicted_class] * 100
+                                    st.markdown(f"""
+                                        <div class="prediction-box">
+                                            <strong>Dự đoán:</strong> {predicted_class}<br>
+                                            <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
+                                            <strong>Nhãn thực tế:</strong> {y_test[idx]}
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    fig, ax = plt.subplots(figsize=(6, 4))
+                                    ax.bar(range(10), prediction * 100, color='blue')
+                                    ax.set_xlabel("Chữ số")
+                                    ax.set_ylabel("Xác suất (%)")
+                                    ax.set_title("Phân bố xác suất")
+                                    st.pyplot(fig)
+                                    plt.close(fig)
+                                    st.success("Dự đoán hoàn tất!")
+                                    del sample, sample_processed, prediction
+                                    gc.collect()
+
+                    elif input_method == "Vẽ trực tiếp":
+                        st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
+                        st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
+
+                        # Sử dụng key cố định cho canvas
+                        if 'canvas_result' not in st.session_state:
+                            st.session_state['canvas_result'] = None
+
+                        canvas_result = st_canvas(
+                            fill_color="rgba(255, 165, 0, 0.3)",
+                            stroke_width=20,
+                            stroke_color="#FFFFFF",
+                            background_color="#000000",
+                            height=280,
+                            width=280,
+                            drawing_mode="freedraw",
+                            key="canvas_fixed_key",  # Key cố định
+                            update_streamlit=False  # Ngăn rerender tự động
+                        )
+
+                        # Lưu kết quả canvas vào session_state
+                        if canvas_result.image_data is not None:
+                            st.session_state['canvas_result'] = canvas_result
+
+                        col_pred, col_clear = st.columns([2, 1])
+                        with col_pred:
+                            if st.button("Dự đoán", key="predict_button"):
+                                if st.session_state['canvas_result'] is not None:
+                                    with st.spinner("Đang xử lý hình vẽ..."):
+                                        image = Image.fromarray(
+                                            st.session_state['canvas_result'].image_data.astype('uint8'), 'RGBA'
+                                        ).convert('L')
+                                        image_resized = image.resize((28, 28))
+                                        image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
+                                        image_processed = preprocess_input(image_array, is_normalized)
+                                        prediction = model.predict(image_processed, verbose=0)[0]
+                                        predicted_class = np.argmax(prediction)
+                                        confidence = prediction[predicted_class] * 100
+                                        st.markdown(f"""
+                                            <div>
+                                                <strong>Dự đoán:</strong> {predicted_class}<br>
+                                                <strong>Độ tin cậy:</strong> {confidence:.2f}%
+                                            </div>
+                                        """, unsafe_allow_html=True)
+                                        fig, ax = plt.subplots(figsize=(6, 4))
+                                        ax.bar(range(10), prediction * 100, color='blue')
+                                        ax.set_xlabel("Chữ số")
+                                        ax.set_ylabel("Xác suất (%)")
+                                        ax.set_title("Phân bố xác suất")
+                                        st.pyplot(fig)
+                                        plt.close(fig)
+                                        st.success("Dự đoán hoàn tất!")
+                                        del image, image_resized, image_array, image_processed, prediction
+                                        gc.collect()
+                                else:
+                                    st.warning("Vui lòng vẽ trước khi dự đoán!")
 
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
-                                st.session_state['canvas_key'] += 1
-                                st.rerun()
+                                st.session_state['canvas_result'] = None
+                                # Xóa canvas bằng JavaScript
+                                st.markdown(
+                                    """
+                                    <script>
+                                        var canvas = document.querySelector('canvas');
+                                        var ctx = canvas.getContext('2d');
+                                        ctx.fillStyle = '#000000';
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                    </script>
+                                    """,
+                                    unsafe_allow_html=True
+                                )
+            else:
+                st.warning("Chưa có mô hình nào được lưu trong MLflow.")
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
@@ -1146,7 +1190,6 @@ def run_mnist_neural_network_app():
                                 st.pyplot(fig)
                                 plt.close(fig)
 
-                    
                     st.subheader("So sánh các Run")
                     selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
                     if selected_runs:
