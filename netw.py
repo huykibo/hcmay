@@ -60,6 +60,7 @@ def get_optimal_params(num_samples):
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
+    # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
