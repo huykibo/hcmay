@@ -1155,8 +1155,6 @@ def run_mnist_neural_network_app():
                 except Exception as e:
                     st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
 
-    # Hiển thị nội dung của tab hiện tại
-    display_tab_content(st.session_state['active_tab'])
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
