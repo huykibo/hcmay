@@ -173,22 +173,19 @@ def run_mnist_neural_network_app():
         </style>
     """, unsafe_allow_html=True)
 
-    # Khởi tạo trạng thái tab hiện tại
+    # Khởi tạo tab mặc định nếu chưa có
     if 'active_tab' not in st.session_state:
         st.session_state['active_tab'] = "Thông tin"
 
-    # Tạo các tab và ánh xạ với tên
+    # Tạo danh sách các tab
     tab_names = ["Thông tin", "Chọn số lượng dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"]
-    tabs = st.tabs(tab_names)
-    tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = tabs
 
-    # Điều khiển tab hiện tại
-    for i, tab_name in enumerate(tab_names):
-        if st.session_state['active_tab'] == tab_name:
-            tabs[i].select()
+    # Sử dụng selectbox để chọn tab
+    selected_tab = st.selectbox("Chọn tab:", tab_names, index=tab_names.index(st.session_state['active_tab']))
+    st.session_state['active_tab'] = selected_tab
 
-    # Tab 1: Thông tin
-    with tab_info:
+    # Hiển thị nội dung dựa trên tab được chọn
+    if selected_tab == "Thông tin":
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
         Chào bạn! Đây là ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** bằng **Mạng nơ-ron nhân tạo (Neural Network)**. Hãy khám phá các tính năng và cách hoạt động của nó nhé!
@@ -487,8 +484,7 @@ def run_mnist_neural_network_app():
                 status_text.empty()
                 progress_bar.empty()
 
-    # Tab 2: Chọn số lượng dữ liệu
-    with tab_load:
+    elif selected_tab == "Chọn số lượng dữ liệu":
         st.markdown('<div class="section-title">Chọn Số lượng Dữ liệu</div>', unsafe_allow_html=True)
         X_full, y_full = st.session_state['full_data']
         st.subheader("Chọn số lượng mẫu")
@@ -518,8 +514,7 @@ def run_mnist_neural_network_app():
                 del X_full, y_full, X_sampled, y_sampled
                 gc.collect()
 
-    # Tab 3: Xử lý dữ liệu
-    with tab_preprocess:
+    elif selected_tab == "Xử lý dữ liệu":
         st.markdown('<div class="section-title">Xử lý Dữ liệu</div>', unsafe_allow_html=True)
 
         if 'data' not in st.session_state:
@@ -562,8 +557,7 @@ def run_mnist_neural_network_app():
                 X_processed, y_processed = st.session_state["data_processed"]
                 st.success("Đã xử lý dữ liệu!")
 
-    # Tab 4: Chia dữ liệu
-    with tab_split:
+    elif selected_tab == "Chia dữ liệu":
         st.markdown('<div class="section-title">Chia Tập Dữ liệu</div>', unsafe_allow_html=True)
 
         if 'data' not in st.session_state:
@@ -597,8 +591,7 @@ def run_mnist_neural_network_app():
                     del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
                     gc.collect()
 
-    # Tab 5: Huấn luyện/Đánh giá
-    with tab_train_eval:
+    elif selected_tab == "Huấn luyện/Đánh giá":
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
 
         if 'split_data' not in st.session_state:
@@ -887,8 +880,7 @@ def run_mnist_neural_network_app():
                             "Dừng sớm": early_stopping
                         })
 
-    # Tab 6: Demo dự đoán
-    with tab_demo:
+    elif selected_tab == "Demo dự đoán":
         st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
         st.header("Dự đoán số viết tay")
         st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
@@ -1058,8 +1050,7 @@ def run_mnist_neural_network_app():
                                 st.session_state['canvas_key'] += 1
                                 st.rerun()
 
-    # Tab 7: Thông tin huấn luyện
-    with tab_log_info:
+    elif selected_tab == "Thông tin huấn luyện":
         st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
         try:
             with st.spinner("Đang tải thông tin huấn luyện..."):
