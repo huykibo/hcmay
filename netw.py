@@ -60,6 +60,7 @@ def get_optimal_params(num_samples):
 
 def run_mnist_neural_network_app():
     # Thiết lập MLflow
+    # Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
         os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
@@ -685,8 +686,10 @@ def run_mnist_neural_network_app():
             # Phần huấn luyện
             st.subheader("🚀 Huấn luyện Mô hình")
             with st.container():
+                # Placeholder cho quá trình huấn luyện
                 training_container = st.empty()
 
+                # Lưu tên mô hình trong session_state
                 if 'model_name' not in st.session_state:
                     st.session_state['model_name'] = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                 model_name = st.text_input("Đặt tên cho mô hình:", value=st.session_state['model_name'], 
@@ -722,6 +725,7 @@ def run_mnist_neural_network_app():
                             history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
                                                 validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
 
+                            # Sau khi huấn luyện kết thúc
                             y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
                             y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                             acc_valid = accuracy_score(y_valid, y_valid_pred)
@@ -737,7 +741,8 @@ def run_mnist_neural_network_app():
                                 mlflow.log_metric("n_iter_actual", len(history.history['loss']))
                                 mlflow.keras.log_model(model, "model")
 
-                            training_results = {
+                            st.session_state['model'] = model
+                            st.session_state['training_results'] = {
                                 'accuracy_val': acc_valid, 'accuracy_test': acc_test,
                                 'cm_valid': cm_valid, 'cm_test': cm_test,
                                 'run_name': model_name, 'run_id': run.info.run_id,
@@ -748,8 +753,8 @@ def run_mnist_neural_network_app():
                                 'val_accuracy_history': history.history['val_accuracy'] if 'val_accuracy' in history.history else [],
                                 'n_iter_actual': len(history.history['loss'])
                             }
-                            st.session_state['model'] = model
-                            st.session_state['training_results'] = training_results
+
+                            # Cập nhật selected_model_id để tab Demo tự động chọn mô hình mới nhất
                             st.session_state['selected_model_id'] = run.info.run_id
 
                             training_container.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây, Số lần lặp thực tế: {len(history.history['loss'])}")
@@ -889,17 +894,22 @@ def run_mnist_neural_network_app():
             runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], filter_string="tags.mlflow.runName != ''", order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags['mlflow.runName'] for run in runs if 'mlflow.runName' in run.data.tags}
             
+            # Nếu có kết quả huấn luyện mới, ưu tiên chọn mô hình vừa huấn luyện
             if 'training_results' in st.session_state and st.session_state['training_results']['run_id'] in model_options:
                 st.session_state['selected_model_id'] = st.session_state['training_results']['run_id']
+            # Nếu không có mô hình được chọn trước đó, chọn mô hình mới nhất
             elif 'selected_model_id' not in st.session_state and model_options:
                 st.session_state['selected_model_id'] = runs[0].info.run_id
 
             if model_options:
+                # Tạo danh sách các mô hình và chọn mặc định là mô hình mới nhất hoặc vừa huấn luyện
                 selected_run_id = st.session_state.get('selected_model_id', runs[0].info.run_id)
                 default_index = list(model_options.keys()).index(selected_run_id) if selected_run_id in model_options else 0
                 selected_model_name = st.selectbox("Chọn mô hình:", list(model_options.values()), index=default_index, key="model_selector")
 
-                if selected_run_id != st.session_state.get('selected_model_id') or 'model' not in st.session_state:
+                # Cập nhật selected_model_id khi người dùng thay đổi lựa chọn
+                selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
+                if selected_run_id != st.session_state.get('selected_model_id'):
                     st.session_state['selected_model_id'] = selected_run_id
                     with st.spinner("Đang tải mô hình..."):
                         model_uri = f"runs:/{selected_run_id}/model"
@@ -911,6 +921,15 @@ def run_mnist_neural_network_app():
                             model = None
                 else:
                     model = st.session_state.get('model', None)
+                    if model is None:
+                        with st.spinner("Đang tải mô hình..."):
+                            model_uri = f"runs:/{selected_run_id}/model"
+                            try:
+                                model = mlflow.keras.load_model(model_uri)
+                                st.session_state['model'] = model
+                            except Exception as e:
+                                st.error(f"Không thể tải mô hình từ MLflow: {e}")
+                                model = None
             else:
                 st.warning("Chưa có mô hình nào được lưu trong MLflow.")
                 model = None
@@ -1007,14 +1026,18 @@ def run_mnist_neural_network_app():
                     st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
                     st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
 
+                    # Khởi tạo canvas_key nếu chưa có
                     if 'canvas_key' not in st.session_state:
                         st.session_state['canvas_key'] = 0
 
+                    # Khởi tạo trạng thái canvas nếu chưa có
                     if 'canvas_data' not in st.session_state:
                         st.session_state['canvas_data'] = None
 
+                    # Container cho canvas
                     canvas_container = st.container()
                     with canvas_container:
+                        # Tạo canvas với key duy nhất
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 165, 0, 0.3)",
                             stroke_width=20,
@@ -1024,12 +1047,14 @@ def run_mnist_neural_network_app():
                             width=280,
                             drawing_mode="freedraw",
                             key=f"canvas_{st.session_state['canvas_key']}",
-                            update_streamlit=False
+                            update_streamlit=False  # Tắt cập nhật tự động để tránh lỗi
                         )
 
+                        # Lưu dữ liệu canvas vào session_state
                         if canvas_result.image_data is not None:
                             st.session_state['canvas_data'] = canvas_result.image_data
 
+                    # Kiểm tra nếu có dữ liệu canvas để xử lý
                     if st.session_state['canvas_data'] is not None:
                         image = Image.fromarray(st.session_state['canvas_data'].astype('uint8'), 'RGBA').convert('L')
                         image_resized = image.resize((28, 28))
@@ -1062,9 +1087,9 @@ def run_mnist_neural_network_app():
 
                         with col_clear:
                             if st.button("Xóa bản vẽ", key="clear_button"):
+                                # Xóa dữ liệu canvas và tăng key để tạo canvas mới
                                 st.session_state['canvas_data'] = None
                                 st.session_state['canvas_key'] += 1
-                                time.sleep(0.1)  # Thêm độ trễ để tránh lỗi rerender
                                 st.rerun()
 
     # Tab 7: Thông tin huấn luyện
@@ -1170,3 +1195,7 @@ def run_mnist_neural_network_app():
 
 if __name__ == "__main__":
     run_mnist_neural_network_app()
+
+
+
+    # sau khi huấn luyen song thì báo lỗi thông báo lỗi Bad message format: 'setIn' cannot be called on an ElementNode
