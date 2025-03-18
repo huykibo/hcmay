@@ -95,7 +95,7 @@ def run_mnist_neural_network_app():
     tabs = st.tabs(["Thông tin", "Chọn dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"])
 
         # Tab 1: Thông tin
-    with tab_info:
+    with tabs[0]:
         st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
         Chào bạn! Đây là ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** bằng **Mạng nơ-ron nhân tạo (Neural Network)**. Hãy khám phá các tính năng và cách hoạt động của nó nhé!
