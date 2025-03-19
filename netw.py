@@ -260,337 +260,337 @@ def run_mnist_neural_network_app():
                 progress_bar.empty()
 
         elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
-          with st.spinner("Đang tải thông tin..."):
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            for i in range(0, 101, 10):
-                progress_bar.progress(i)
-                status_text.text(f"Đang tải thông tin... {i}%")
-                time.sleep(0.05)
-        st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
-        st.markdown("""
-        **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
-        """, unsafe_allow_html=True)
+            with st.spinner("Đang tải thông tin..."):
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                for i in range(0, 101, 10):
+                    progress_bar.progress(i)
+                    status_text.text(f"Đang tải thông tin... {i}%")
+                    time.sleep(0.05)
+            st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
+            st.markdown("""
+            **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
+            """, unsafe_allow_html=True)
 
-        st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
-        st.markdown("""
-        - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
-        - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
-        - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
-        """, unsafe_allow_html=True)
+            st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
+            st.markdown("""
+            - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
+            - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
+            - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
+            """, unsafe_allow_html=True)
 
-        st.subheader("🔧 Quy trình hoạt động")
-        st.markdown("""
-        Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
-        """, unsafe_allow_html=True)
+            st.subheader("🔧 Quy trình hoạt động")
+            st.markdown("""
+            Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
+            """, unsafe_allow_html=True)
 
-        st.subheader("1. Khởi tạo mô hình")
-        st.markdown("""
-        - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
-        - **Tham số liên quan**: Số lớp ẩn, số nơ-ron mỗi lớp.  
-        - **Chú thích**:  
-          - $W$: Ma trận trọng số (weights) kết nối các nơ-ron giữa các lớp.  
-          - $b$: Vector bias (độ lệch) giúp điều chỉnh đầu ra của nơ-ron.  
-        - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("1. Khởi tạo mô hình")
+            st.markdown("""
+            - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
+            - **Tham số liên quan**: Số lớp ẩn, số nơ-ron mỗi lớp.  
+            - **Chú thích**:  
+              - $W$: Ma trận trọng số (weights) kết nối các nơ-ron giữa các lớp.  
+              - $b$: Vector bias (độ lệch) giúp điều chỉnh đầu ra của nơ-ron.  
+            - Mục đích: Thiết lập cấu trúc ban đầu để bắt đầu quá trình học.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("2. Lan truyền thuận (Feedforward)")
-        st.markdown("""
-        - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
-          $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
-          $$ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $$  
-        - **Chú thích**:  
-          - $Z^{(l)}$: Tổng trọng số đầu vào tại lớp $l$ (trước khi áp dụng hàm kích hoạt).  
-          - $A^{(l-1)}$: Đầu ra của lớp trước ($l-1$), là đầu vào của lớp $l$.  
-          - $W^{(l)}$: Ma trận trọng số của lớp $l$.  
-          - $b^{(l)}$: Vector bias của lớp $l$.  
-          - $A^{(l)}$: Đầu ra của lớp $l$ sau khi áp dụng hàm kích hoạt.  
-        - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("2. Lan truyền thuận (Feedforward)")
+            st.markdown("""
+            - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
+              $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
+              $$ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $$  
+            - **Chú thích**:  
+              - $Z^{(l)}$: Tổng trọng số đầu vào tại lớp $l$ (trước khi áp dụng hàm kích hoạt).  
+              - $A^{(l-1)}$: Đầu ra của lớp trước ($l-1$), là đầu vào của lớp $l$.  
+              - $W^{(l)}$: Ma trận trọng số của lớp $l$.  
+              - $b^{(l)}$: Vector bias của lớp $l$.  
+              - $A^{(l)}$: Đầu ra của lớp $l$ sau khi áp dụng hàm kích hoạt.  
+            - Mục đích: Tạo dự đoán ban đầu từ dữ liệu đầu vào qua các lớp nơ-ron.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("3. Tính hàm mất mát (Loss Function)")
-        st.markdown("""
-        - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
-          $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
-        - **Chú thích**:  
-          - $L$: Giá trị mất mát (loss) tổng thể của mô hình.  
-          - $N$: Số lượng mẫu trong tập dữ liệu.  
-          - $y_{ij}$: Giá trị thực tế (1 nếu mẫu $i$ thuộc lớp $j$, 0 nếu không).  
-          - $\\hat{y}_{ij}$: Xác suất dự đoán bởi mô hình cho mẫu $i$ thuộc lớp $j$.  
-        - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("3. Tính hàm mất mát (Loss Function)")
+            st.markdown("""
+            - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
+              $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+            - **Chú thích**:  
+              - $L$: Giá trị mất mát (loss) tổng thể của mô hình.  
+              - $N$: Số lượng mẫu trong tập dữ liệu.  
+              - $y_{ij}$: Giá trị thực tế (1 nếu mẫu $i$ thuộc lớp $j$, 0 nếu không).  
+              - $\\hat{y}_{ij}$: Xác suất dự đoán bởi mô hình cho mẫu $i$ thuộc lớp $j$.  
+            - Mục đích: Định lượng sai lệch để điều chỉnh mô hình trong bước tiếp theo.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("4. Lan truyền ngược (Backpropagation)")
-        st.markdown("""
-        - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$ nhằm giảm sai số dự đoán.  
-        - **Chú thích**:  
-          - $\\frac{\\partial L}{\\partial W^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo trọng số $W^{(l)}$.  
-          - $\\frac{\\partial L}{\\partial b^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo bias $b^{(l)}$.  
-        - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("4. Lan truyền ngược (Backpropagation)")
+            st.markdown("""
+            - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$ nhằm giảm sai số dự đoán.  
+            - **Chú thích**:  
+              - $\\frac{\\partial L}{\\partial W^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo trọng số $W^{(l)}$.  
+              - $\\frac{\\partial L}{\\partial b^{(l)}}$: Đạo hàm riêng của mất mát $L$ theo bias $b^{(l)}$.  
+            - Mục đích: Xác định hướng điều chỉnh tham số dựa trên sai số.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("5. Cập nhật tham số (Gradient Descent)")
-        st.markdown("""
-        - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
-          $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-          $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
-        - **Chú thích**:  
-          - $\\eta$: Tốc độ học (learning rate), kiểm soát mức độ thay đổi của $W$ và $b$.  
-          - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của $L$ theo $W^{(l)}$.  
-          - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của $L$ theo $b^{(l)}$.  
-        - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("5. Cập nhật tham số (Gradient Descent)")
+            st.markdown("""
+            - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
+              $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
+              $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+            - **Chú thích**:  
+              - $\\eta$: Tốc độ học (learning rate), kiểm soát mức độ thay đổi của $W$ và $b$.  
+              - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của $L$ theo $W^{(l)}$.  
+              - $\\frac{\\partial L}{\\partial b^{(l)}}$: Gradient của $L$ theo $b^{(l)}$.  
+            - Mục đích: Tối ưu hóa tham số để giảm sai số dự đoán.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("6. Lặp lại")
-        st.markdown("""
-        - Lặp lại từ bước 2 qua nhiều **epoch** cho đến khi mất mát $L$ hội tụ.  
-        - **Chú thích**:  
-          - **Epoch**: Một lần lặp qua toàn bộ tập dữ liệu huấn luyện.  
-        - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.  
-        """, unsafe_allow_html=True)
-        try:
-            st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=700)
-        except FileNotFoundError:
-            st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
-        except Exception as e:
-            st.error(f"Lỗi khi tải ảnh: {e}")
+            st.subheader("6. Lặp lại")
+            st.markdown("""
+            - Lặp lại từ bước 2 qua nhiều **epoch** cho đến khi mất mát $L$ hội tụ.  
+            - **Chú thích**:  
+              - **Epoch**: Một lần lặp qua toàn bộ tập dữ liệu huấn luyện.  
+            - Mục đích: Tinh chỉnh mô hình qua nhiều vòng lặp để đạt hiệu suất tối ưu.  
+            """, unsafe_allow_html=True)
+            try:
+                st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=700)
+            except FileNotFoundError:
+                st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+            except Exception as e:
+                st.error(f"Lỗi khi tải ảnh: {e}")
 
-        st.subheader("🔧 Các tham số huấn luyện.")
-        st.markdown("""
-        Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, được giải thích chi tiết với ý nghĩa, cách hoạt động, công thức (nếu có), ví dụ minh họa và lưu ý khi điều chỉnh:
+            st.subheader("🔧 Các tham số huấn luyện.")
+            st.markdown("""
+            Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, được giải thích chi tiết với ý nghĩa, cách hoạt động, công thức (nếu có), ví dụ minh họa và lưu ý khi điều chỉnh:
 
-        ---
+            ---
 
-        #### **1. Số lớp ẩn (Number of Hidden Layers)**  
-        - **Ý nghĩa**: Quyết định độ sâu của mạng, tức là số lượng lớp nơ-ron nằm giữa lớp đầu vào và lớp đầu ra.  
-        - **Hoạt động**:  
-          - Mỗi lớp ẩn giúp mạng học được các đặc trưng phức tạp hơn từ dữ liệu đầu vào.  
-          - Với bài toán đơn giản như MNIST, 1-2 lớp ẩn thường đủ; bài toán phức tạp hơn (như nhận diện ảnh tự nhiên) có thể cần nhiều lớp hơn.  
-        - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm.  
-        - **Ví dụ**:  
-          - **1 lớp ẩn**: Đủ để học các đặc trưng cơ bản trong bài toán tuyến tính hoặc gần tuyến tính.  
-          - **2-3 lớp ẩn**: Phù hợp cho bài toán phi tuyến tính như phân loại chữ số MNIST.  
-          - **5 lớp ẩn trở lên**: Thường dùng cho mạng sâu (deep learning) với dữ liệu phức tạp hơn.  
-        - **Lưu ý**:  
-          - Quá ít lớp ẩn có thể khiến mô hình không học được các đặc trưng đủ phức tạp (underfitting).  
-          - Quá nhiều lớp ẩn làm tăng nguy cơ overfitting (mô hình học quá mức dữ liệu huấn luyện) và khó hội tụ nếu không đủ dữ liệu hoặc tài nguyên tính toán.  
-          - Trong ứng dụng này, bạn có thể chọn từ 1 đến 5 lớp ẩn trong tab "Huấn luyện/Đánh giá".  
-
-        ---
-
-        #### **2. Số nơ-ron mỗi lớp ẩn (Number of Neurons per Hidden Layer)**  
-        - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là số lượng nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến khả năng biểu diễn thông tin.  
-        - **Hoạt động**:  
-          - Nhiều nơ-ron hơn cho phép mạng học được nhiều đặc trưng hơn từ dữ liệu, nhưng cũng tăng chi phí tính toán và nguy cơ overfitting.  
-          - Số nơ-ron thường giảm dần qua các lớp (ví dụ: 128 → 64 → 32) để học từ các đặc trưng chung đến cụ thể.  
-        - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa tính toán trên phần cứng như GPU.  
-        - **Ví dụ**:  
-          - **32 nơ-ron**: Phù hợp cho mạng nhỏ hoặc dữ liệu đơn giản.  
-          - **128 nơ-ron**: Thường dùng cho lớp ẩn đầu tiên trong mạng sâu để học nhiều đặc trưng từ dữ liệu thô (như ảnh MNIST).  
-          - **64 → 32**: Một cấu hình phổ biến cho mạng 2 lớp ẩn khi xử lý MNIST.  
-        - **Lưu ý**:  
-          - Quá nhiều nơ-ron có thể làm mô hình phức tạp không cần thiết, dẫn đến overfitting hoặc yêu cầu nhiều tài nguyên hơn.  
-          - Quá ít nơ-ron khiến mô hình không học đủ đặc trưng, gây underfitting.  
-          - Trong ứng dụng này, bạn có thể tùy chỉnh số nơ-ron cho từng lớp ẩn trong tab "Huấn luyện/Đánh giá".  
-
-        ---
-
-        #### **3. Tốc độ học (Learning Rate - η)**  
-        - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số và bias trong mỗi lần cập nhật, ảnh hưởng đến tốc độ và chất lượng hội tụ của mô hình.  
-        - **Hoạt động**:  
-          - Giá trị nhỏ (ví dụ: 0.0001) giúp mô hình học chậm nhưng ổn định, ít vượt qua điểm tối ưu của hàm mất mát.  
-          - Giá trị lớn (ví dụ: 0.01) làm mô hình học nhanh hơn nhưng có thể dao động hoặc không hội tụ.  
-        - **Công thức**:  
-          $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-          $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
-          - $W_{t+1}$, $b_{t+1}$: Trọng số và bias sau khi cập nhật.  
-          - $W_t$, $b_t$: Trọng số và bias hiện tại.  
-          - $\\eta$: Tốc độ học.  
-          - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient của hàm mất mát theo trọng số và bias.  
-        - **Ví dụ**:  
-          - **$\\eta = 0.001$**: Phù hợp cho bài toán phức tạp như MNIST, cần hội tụ chậm và ổn định.  
-          - **$\\eta = 0.01$**: Có thể dùng cho bài toán đơn giản hoặc khi muốn thử nghiệm nhanh.  
-          - **$\\eta = 0.0001$**: Thích hợp khi mạng sâu hoặc dữ liệu lớn, tránh dao động quá mức.  
-        - **Lưu ý**:  
-          - Tốc độ học quá cao khiến mô hình không hội tụ, dao động quanh điểm tối ưu.  
-          - Tốc độ học quá thấp làm quá trình huấn luyện chậm, tốn thời gian.  
-          - Trong ứng dụng này, giá trị mặc định thường là 0.001, nhưng bạn có thể điều chỉnh trong tab "Huấn luyện/Đánh giá".  
-
-        ---
-
-        #### **4. Số lần lặp (Epochs)**  
-        - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng, quyết định mức độ tinh chỉnh của mô hình.  
-        - **Hoạt động**:  
-          - Mỗi epoch là một lần mạng học từ toàn bộ dữ liệu, giúp cập nhật trọng số và bias để giảm hàm mất mát.  
-          - Tăng số epoch cải thiện hiệu suất, nhưng quá nhiều có thể dẫn đến overfitting nếu không kiểm soát.  
-        - **Công thức**: Không có công thức cụ thể, là tham số do người dùng chọn.  
-        - **Ví dụ**:  
-          - **10 epochs**: Phù hợp cho thử nghiệm nhanh hoặc dữ liệu lớn khi tài nguyên hạn chế.  
-          - **50 epochs**: Thường dùng cho huấn luyện cơ bản với dữ liệu vừa phải (như 10,000 mẫu MNIST).  
-          - **100 epochs**: Dùng cho huấn luyện chuyên sâu để đạt độ chính xác cao (như 70,000 mẫu MNIST).  
-        - **Lưu ý**:  
-          - Quá ít epoch khiến mô hình chưa học đủ, dẫn đến underfitting.  
-          - Quá nhiều epoch làm tăng nguy cơ overfitting, đặc biệt nếu không dùng kỹ thuật như Early Stopping.  
-          - Trong ứng dụng này, bạn có thể chọn từ 10 đến 200 epochs, và nên dùng Early Stopping để dừng khi mô hình không cải thiện thêm.  
-
-        ---
-
-        #### **5. Kích thước batch (Batch Size)**  
-        - **Ý nghĩa**: Số mẫu dữ liệu được xử lý trong một lần lan truyền thuận và ngược trước khi cập nhật trọng số.  
-        - **Hoạt động**:  
-          - **Batch nhỏ** (ví dụ: 16): Cập nhật trọng số thường xuyên, giúp học chi tiết hơn nhưng chậm và có thể dao động.  
-          - **Batch lớn** (ví dụ: 256): Cập nhật ít thường xuyên hơn, tăng tốc huấn luyện nhưng cần nhiều bộ nhớ và có thể bỏ qua chi tiết.  
-        - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, 256, v.v.) để tối ưu hóa tính toán trên phần cứng.  
-        - **Ví dụ**:  
-          - **Batch size = 32**: Phù hợp cho dữ liệu nhỏ hoặc thử nghiệm nhanh (như 1,000 mẫu MNIST).  
-          - **Batch size = 128**: Thường dùng cho dữ liệu vừa (như 50,000 mẫu MNIST) để cân bằng tốc độ và độ chính xác.  
-          - **Batch size = 256**: Dùng cho dữ liệu lớn (như 70,000 mẫu MNIST) để tăng tốc huấn luyện.  
-        - **Lưu ý**:  
-          - Batch quá nhỏ làm huấn luyện không ổn định, dễ dao động quanh điểm tối ưu.  
-          - Batch quá lớn có thể khiến mô hình không học được các đặc trưng chi tiết, đặc biệt với dữ liệu phức tạp.  
-          - Trong ứng dụng này, giá trị mặc định phụ thuộc vào số lượng mẫu (32, 64, 128, hoặc 256), nhưng bạn có thể tùy chỉnh.  
-
-        ---
-
-        #### **6. Hàm kích hoạt (Activation Function)**  
-        - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào, giúp mạng học được các mối quan hệ phi tuyến tính.  
-        - **Hoạt động**:  
-          - Chuyển đổi giá trị tuyến tính (tổng trọng số) thành phi tuyến để mô hình học được các đặc trưng phức tạp.  
-          - Được áp dụng sau mỗi lớp (trừ lớp đầu ra trong một số trường hợp).  
-        - **Các hàm kích hoạt phổ biến**:  
-          - **ReLU (Rectified Linear Unit)**:  
-            - **Ý nghĩa**: Đơn giản, nhanh, giúp tránh vấn đề biến mất gradient trong mạng sâu.  
-            - **Hoạt động**: Chỉ cho phép giá trị dương đi qua, đặt tất cả giá trị âm về 0.  
-            - **Công thức**:  
-              $$ f(x) = \\max(0, x) $$  
+            #### **1. Số lớp ẩn (Number of Hidden Layers)**  
+            - **Ý nghĩa**: Quyết định độ sâu của mạng, tức là số lượng lớp nơ-ron nằm giữa lớp đầu vào và lớp đầu ra.  
+            - **Hoạt động**:  
+              - Mỗi lớp ẩn giúp mạng học được các đặc trưng phức tạp hơn từ dữ liệu đầu vào.  
+              - Với bài toán đơn giản như MNIST, 1-2 lớp ẩn thường đủ; bài toán phức tạp hơn (như nhận diện ảnh tự nhiên) có thể cần nhiều lớp hơn.  
+            - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm.  
             - **Ví dụ**:  
-              - Nếu $x = 3$, thì $f(3) = 3$.  
-              - Nếu $x = -1$, thì $f(-1) = 0$.  
+              - **1 lớp ẩn**: Đủ để học các đặc trưng cơ bản trong bài toán tuyến tính hoặc gần tuyến tính.  
+              - **2-3 lớp ẩn**: Phù hợp cho bài toán phi tuyến tính như phân loại chữ số MNIST.  
+              - **5 lớp ẩn trở lên**: Thường dùng cho mạng sâu (deep learning) với dữ liệu phức tạp hơn.  
             - **Lưu ý**:  
-              - Thường dùng cho lớp ẩn vì hiệu quả và đơn giản.  
-              - Có thể gây "dead neurons" (nơ-ron không hoạt động) nếu đầu vào luôn âm.  
-          - **Tanh (Hyperbolic Tangent)**:  
-            - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm và dương.  
-            - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient trong mạng sâu.  
-            - **Công thức**:  
-              $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
-            - **Ví dụ**:  
-              - Nếu $x = 0$, thì $f(0) = 0$.  
-              - Nếu $x = 1$, thì $f(1) \\approx 0.76$.  
-              - Nếu $x = -1$, thì $f(-1) \\approx -0.76$.  
-            - **Lưu ý**:  
-              - Ít dùng hơn ReLU do vấn đề biến mất gradient, nhưng vẫn hữu ích trong một số trường hợp.  
-          - **Softmax**:  
-            - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi đầu ra thành xác suất cho bài toán phân loại đa lớp (như MNIST).  
-            - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp chọn lớp có xác suất cao nhất.  
-            - **Công thức**:  
-              $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
-              - $x_i$: Đầu vào của nơ-ron thứ $i$.  
-              - $k$: Số lớp (ở đây là 10, từ 0-9).  
-            - **Ví dụ**:  
-              - Nếu $x = [1, 2, 3]$, thì $f(x) \\approx [0.09, 0.24, 0.67]$.  
-              - Tổng xác suất luôn bằng 1.  
-            - **Lưu ý**:  
-              - Bắt buộc dùng ở lớp đầu ra cho bài toán phân loại đa lớp như MNIST.  
-        - **Lưu ý chung**:  
-          - ReLU là lựa chọn mặc định cho lớp ẩn trong ứng dụng này vì tính hiệu quả và phổ biến.  
-          - Softmax luôn được dùng ở lớp đầu ra để dự đoán chữ số từ 0-9.  
-          - Bạn có thể chọn giữa ReLU, Tanh, hoặc Softmax trong tab "Huấn luyện/Đánh giá" cho lớp ẩn.  
+              - Quá ít lớp ẩn có thể khiến mô hình không học được các đặc trưng đủ phức tạp (underfitting).  
+              - Quá nhiều lớp ẩn làm tăng nguy cơ overfitting (mô hình học quá mức dữ liệu huấn luyện) và khó hội tụ nếu không đủ dữ liệu hoặc tài nguyên tính toán.  
+              - Trong ứng dụng này, bạn có thể chọn từ 1 đến 5 lớp ẩn trong tab "Huấn luyện/Đánh giá".  
 
-        ---
+            ---
 
-        #### **7. Trình tối ưu (Optimizer)**  
-        - **Ý nghĩa**: Thuật toán điều chỉnh trọng số và bias để giảm hàm mất mát, quyết định cách mô hình học.  
-        - **Hoạt động**:  
-          - Dùng gradient (đạo hàm của hàm mất mát) để cập nhật tham số, với cách tiếp cận khác nhau tùy thuật toán.  
-        - **Các trình tối ưu phổ biến**:  
-          - **SGD (Stochastic Gradient Descent)**:  
-            - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu hoặc mini-batch, là phiên bản ngẫu nhiên của Gradient Descent.  
-            - **Hoạt động**: Tính gradient cho từng batch và điều chỉnh tham số theo hướng giảm mất mát.  
+            #### **2. Số nơ-ron mỗi lớp ẩn (Number of Neurons per Hidden Layer)**  
+            - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là số lượng nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến khả năng biểu diễn thông tin.  
+            - **Hoạt động**:  
+              - Nhiều nơ-ron hơn cho phép mạng học được nhiều đặc trưng hơn từ dữ liệu, nhưng cũng tăng chi phí tính toán và nguy cơ overfitting.  
+              - Số nơ-ron thường giảm dần qua các lớp (ví dụ: 128 → 64 → 32) để học từ các đặc trưng chung đến cụ thể.  
+            - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa tính toán trên phần cứng như GPU.  
+            - **Ví dụ**:  
+              - **32 nơ-ron**: Phù hợp cho mạng nhỏ hoặc dữ liệu đơn giản.  
+              - **128 nơ-ron**: Thường dùng cho lớp ẩn đầu tiên trong mạng sâu để học nhiều đặc trưng từ dữ liệu thô (như ảnh MNIST).  
+              - **64 → 32**: Một cấu hình phổ biến cho mạng 2 lớp ẩn khi xử lý MNIST.  
+            - **Lưu ý**:  
+              - Quá nhiều nơ-ron có thể làm mô hình phức tạp không cần thiết, dẫn đến overfitting hoặc yêu cầu nhiều tài nguyên hơn.  
+              - Quá ít nơ-ron khiến mô hình không học đủ đặc trưng, gây underfitting.  
+              - Trong ứng dụng này, bạn có thể tùy chỉnh số nơ-ron cho từng lớp ẩn trong tab "Huấn luyện/Đánh giá".  
+
+            ---
+
+            #### **3. Tốc độ học (Learning Rate - η)**  
+            - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số và bias trong mỗi lần cập nhật, ảnh hưởng đến tốc độ và chất lượng hội tụ của mô hình.  
+            - **Hoạt động**:  
+              - Giá trị nhỏ (ví dụ: 0.0001) giúp mô hình học chậm nhưng ổn định, ít vượt qua điểm tối ưu của hàm mất mát.  
+              - Giá trị lớn (ví dụ: 0.01) làm mô hình học nhanh hơn nhưng có thể dao động hoặc không hội tụ.  
             - **Công thức**:  
               $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
               $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
+              - $W_{t+1}$, $b_{t+1}$: Trọng số và bias sau khi cập nhật.  
               - $W_t$, $b_t$: Trọng số và bias hiện tại.  
               - $\\eta$: Tốc độ học.  
-              - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient.  
+              - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient của hàm mất mát theo trọng số và bias.  
             - **Ví dụ**:  
-              - Với $\\eta = 0.01$, nếu gradient $\\frac{\\partial L}{\\partial W_t} = 0.5$, thì $W_{t+1} = W_t - 0.01 \\cdot 0.5 = W_t - 0.005$.  
-            - **Ưu điểm**: Đơn giản, hiệu quả với dữ liệu lớn khi dùng mini-batch.  
-            - **Nhược điểm**: Dao động quanh điểm tối ưu, hội tụ chậm nếu không điều chỉnh tốt.  
-          - **Adam (Adaptive Moment Estimation)**:  
-            - **Ý nghĩa**: Kết hợp phương pháp động lượng và RMSProp, thích nghi tốc độ học cho từng tham số.  
-            - **Hoạt động**: Dùng hai moment (bậc 1 và bậc 2) của gradient để điều chỉnh cập nhật, giúp hội tụ nhanh và ổn định hơn SGD.  
-            - **Công thức**:  
-              1. $m_t = \\beta_1 \\cdot m_{t-1} + (1 - \\beta_1) \\cdot g_t$ (moment bậc 1 - trung bình động của gradient).  
-              2. $v_t = \\beta_2 \\cdot v_{t-1} + (1 - \\beta_2) \\cdot g_t^2$ (moment bậc 2 - trung bình động của bình phương gradient).  
-              3. $\\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t}$, $\\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t}$ (hiệu chỉnh bias).  
-              4. $W_{t+1} = W_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$ (cập nhật trọng số).  
-              - $g_t$: Gradient tại bước $t$.  
-              - $\\beta_1 \\approx 0.9$, $\\beta_2 \\approx 0.999$: Hệ số giảm dần.  
-              - $\\epsilon \\approx 10^{-8}$: Hằng số nhỏ để tránh chia cho 0.  
+              - **$\\eta = 0.001$**: Phù hợp cho bài toán phức tạp như MNIST, cần hội tụ chậm và ổn định.  
+              - **$\\eta = 0.01$**: Có thể dùng cho bài toán đơn giản hoặc khi muốn thử nghiệm nhanh.  
+              - **$\\eta = 0.0001$**: Thích hợp khi mạng sâu hoặc dữ liệu lớn, tránh dao động quá mức.  
+            - **Lưu ý**:  
+              - Tốc độ học quá cao khiến mô hình không hội tụ, dao động quanh điểm tối ưu.  
+              - Tốc độ học quá thấp làm quá trình huấn luyện chậm, tốn thời gian.  
+              - Trong ứng dụng này, giá trị mặc định thường là 0.001, nhưng bạn có thể điều chỉnh trong tab "Huấn luyện/Đánh giá".  
+
+            ---
+
+            #### **4. Số lần lặp (Epochs)**  
+            - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng, quyết định mức độ tinh chỉnh của mô hình.  
+            - **Hoạt động**:  
+              - Mỗi epoch là một lần mạng học từ toàn bộ dữ liệu, giúp cập nhật trọng số và bias để giảm hàm mất mát.  
+              - Tăng số epoch cải thiện hiệu suất, nhưng quá nhiều có thể dẫn đến overfitting nếu không kiểm soát.  
+            - **Công thức**: Không có công thức cụ thể, là tham số do người dùng chọn.  
             - **Ví dụ**:  
-              - Với gradient $g_t = 0.5$, Adam tự động điều chỉnh tốc độ học dựa trên $m_t$ và $v_t$, giúp cập nhật ổn định hơn SGD.  
-            - **Ưu điểm**: Nhanh, ổn định, hiệu quả với hầu hết bài toán, đặc biệt là mạng sâu.  
-            - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém hiệu quả trên hàm mất mát không lồi.  
-        - **Lưu ý**:  
-          - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
-          - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
-          - Bạn có thể chọn giữa SGD và Adam trong tab "Huấn luyện/Đánh giá".  
+              - **10 epochs**: Phù hợp cho thử nghiệm nhanh hoặc dữ liệu lớn khi tài nguyên hạn chế.  
+              - **50 epochs**: Thường dùng cho huấn luyện cơ bản với dữ liệu vừa phải (như 10,000 mẫu MNIST).  
+              - **100 epochs**: Dùng cho huấn luyện chuyên sâu để đạt độ chính xác cao (như 70,000 mẫu MNIST).  
+            - **Lưu ý**:  
+              - Quá ít epoch khiến mô hình chưa học đủ, dẫn đến underfitting.  
+              - Quá nhiều epoch làm tăng nguy cơ overfitting, đặc biệt nếu không dùng kỹ thuật như Early Stopping.  
+              - Trong ứng dụng này, bạn có thể chọn từ 10 đến 200 epochs, và nên dùng Early Stopping để dừng khi mô hình không cải thiện thêm.  
 
-        ---
+            ---
 
-        Các tham số trên được điều chỉnh trong tab **"Huấn luyện/Đánh giá"** của ứng dụng này. Việc hiểu rõ ý nghĩa và cách hoạt động của chúng sẽ giúp bạn tối ưu hóa mô hình Neural Network để đạt hiệu suất tốt nhất trên tập dữ liệu MNIST!
-        """, unsafe_allow_html=True)
+            #### **5. Kích thước batch (Batch Size)**  
+            - **Ý nghĩa**: Số mẫu dữ liệu được xử lý trong một lần lan truyền thuận và ngược trước khi cập nhật trọng số.  
+            - **Hoạt động**:  
+              - **Batch nhỏ** (ví dụ: 16): Cập nhật trọng số thường xuyên, giúp học chi tiết hơn nhưng chậm và có thể dao động.  
+              - **Batch lớn** (ví dụ: 256): Cập nhật ít thường xuyên hơn, tăng tốc huấn luyện nhưng cần nhiều bộ nhớ và có thể bỏ qua chi tiết.  
+            - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, 256, v.v.) để tối ưu hóa tính toán trên phần cứng.  
+            - **Ví dụ**:  
+              - **Batch size = 32**: Phù hợp cho dữ liệu nhỏ hoặc thử nghiệm nhanh (như 1,000 mẫu MNIST).  
+              - **Batch size = 128**: Thường dùng cho dữ liệu vừa (như 50,000 mẫu MNIST) để cân bằng tốc độ và độ chính xác.  
+              - **Batch size = 256**: Dùng cho dữ liệu lớn (như 70,000 mẫu MNIST) để tăng tốc huấn luyện.  
+            - **Lưu ý**:  
+              - Batch quá nhỏ làm huấn luyện không ổn định, dễ dao động quanh điểm tối ưu.  
+              - Batch quá lớn có thể khiến mô hình không học được các đặc trưng chi tiết, đặc biệt với dữ liệu phức tạp.  
+              - Trong ứng dụng này, giá trị mặc định phụ thuộc vào số lượng mẫu (32, 64, 128, hoặc 256), nhưng bạn có thể tùy chỉnh.  
 
-        st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
-        st.markdown("""
-        #### **Ưu điểm:**  
-        - **Khả năng học phi tuyến tính**: Neural Network có thể học các mối quan hệ phức tạp, phi tuyến tính trong dữ liệu mà các mô hình tuyến tính không làm được.  
-        - **Khả năng mở rộng**: Có thể xử lý dữ liệu lớn và nhiều chiều (như ảnh, âm thanh) khi được huấn luyện đúng cách.  
-        - **Tính linh hoạt**: Có thể áp dụng cho nhiều bài toán khác nhau (phân loại, hồi quy, nhận diện hình ảnh, v.v.).  
-        - **Tự động học đặc trưng**: Không cần trích xuất đặc trưng thủ công, mạng tự động học từ dữ liệu thô.  
+            ---
 
-        #### **Nhược điểm:**  
-        - **Đòi hỏi tài nguyên lớn**: Cần nhiều dữ liệu và sức mạnh tính toán (CPU/GPU) để huấn luyện hiệu quả.  
-        - **Khó giải thích**: Mạng hoạt động như "hộp đen", khó hiểu tại sao lại đưa ra dự đoán cụ thể.  
-        - **Dễ bị overfitting**: Nếu không được điều chỉnh tốt (ví dụ: thiếu dữ liệu hoặc không dùng regularization), mô hình có thể học quá mức dữ liệu huấn luyện.  
-        - **Thời gian huấn luyện lâu**: Đặc biệt với mạng sâu hoặc dữ liệu lớn.  
-        """, unsafe_allow_html=True)
+            #### **6. Hàm kích hoạt (Activation Function)**  
+            - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào, giúp mạng học được các mối quan hệ phi tuyến tính.  
+            - **Hoạt động**:  
+              - Chuyển đổi giá trị tuyến tính (tổng trọng số) thành phi tuyến để mô hình học được các đặc trưng phức tạp.  
+              - Được áp dụng sau mỗi lớp (trừ lớp đầu ra trong một số trường hợp).  
+            - **Các hàm kích hoạt phổ biến**:  
+              - **ReLU (Rectified Linear Unit)**:  
+                - **Ý nghĩa**: Đơn giản, nhanh, giúp tránh vấn đề biến mất gradient trong mạng sâu.  
+                - **Hoạt động**: Chỉ cho phép giá trị dương đi qua, đặt tất cả giá trị âm về 0.  
+                - **Công thức**:  
+                  $$ f(x) = \\max(0, x) $$  
+                - **Ví dụ**:  
+                  - Nếu $x = 3$, thì $f(3) = 3$.  
+                  - Nếu $x = -1$, thì $f(-1) = 0$.  
+                - **Lưu ý**:  
+                  - Thường dùng cho lớp ẩn vì hiệu quả và đơn giản.  
+                  - Có thể gây "dead neurons" (nơ-ron không hoạt động) nếu đầu vào luôn âm.  
+              - **Tanh (Hyperbolic Tangent)**:  
+                - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm và dương.  
+                - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient trong mạng sâu.  
+                - **Công thức**:  
+                  $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
+                - **Ví dụ**:  
+                  - Nếu $x = 0$, thì $f(0) = 0$.  
+                  - Nếu $x = 1$, thì $f(1) \\approx 0.76$.  
+                  - Nếu $x = -1$, thì $f(-1) \\approx -0.76$.  
+                - **Lưu ý**:  
+                  - Ít dùng hơn ReLU do vấn đề biến mất gradient, nhưng vẫn hữu ích trong một số trường hợp.  
+              - **Softmax**:  
+                - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi đầu ra thành xác suất cho bài toán phân loại đa lớp (như MNIST).  
+                - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp chọn lớp có xác suất cao nhất.  
+                - **Công thức**:  
+                  $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                  - $x_i$: Đầu vào của nơ-ron thứ $i$.  
+                  - $k$: Số lớp (ở đây là 10, từ 0-9).  
+                - **Ví dụ**:  
+                  - Nếu $x = [1, 2, 3]$, thì $f(x) \\approx [0.09, 0.24, 0.67]$.  
+                  - Tổng xác suất luôn bằng 1.  
+                - **Lưu ý**:  
+                  - Bắt buộc dùng ở lớp đầu ra cho bài toán phân loại đa lớp như MNIST.  
+            - **Lưu ý chung**:  
+              - ReLU là lựa chọn mặc định cho lớp ẩn trong ứng dụng này vì tính hiệu quả và phổ biến.  
+              - Softmax luôn được dùng ở lớp đầu ra để dự đoán chữ số từ 0-9.  
+              - Bạn có thể chọn giữa ReLU, Tanh, hoặc Softmax trong tab "Huấn luyện/Đánh giá" cho lớp ẩn.  
 
-        status_text.text("Đã tải xong! 100%")
-        time.sleep(0.5)
-        status_text.empty()
-        progress_bar.empty()
+            ---
+
+            #### **7. Trình tối ưu (Optimizer)**  
+            - **Ý nghĩa**: Thuật toán điều chỉnh trọng số và bias để giảm hàm mất mát, quyết định cách mô hình học.  
+            - **Hoạt động**:  
+              - Dùng gradient (đạo hàm của hàm mất mát) để cập nhật tham số, với cách tiếp cận khác nhau tùy thuật toán.  
+            - **Các trình tối ưu phổ biến**:  
+              - **SGD (Stochastic Gradient Descent)**:  
+                - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu hoặc mini-batch, là phiên bản ngẫu nhiên của Gradient Descent.  
+                - **Hoạt động**: Tính gradient cho từng batch và điều chỉnh tham số theo hướng giảm mất mát.  
+                - **Công thức**:  
+                  $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                  $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
+                  - $W_t$, $b_t$: Trọng số và bias hiện tại.  
+                  - $\\eta$: Tốc độ học.  
+                  - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient.  
+                - **Ví dụ**:  
+                  - Với $\\eta = 0.01$, nếu gradient $\\frac{\\partial L}{\\partial W_t} = 0.5$, thì $W_{t+1} = W_t - 0.01 \\cdot 0.5 = W_t - 0.005$.  
+                - **Ưu điểm**: Đơn giản, hiệu quả với dữ liệu lớn khi dùng mini-batch.  
+                - **Nhược điểm**: Dao động quanh điểm tối ưu, hội tụ chậm nếu không điều chỉnh tốt.  
+              - **Adam (Adaptive Moment Estimation)**:  
+                - **Ý nghĩa**: Kết hợp phương pháp động lượng và RMSProp, thích nghi tốc độ học cho từng tham số.  
+                - **Hoạt động**: Dùng hai moment (bậc 1 và bậc 2) của gradient để điều chỉnh cập nhật, giúp hội tụ nhanh và ổn định hơn SGD.  
+                - **Công thức**:  
+                  1. $m_t = \\beta_1 \\cdot m_{t-1} + (1 - \\beta_1) \\cdot g_t$ (moment bậc 1 - trung bình động của gradient).  
+                  2. $v_t = \\beta_2 \\cdot v_{t-1} + (1 - \\beta_2) \\cdot g_t^2$ (moment bậc 2 - trung bình động của bình phương gradient).  
+                  3. $\\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t}$, $\\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t}$ (hiệu chỉnh bias).  
+                  4. $W_{t+1} = W_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$ (cập nhật trọng số).  
+                  - $g_t$: Gradient tại bước $t$.  
+                  - $\\beta_1 \\approx 0.9$, $\\beta_2 \\approx 0.999$: Hệ số giảm dần.  
+                  - $\\epsilon \\approx 10^{-8}$: Hằng số nhỏ để tránh chia cho 0.  
+                - **Ví dụ**:  
+                  - Với gradient $g_t = 0.5$, Adam tự động điều chỉnh tốc độ học dựa trên $m_t$ và $v_t$, giúp cập nhật ổn định hơn SGD.  
+                - **Ưu điểm**: Nhanh, ổn định, hiệu quả với hầu hết bài toán, đặc biệt là mạng sâu.  
+                - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém hiệu quả trên hàm mất mát không lồi.  
+            - **Lưu ý**:  
+              - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
+              - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
+              - Bạn có thể chọn giữa SGD và Adam trong tab "Huấn luyện/Đánh giá".  
+
+            ---
+
+            Các tham số trên được điều chỉnh trong tab **"Huấn luyện/Đánh giá"** của ứng dụng này. Việc hiểu rõ ý nghĩa và cách hoạt động của chúng sẽ giúp bạn tối ưu hóa mô hình Neural Network để đạt hiệu suất tốt nhất trên tập dữ liệu MNIST!
+            """, unsafe_allow_html=True)
+
+            st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
+            st.markdown("""
+            #### **Ưu điểm:**  
+            - **Khả năng học phi tuyến tính**: Neural Network có thể học các mối quan hệ phức tạp, phi tuyến tính trong dữ liệu mà các mô hình tuyến tính không làm được.  
+            - **Khả năng mở rộng**: Có thể xử lý dữ liệu lớn và nhiều chiều (như ảnh, âm thanh) khi được huấn luyện đúng cách.  
+            - **Tính linh hoạt**: Có thể áp dụng cho nhiều bài toán khác nhau (phân loại, hồi quy, nhận diện hình ảnh, v.v.).  
+            - **Tự động học đặc trưng**: Không cần trích xuất đặc trưng thủ công, mạng tự động học từ dữ liệu thô.  
+
+            #### **Nhược điểm:**  
+            - **Đòi hỏi tài nguyên lớn**: Cần nhiều dữ liệu và sức mạnh tính toán (CPU/GPU) để huấn luyện hiệu quả.  
+            - **Khó giải thích**: Mạng hoạt động như "hộp đen", khó hiểu tại sao lại đưa ra dự đoán cụ thể.  
+            - **Dễ bị overfitting**: Nếu không được điều chỉnh tốt (ví dụ: thiếu dữ liệu hoặc không dùng regularization), mô hình có thể học quá mức dữ liệu huấn luyện.  
+            - **Thời gian huấn luyện lâu**: Đặc biệt với mạng sâu hoặc dữ liệu lớn.  
+            """, unsafe_allow_html=True)
+
+            status_text.text("Đã tải xong! 100%")
+            time.sleep(0.5)
+            status_text.empty()
+            progress_bar.empty()
 
     # Tab 2: Chọn số lượng dữ liệu
     with tab_load:
@@ -996,179 +996,80 @@ def run_mnist_neural_network_app():
         st.header("Dự đoán số viết tay")
         st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
 
-    if 'split_data' not in st.session_state:
-        st.warning("⚠️ Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'!")
-    else:
-        # Khởi tạo client MLflow chỉ một lần
-        if 'mlflow_client' not in st.session_state:
-            st.session_state['mlflow_client'] = MlflowClient()
+        if 'split_data' not in st.session_state:
+            st.warning("⚠️ Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'!")
+        else:
+            # Khởi tạo client MLflow chỉ một lần
+            if 'mlflow_client' not in st.session_state:
+                st.session_state['mlflow_client'] = MlflowClient()
 
-        # Lấy danh sách runs một lần và lưu vào session_state
-        if 'model_options' not in st.session_state or st.button("Làm mới danh sách mô hình"):
-            with st.spinner("Đang tải danh sách mô hình..."):
-                runs = st.session_state['mlflow_client'].search_runs(
-                    experiment_ids=[EXPERIMENT_ID], 
-                    order_by=["attributes.start_time DESC"]
-                )
-                st.session_state['model_options'] = {
-                    run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") 
-                    for run in runs if 'mlflow.runName' in run.data.tags
-                }
-
-        model_options = st.session_state['model_options']
-
-        if model_options:
-            # Chọn mô hình từ danh sách
-            selected_model_name = st.selectbox(
-                "Chọn mô hình:", 
-                list(model_options.values()), 
-                key="model_select"
-            )
-            selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
-
-            # Nút "Sử dụng mô hình này"
-            if st.button("Sử dụng mô hình này"):
-                with st.spinner("Đang tải mô hình..."):
-                    model_uri = f"runs:/{selected_run_id}/model"
-                    try:
-                        model = mlflow.keras.load_model(model_uri)
-                        st.session_state['selected_model'] = model
-                        st.session_state['selected_run_id'] = selected_run_id
-                        st.success(f"Đã tải mô hình: {selected_model_name}")
-                    except Exception as e:
-                        st.error(f"Không thể tải mô hình từ MLflow: {e}")
-                        model = None
-            else:
-                model = None
-
-            # Kiểm tra nếu mô hình đã được tải
-            if 'selected_model' in st.session_state and st.session_state['selected_run_id'] == selected_run_id:
-                model = st.session_state['selected_model']
-                st.write(f"**Mô hình hiện tại**: {selected_model_name}")
-
-                input_method = st.selectbox(
-                    "Chọn phương thức nhập liệu", 
-                    ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"],
-                    key="input_method"
-                )
-                is_normalized = 'data_processed' in st.session_state
-
-                def preprocess_input(data, is_normalized):
-                    if not is_normalized:
-                        data = data / 255.0
-                    return data
-
-                if input_method == "Tải ảnh lên":
-                    st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
-                    uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
-                    if uploaded_file is not None:
-                        image = Image.open(uploaded_file).convert('L')
-                        image = image.resize((28, 28))
-                        st.image(image, caption="Hình ảnh đầu vào", width=100)
-
-                        if st.button("Dự đoán", key="predict_upload_button"):
-                            with st.spinner("Đang xử lý ảnh..."):
-                                image_array = np.array(image, dtype=np.float32)
-                                image_array = image_array.reshape(1, 784)
-                                image_processed = preprocess_input(image_array, is_normalized)
-                                prediction = model.predict(image_processed, verbose=0)[0]
-                                predicted_class = np.argmax(prediction)
-                                confidence = prediction[predicted_class] * 100
-                                st.markdown(f"""
-                                    <div>
-                                        <strong>Dự đoán:</strong> {predicted_class}<br>
-                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%
-                                    </div>
-                                """, unsafe_allow_html=True)
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), prediction * 100, color='blue')
-                                ax.set_xlabel("Chữ số")
-                                ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân bố xác suất")
-                                st.pyplot(fig)
-                                plt.close(fig)
-                                st.success("Dự đoán hoàn tất!")
-                                del image, image_array, image_processed, prediction
-                                gc.collect()
-
-                elif input_method == "Dữ liệu Test":
-                    st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
-                    X_test = st.session_state['split_data']["X_test"]
-                    y_test = st.session_state['split_data']["y_test"]
-                    if len(X_test) == 0:
-                        st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
-                    else:
-                        col_select, col_display = st.columns([3, 2])
-                        with col_select:
-                            idx = st.slider("Chọn mẫu Test", 0, min(len(X_test) - 1, 100), 0)
-                        with col_display:
-                            st.write("**Ảnh mẫu Test:**")
-                            fig, ax = plt.subplots(figsize=(2, 2))
-                            ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
-                            ax.axis('off')
-                            st.pyplot(fig)
-                            plt.close(fig)
-                            st.write(f"**Nhãn thực tế:** {y_test[idx]}")
-
-                        if st.button("🔍 Dự đoán", key="predict_test"):
-                            with st.spinner("Đang dự đoán..."):
-                                sample = X_test[idx].reshape(1, -1)
-                                sample_processed = preprocess_input(sample, is_normalized)
-                                prediction = model.predict(sample_processed, verbose=0)[0]
-                                predicted_class = np.argmax(prediction)
-                                confidence = prediction[predicted_class] * 100
-                                st.markdown(f"""
-                                    <div class="prediction-box">
-                                        <strong>Dự đoán:</strong> {predicted_class}<br>
-                                        <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
-                                        <strong>Nhãn thực tế:</strong> {y_test[idx]}
-                                    </div>
-                                """, unsafe_allow_html=True)
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), prediction * 100, color='blue')
-                                ax.set_xlabel("Chữ số")
-                                ax.set_ylabel("Xác suất (%)")
-                                ax.set_title("Phân bố xác suất")
-                                st.pyplot(fig)
-                                plt.close(fig)
-                                st.success("Dự đoán hoàn tất!")
-                                del sample, sample_processed, prediction
-                                gc.collect()
-
-                elif input_method == "Vẽ trực tiếp":
-                    st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                    st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
-
-                    # Sử dụng key cố định cho canvas
-                    if 'canvas_result' not in st.session_state:
-                        st.session_state['canvas_result'] = None
-
-                    canvas_result = st_canvas(
-                        fill_color="rgba(255, 165, 0, 0.3)",
-                        stroke_width=20,
-                        stroke_color="#FFFFFF",
-                        background_color="#000000",
-                        height=280,
-                        width=280,
-                        drawing_mode="freedraw",
-                        key="canvas_fixed_key",  # Key cố định
-                        update_streamlit=False  # Ngăn rerender tự động
+            # Lấy danh sách runs một lần và lưu vào session_state
+            if 'model_options' not in st.session_state or st.button("Làm mới danh sách mô hình"):
+                with st.spinner("Đang tải danh sách mô hình..."):
+                    runs = st.session_state['mlflow_client'].search_runs(
+                        experiment_ids=[EXPERIMENT_ID], 
+                        order_by=["attributes.start_time DESC"]
                     )
+                    st.session_state['model_options'] = {
+                        run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") 
+                        for run in runs if 'mlflow.runName' in run.data.tags
+                    }
 
-                    # Lưu kết quả canvas vào session_state
-                    if canvas_result.image_data is not None:
-                        st.session_state['canvas_result'] = canvas_result
+            model_options = st.session_state['model_options']
 
-                    col_pred, col_clear = st.columns([2, 1])
-                    with col_pred:
-                        if st.button("Dự đoán", key="predict_button"):
-                            if st.session_state['canvas_result'] is not None:
-                                with st.spinner("Đang xử lý hình vẽ..."):
-                                    image = Image.fromarray(
-                                        st.session_state['canvas_result'].image_data.astype('uint8'), 'RGBA'
-                                    ).convert('L')
-                                    image_resized = image.resize((28, 28))
-                                    image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
+            if model_options:
+                # Chọn mô hình từ danh sách
+                selected_model_name = st.selectbox(
+                    "Chọn mô hình:", 
+                    list(model_options.values()), 
+                    key="model_select"
+                )
+                selected_run_id = [k for k, v in model_options.items() if v == selected_model_name][0]
+
+                # Nút "Sử dụng mô hình này"
+                if st.button("Sử dụng mô hình này"):
+                    with st.spinner("Đang tải mô hình..."):
+                        model_uri = f"runs:/{selected_run_id}/model"
+                        try:
+                            model = mlflow.keras.load_model(model_uri)
+                            st.session_state['selected_model'] = model
+                            st.session_state['selected_run_id'] = selected_run_id
+                            st.success(f"Đã tải mô hình: {selected_model_name}")
+                        except Exception as e:
+                            st.error(f"Không thể tải mô hình từ MLflow: {e}")
+                            model = None
+                else:
+                    model = None
+
+                # Kiểm tra nếu mô hình đã được tải
+                if 'selected_model' in st.session_state and st.session_state['selected_run_id'] == selected_run_id:
+                    model = st.session_state['selected_model']
+                    st.write(f"**Mô hình hiện tại**: {selected_model_name}")
+
+                    input_method = st.selectbox(
+                        "Chọn phương thức nhập liệu", 
+                        ["Tải ảnh lên", "Dữ liệu Test", "Vẽ trực tiếp"],
+                        key="input_method"
+                    )
+                    is_normalized = 'data_processed' in st.session_state
+
+                    def preprocess_input(data, is_normalized):
+                        if not is_normalized:
+                            data = data / 255.0
+                        return data
+
+                    if input_method == "Tải ảnh lên":
+                        st.markdown('<p class="mode-title">Dự đoán từ Ảnh Tải lên</p>', unsafe_allow_html=True)
+                        uploaded_file = st.file_uploader("Tải lên hình ảnh", type=["png", "jpg", "jpeg"])
+                        if uploaded_file is not None:
+                            image = Image.open(uploaded_file).convert('L')
+                            image = image.resize((28, 28))
+                            st.image(image, caption="Hình ảnh đầu vào", width=100)
+
+                            if st.button("Dự đoán", key="predict_upload_button"):
+                                with st.spinner("Đang xử lý ảnh..."):
+                                    image_array = np.array(image, dtype=np.float32)
+                                    image_array = image_array.reshape(1, 784)
                                     image_processed = preprocess_input(image_array, is_normalized)
                                     prediction = model.predict(image_processed, verbose=0)[0]
                                     predicted_class = np.argmax(prediction)
@@ -1187,13 +1088,112 @@ def run_mnist_neural_network_app():
                                     st.pyplot(fig)
                                     plt.close(fig)
                                     st.success("Dự đoán hoàn tất!")
-                                    del image, image_resized, image_array, image_processed, prediction
+                                    del image, image_array, image_processed, prediction
                                     gc.collect()
-                            else:
-                                st.warning("Vui lòng vẽ trước khi dự đoán!")
 
-        else:
-            st.warning("Chưa có mô hình nào được lưu trong MLflow.")
+                    elif input_method == "Dữ liệu Test":
+                        st.markdown('<p class="mode-title">Dự đoán từ Dữ liệu Test</p>', unsafe_allow_html=True)
+                        X_test = st.session_state['split_data']["X_test"]
+                        y_test = st.session_state['split_data']["y_test"]
+                        if len(X_test) == 0:
+                            st.warning("Tập Test rỗng. Vui lòng chia lại dữ liệu với tỷ lệ Test > 0%.")
+                        else:
+                            col_select, col_display = st.columns([3, 2])
+                            with col_select:
+                                idx = st.slider("Chọn mẫu Test", 0, min(len(X_test) - 1, 100), 0)
+                            with col_display:
+                                st.write("**Ảnh mẫu Test:**")
+                                fig, ax = plt.subplots(figsize=(2, 2))
+                                ax.imshow(X_test[idx].reshape(28, 28), cmap='gray')
+                                ax.axis('off')
+                                st.pyplot(fig)
+                                plt.close(fig)
+                                st.write(f"**Nhãn thực tế:** {y_test[idx]}")
+
+                            if st.button("🔍 Dự đoán", key="predict_test"):
+                                with st.spinner("Đang dự đoán..."):
+                                    sample = X_test[idx].reshape(1, -1)
+                                    sample_processed = preprocess_input(sample, is_normalized)
+                                    prediction = model.predict(sample_processed, verbose=0)[0]
+                                    predicted_class = np.argmax(prediction)
+                                    confidence = prediction[predicted_class] * 100
+                                    st.markdown(f"""
+                                        <div class="prediction-box">
+                                            <strong>Dự đoán:</strong> {predicted_class}<br>
+                                            <strong>Độ tin cậy:</strong> {confidence:.2f}%<br>
+                                            <strong>Nhãn thực tế:</strong> {y_test[idx]}
+                                        </div>
+                                    """, unsafe_allow_html=True)
+                                    fig, ax = plt.subplots(figsize=(6, 4))
+                                    ax.bar(range(10), prediction * 100, color='blue')
+                                    ax.set_xlabel("Chữ số")
+                                    ax.set_ylabel("Xác suất (%)")
+                                    ax.set_title("Phân bố xác suất")
+                                    st.pyplot(fig)
+                                    plt.close(fig)
+                                    st.success("Dự đoán hoàn tất!")
+                                    del sample, sample_processed, prediction
+                                    gc.collect()
+
+                    elif input_method == "Vẽ trực tiếp":
+                        st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
+                        st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
+
+                        # Sử dụng key cố định cho canvas
+                        if 'canvas_result' not in st.session_state:
+                            st.session_state['canvas_result'] = None
+
+                        canvas_result = st_canvas(
+                            fill_color="rgba(255, 165, 0, 0.3)",
+                            stroke_width=20,
+                            stroke_color="#FFFFFF",
+                            background_color="#000000",
+                            height=280,
+                            width=280,
+                            drawing_mode="freedraw",
+                            key="canvas_fixed_key",  # Key cố định
+                            update_streamlit=False  # Ngăn rerender tự động
+                        )
+
+                        # Lưu kết quả canvas vào session_state
+                        if canvas_result.image_data is not None:
+                            st.session_state['canvas_result'] = canvas_result
+
+                        col_pred, col_clear = st.columns([2, 1])
+                        with col_pred:
+                            if st.button("Dự đoán", key="predict_button"):
+                                if st.session_state['canvas_result'] is not None:
+                                    with st.spinner("Đang xử lý hình vẽ..."):
+                                        image = Image.fromarray(
+                                            st.session_state['canvas_result'].image_data.astype('uint8'), 'RGBA'
+                                        ).convert('L')
+                                        image_resized = image.resize((28, 28))
+                                        image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
+                                        image_processed = preprocess_input(image_array, is_normalized)
+                                        prediction = model.predict(image_processed, verbose=0)[0]
+                                        predicted_class = np.argmax(prediction)
+                                        confidence = prediction[predicted_class] * 100
+                                        st.markdown(f"""
+                                            <div>
+                                                <strong>Dự đoán:</strong> {predicted_class}<br>
+                                                <strong>Độ tin cậy:</strong> {confidence:.2f}%
+                                            </div>
+                                        """, unsafe_allow_html=True)
+                                        fig, ax = plt.subplots(figsize=(6, 4))
+                                        ax.bar(range(10), prediction * 100, color='blue')
+                                        ax.set_xlabel("Chữ số")
+                                        ax.set_ylabel("Xác suất (%)")
+                                        ax.set_title("Phân bố xác suất")
+                                        st.pyplot(fig)
+                                        plt.close(fig)
+                                        st.success("Dự đoán hoàn tất!")
+                                        del image, image_resized, image_array, image_processed, prediction
+                                        gc.collect()
+                                else:
+                                    st.warning("Vui lòng vẽ trước khi dự đoán!")
+
+            else:
+                st.warning("Chưa có mô hình nào được lưu trong MLflow.")
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:

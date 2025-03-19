@@ -386,7 +386,7 @@ def run_mnist_pseudo_labeling_app():
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
-                    st.subheader("🔧 Các tham số huấn luyện.")
+                    st.subheader("🔧 Các tham số huấn luyện")
                     st.markdown("""
                     Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
@@ -829,17 +829,14 @@ def run_mnist_pseudo_labeling_app():
                             loss_text = st.empty()    # Placeholder cho loss
                             acc_text = st.empty()     # Placeholder cho accuracy
 
-                            # Tạo tập dữ liệu có nhãn ban đầu (dựa trên labeled_pct mỗi lớp)
+                            # Tạo tập dữ liệu có nhãn ban đầu (1% từ mỗi lớp)
                             labeled_indices = []
                             for digit in range(10):
                                 digit_indices = np.where(y_train == digit)[0]
                                 if len(digit_indices) > 0:
-                                    train_size = min(int(len(digit_indices) * (labeled_pct / 100)), len(digit_indices))
-                                    if train_size < 1 and len(digit_indices) > 0:
-                                        train_size = 1  # Đảm bảo lấy ít nhất 1 mẫu nếu lớp có dữ liệu
-                                    if train_size > 0:
-                                        labeled_digit, _ = train_test_split(digit_indices, train_size=train_size, random_state=42)
-                                        labeled_indices.extend(labeled_digit)
+                                    train_size = max(1, int(len(digit_indices) * (labeled_pct / 100)))
+                                    labeled_digit = digit_indices[:train_size]
+                                    labeled_indices.extend(labeled_digit)
                             labeled_indices = np.array(labeled_indices)
                             unlabeled_indices = np.setdiff1d(np.arange(len(X_train)), labeled_indices)
 
@@ -847,236 +844,151 @@ def run_mnist_pseudo_labeling_app():
                             y_labeled = y_train[labeled_indices]
                             X_unlabeled = X_train[unlabeled_indices]
 
-                            loss_history = []
-                            accuracy_history = []
-                            test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
-                            pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
-                            iteration = 0
-
-                            # Callback để cập nhật thông tin trong quá trình huấn luyện
-                            class CustomCallback(tf.keras.callbacks.Callback):
-                                def __init__(self, iteration, max_iterations):
-                                    super().__init__()
-                                    self.iteration = iteration
-                                    self.max_iterations = max_iterations
-
-                                def on_epoch_end(self, epoch, logs=None):
-                                    epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
-                                    loss_text.write(f"Loss: {logs['loss']:.4f}")
-                                    acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
-
-                            # Quá trình huấn luyện với Pseudo-Labeling
-                            while iteration < max_iterations and len(unlabeled_indices) > 0:
-                                iteration += 1
-                                status_text.write(f"Vòng {iteration}/{max_iterations}")
-
-                                # Huấn luyện mô hình trên tập dữ liệu có nhãn hiện tại
-                                model = build_model(params)
-                                history = model.fit(
-                                    X_labeled, y_labeled,
-                                    epochs=params["epochs"],
-                                    batch_size=params["batch_size"],
-                                    verbose=0,
-                                    callbacks=[CustomCallback(iteration, max_iterations)]
-                                )
-                                loss_history.append(history.history['loss'][-1])
-                                accuracy_history.append(history.history['accuracy'][-1])
-
-                                # Đánh giá trên tập test sau mỗi vòng để kiểm chứng hiệu quả
-                                test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                test_acc = accuracy_score(y_test, test_pred)
-                                test_acc_history.append(test_acc)
-
-                                # Dự đoán nhãn cho tập dữ liệu không có nhãn
-                                predictions = model.predict(X_unlabeled, verbose=0)
-                                max_probs = np.max(predictions, axis=1)
-                                pseudo_labels = np.argmax(predictions, axis=1)
-
-                                # Lọc các mẫu có độ tin cậy cao
-                                high_confidence_mask = max_probs >= threshold
-                                if not np.any(high_confidence_mask):
-                                    break
-
-                                pseudo_indices = unlabeled_indices[high_confidence_mask]
-
-                                # Thu thập thông tin mẫu được gán nhãn giả để minh họa
-                                if len(pseudo_indices) > 0:
-                                    selected_indices = np.random.choice(pseudo_indices, size=min(5, len(pseudo_indices)), replace=False)
-                                    samples = []
-                                    for idx in selected_indices:
-                                        i = np.where(unlabeled_indices == idx)[0][0]
-                                        image = X_unlabeled[i].copy()
-                                        pseudo_label = pseudo_labels[i]
-                                        confidence = max_probs[i]
-                                        true_label = y_train[idx]
-                                        samples.append({
-                                            'image': image,
-                                            'pseudo_label': pseudo_label,
-                                            'confidence': confidence,
-                                            'true_label': true_label
-                                        })
-                                    pseudo_samples.append({
-                                        'iteration': iteration,
-                                        'samples': samples,
-                                        'num_added': len(pseudo_indices),
-                                        'total_labeled': len(X_labeled) + len(pseudo_indices)
-                                    })
-
-                                # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
-                                X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
-                                y_labeled = np.hstack((y_labeled, pseudo_labels[high_confidence_mask]))
-
-                                # Cập nhật tập dữ liệu không có nhãn
-                                unlabeled_indices = unlabeled_indices[~high_confidence_mask]
-                                X_unlabeled = X_unlabeled[~high_confidence_mask]
-
-                                # Cập nhật progress bar
-                                progress = iteration / max_iterations
-                                progress_bar.progress(min(progress, 1.0))
-
-                            # Huấn luyện lần cuối trên toàn bộ dữ liệu đã gắn nhãn
+                            # Huấn luyện mô hình trên 1% dữ liệu ban đầu
                             model = build_model(params)
                             history = model.fit(
                                 X_labeled, y_labeled,
                                 epochs=params["epochs"],
                                 batch_size=params["batch_size"],
                                 verbose=0,
-                                callbacks=[CustomCallback(iteration, max_iterations)]
+                                callbacks=[tf.keras.callbacks.LambdaCallback(
+                                    on_epoch_end=lambda epoch, logs: (
+                                        epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}"),
+                                        loss_text.write(f"Loss: {logs['loss']:.4f}"),
+                                        acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
+                                    )
+                                )]
                             )
-                            loss_history.append(history.history['loss'][-1])
-                            accuracy_history.append(history.history['accuracy'][-1])
+                            loss_history = history.history['loss']
+                            accuracy_history = history.history['accuracy']
+
+                            # Hiển thị biểu đồ loss và accuracy theo epoch
+                            st.subheader("📊 Biểu đồ Loss và Accuracy theo Epoch (Huấn luyện ban đầu)")
+                            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+                            ax1.plot(range(1, params["epochs"] + 1), loss_history, label='Loss', color='blue')
+                            ax1.set_title("Loss theo Epoch")
+                            ax1.set_xlabel("Epoch")
+                            ax1.set_ylabel("Loss")
+                            ax1.set_xticks(range(1, params["epochs"] + 1, max(1, params["epochs"] // 10)))
+                            ax1.legend()
+                            ax1.grid(True)
+                            ax2.plot(range(1, params["epochs"] + 1), accuracy_history, label='Accuracy', color='green')
+                            ax2.set_title("Accuracy theo Epoch")
+                            ax2.set_xlabel("Epoch")
+                            ax2.set_ylabel("Accuracy")
+                            ax2.set_xticks(range(1, params["epochs"] + 1, max(1, params["epochs"] // 10)))
+                            ax2.legend()
+                            ax2.grid(True)
+                            st.pyplot(fig)
+                            plt.close(fig)
+
+                            # Nếu số epoch > 10, hiển thị bảng chi tiết trong expander
+                            if params["epochs"] > 10:
+                                with st.expander("📋 Chi tiết Loss và Accuracy theo Epoch"):
+                                    df_history = pd.DataFrame({
+                                        "Epoch": range(1, params["epochs"] + 1),
+                                        "Loss": loss_history,
+                                        "Accuracy": accuracy_history
+                                    })
+                                    st.table(df_history)
+
+                            # Dự đoán nhãn cho 99% dữ liệu không có nhãn
+                            predictions = model.predict(X_unlabeled, verbose=0)
+                            pseudo_labels = np.argmax(predictions, axis=1)
+                            confidences = np.max(predictions, axis=1)
+
+                            # Hiển thị 5 mẫu dự đoán ngẫu nhiên
+                            st.subheader("📸 Minh họa Dự đoán cho Dữ liệu Không có Nhãn")
+                            num_display = min(5, len(X_unlabeled))
+                            selected_indices = np.random.choice(len(X_unlabeled), size=num_display, replace=False)
+                            fig, axes = plt.subplots(1, num_display, figsize=(15, 3))
+                            for i, idx in enumerate(selected_indices):
+                                image = X_unlabeled[idx].reshape(28, 28)
+                                label = pseudo_labels[idx]
+                                confidence = confidences[idx]
+                                axes[i].imshow(image, cmap='gray')
+                                axes[i].set_title(f"Pred: {label}\nConf: {confidence:.2f}")
+                                axes[i].axis('off')
+                            st.pyplot(fig)
+                            plt.close(fig)
+
+                            # Quá trình Pseudo-Labeling
+                            X_combined = X_labeled.copy()
+                            y_combined = y_labeled.copy()
+                            remaining_indices = unlabeled_indices.copy()
+
+                            for iteration in range(max_iterations):
+                                status_text.write(f"Vòng Pseudo-Labeling {iteration + 1}/{max_iterations}")
+                                progress_bar.progress((iteration + 1) / max_iterations)
+
+                                # Dự đoán nhãn cho dữ liệu không có nhãn
+                                if len(remaining_indices) == 0:
+                                    status_text.write("Không còn dữ liệu không có nhãn để gắn nhãn giả.")
+                                    break
+
+                                X_unlabeled = X_train[remaining_indices]
+                                predictions = model.predict(X_unlabeled, verbose=0)
+                                pseudo_labels = np.argmax(predictions, axis=1)
+                                confidences = np.max(predictions, axis=1)
+
+                                # Lọc các mẫu có độ tin cậy cao
+                                high_confidence_mask = confidences >= threshold
+                                if not np.any(high_confidence_mask):
+                                    status_text.write(f"Vòng {iteration + 1}: Không có mẫu nào đạt ngưỡng tin cậy {threshold}.")
+                                    break
+
+                                selected_indices = remaining_indices[high_confidence_mask]
+                                X_high_conf = X_train[selected_indices]
+                                y_high_conf = pseudo_labels[high_confidence_mask]
+
+                                # Kết hợp dữ liệu mới
+                                X_combined = np.concatenate([X_combined, X_high_conf], axis=0)
+                                y_combined = np.concatenate([y_combined, y_high_conf], axis=0)
+                                remaining_indices = remaining_indices[~high_confidence_mask]
+
+                                # Huấn luyện lại mô hình
+                                model = build_model(params)
+                                history = model.fit(
+                                    X_combined, y_combined,
+                                    epochs=params["epochs"],
+                                    batch_size=params["batch_size"],
+                                    verbose=0,
+                                    callbacks=[tf.keras.callbacks.LambdaCallback(
+                                        on_epoch_end=lambda epoch, logs: (
+                                            epoch_text.write(f"Vòng {iteration + 1} - Epoch {epoch + 1}/{params['epochs']}"),
+                                            loss_text.write(f"Loss: {logs['loss']:.4f}"),
+                                            acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
+                                        )
+                                    )]
+                                )
+
+                            # Huấn luyện lần cuối trên toàn bộ dữ liệu đã gắn nhãn
+                            status_text.write("Huấn luyện mô hình cuối cùng...")
+                            final_model = build_model(params)
+                            final_history = final_model.fit(
+                                X_combined, y_combined,
+                                epochs=params["epochs"],
+                                batch_size=params["batch_size"],
+                                verbose=0
+                            )
 
                             # Đánh giá trên tập test
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            cm_test = confusion_matrix(y_test, y_test_pred)
-
-                            # Lưu kết quả vào MLflow
-                            mlflow.log_metric("accuracy_test", acc_test)
+                            test_loss, test_accuracy = final_model.evaluate(X_test, y_test, verbose=0)
+                            st.write(f"**Độ chính xác trên tập test**: {test_accuracy:.4f}")
+                            mlflow.log_metric("accuracy_test", test_accuracy)
                             mlflow.log_metric("training_time", time.time() - start_time)
-                            mlflow.keras.log_model(model, "model")
 
-                            # Lưu kết quả vào session_state
-                            results = {
-                                'accuracy_test': acc_test,
-                                'cm_test': cm_test,
-                                'loss_history': loss_history,
-                                'accuracy_history': accuracy_history,
-                                'test_acc_history': test_acc_history,
-                                'pseudo_samples': pseudo_samples,
-                                'iterations': iteration,
-                                'training_time': time.time() - start_time,
-                                'run_id': run.info.run_id,
-                                'run_name': model_name.strip(),
-                                'params': params,
-                                'n_iter_actual': iteration
+                            # Lưu mô hình
+                            mlflow.keras.log_model(final_model, "model")
+
+                            # Lưu kết quả huấn luyện
+                            st.session_state['training_results'] = {
+                                'run_id': run_id,
+                                'loss_history': final_history.history['loss'],
+                                'accuracy_history': final_history.history['accuracy']
                             }
-                            st.session_state['training_results'] = results
-                            st.success(f"Đã huấn luyện xong sau {iteration} vòng! Thời gian: {results['training_time']:.2f} giây")
 
-            # Hiển thị kết quả
-            if 'training_results' in st.session_state:
-                results = st.session_state['training_results']
-                st.subheader("📊 Kết quả Huấn luyện")
-                col1, col2 = st.columns(2)
-                col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
-                col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
-
-                st.subheader("Ma trận Nhầm lẫn")
-                fig, ax = plt.subplots()
-                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Test")
-                st.pyplot(fig)
-                plt.close(fig)
-
-                # Biểu đồ Loss và Accuracy theo số vòng
-                st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
-                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
-                ax1.set_title("Loss qua các vòng")
-                ax1.set_xlabel("Vòng")
-                ax1.set_ylabel("Loss")
-                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'])
-                ax2.set_title("Accuracy qua các vòng")
-                ax2.set_xlabel("Vòng")
-                ax2.set_ylabel("Accuracy")
-                st.pyplot(fig)
-                plt.close(fig)
-
-                # Biểu đồ độ chính xác trên Test qua các vòng
-                if 'test_acc_history' in results:
-                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
-                    fig, ax = plt.subplots()
-                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'])
-                    ax.set_title("Độ chính xác trên Test qua các Vòng")
-                    ax.set_xlabel("Vòng")
-                    ax.set_ylabel("Độ chính xác")
-                    st.pyplot(fig)
-                    plt.close(fig)
-
-                # Minh họa các mẫu được gán nhãn Pseudo
-                if 'pseudo_samples' in results:
-                    st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
-                    for iter_data in results['pseudo_samples']:
-                        with st.expander(f"Vòng {iter_data['iteration']}"):
-                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
-                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
-                            num_samples = len(iter_data['samples'])
-                            if num_samples > 0:
-                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
-                                if num_samples == 1:
-                                    axes = [axes]
-                                for ax, sample in zip(axes, iter_data['samples']):
-                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                    ax.axis('off')
-                                st.pyplot(fig)
-                                plt.close(fig)
-
-                # Tóm tắt kết quả huấn luyện
-                st.markdown("#### 📋 Tóm tắt Kết quả Huấn luyện")
-                full_data = {
-                    "Vòng": list(range(1, len(results['loss_history']) + 1)),
-                    "Loss": results['loss_history'],
-                    "Accuracy": results['accuracy_history'],
-                }
-                df_full = pd.DataFrame(full_data)
-
-                if 'display_iterations' not in st.session_state:
-                    st.session_state['display_iterations'] = 5
-
-                st.table(df_full.head(st.session_state['display_iterations']))
-
-                if len(results['loss_history']) > st.session_state['display_iterations']:
-                    if st.button("Xem thêm 5 vòng", key="show_more_iterations"):
-                        st.session_state['display_iterations'] += 5
-                        st.rerun()
-
-                if st.session_state['display_iterations'] > 5:
-                    if st.button("Thu gọn", key="collapse_iterations"):
-                        st.session_state['display_iterations'] = 5
-                        st.rerun()
-
-                # Thêm phần chi tiết kết quả huấn luyện
-                with st.expander("Xem chi tiết", expanded=False):
-                    st.markdown("**Thông tin lần chạy:**")
-                    st.write(f"- Tên: {results['run_name']}")
-                    st.write(f"- ID: {results['run_id']}")
-                    st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
-                    st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
-                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
-                    st.markdown("**Tham số đã chọn:**")
-                    st.json({
-                        "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
-                        "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
-                        "Tốc độ học": results['params']['learning_rate'],
-                        "Số lần lặp": results['params']['epochs'],
-                        "Kích thước batch": results['params']['batch_size'],
-                        "Hàm kích hoạt": results['params']['activation'],
-                        "Trình tối ưu": results['params']['solver'],
-                        "Ngưỡng tin cậy": threshold,
-                        "Số vòng lặp tối đa": max_iterations
-                    })
+                            st.success(f"Đã huấn luyện xong! Thời gian: {time.time() - start_time:.2f} giây")
 
     ### Tab 6: Demo dự đoán
     with tab_demo:
