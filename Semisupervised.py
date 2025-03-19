@@ -30,8 +30,8 @@ def get_optimal_params(num_samples):
             "activation": "relu",
             "solver": "adam",
             "batch_size": 32,
-            "threshold": 0.95,  # Pseudo-Labeling
-            "max_iterations": 5  # Pseudo-Labeling
+            "threshold": 0.95,
+            "max_iterations": 5
         }
     elif num_samples <= 10000:
         return {
@@ -78,19 +78,6 @@ def build_model(params):
     optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
     model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
-
-# Callback tùy chỉnh để cập nhật giao diện trong quá trình huấn luyện
-class CustomCallback(callbacks.Callback):
-    def __init__(self, iteration, max_iterations):
-        super().__init__()
-        self.iteration = iteration
-        self.max_iterations = max_iterations
-
-    def on_epoch_end(self, epoch, logs=None):
-        logs = logs or {}
-        st.session_state['epoch_text'].write(f"Epoch {epoch + 1}/{self.params['epochs']} - Vòng {self.iteration}/{self.max_iterations}")
-        st.session_state['loss_text'].write(f"Loss: {logs.get('loss', 0):.4f}")
-        st.session_state['acc_text'].write(f"Accuracy: {logs.get('accuracy', 0):.4f}")
 
 # Ứng dụng chính
 def run_mnist_pseudo_labeling_app():
@@ -206,8 +193,13 @@ def run_mnist_pseudo_labeling_app():
             help="Khám phá chi tiết về ứng dụng, dữ liệu, mô hình và kỹ thuật Pseudo-Labeling."
         )
 
+        # Tạo placeholder để chứa nội dung động
         content_placeholder = st.empty()
 
+        # Xóa nội dung cũ trước khi hiển thị nội dung mới
+        content_placeholder.empty()
+
+        # Hiển thị nội dung mới dựa trên lựa chọn
         with content_placeholder.container():
             if info_option == "Tổng quan về ứng dụng và mục tiêu":
                 with st.spinner("Đang tải thông tin..."):
@@ -394,7 +386,7 @@ def run_mnist_pseudo_labeling_app():
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
-                    st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
+                    st.subheader("🔧 Các tham số huấn luyện.")
                     st.markdown("""
                     Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
@@ -833,9 +825,9 @@ def run_mnist_pseudo_labeling_app():
                             start_time = time.time()
                             progress_bar = st.progress(0)
                             status_text = st.empty()  # Placeholder cho vòng hiện tại
-                            st.session_state['epoch_text'] = st.empty()   # Placeholder cho epoch hiện tại
-                            st.session_state['loss_text'] = st.empty()    # Placeholder cho loss
-                            st.session_state['acc_text'] = st.empty()     # Placeholder cho accuracy
+                            epoch_text = st.empty()   # Placeholder cho epoch hiện tại
+                            loss_text = st.empty()    # Placeholder cho loss
+                            acc_text = st.empty()     # Placeholder cho accuracy
 
                             # Tạo tập dữ liệu có nhãn ban đầu (dựa trên labeled_pct mỗi lớp)
                             labeled_indices = []
@@ -857,26 +849,26 @@ def run_mnist_pseudo_labeling_app():
 
                             loss_history = []
                             accuracy_history = []
-                            confidence_history = []  # Lưu độ tin cậy của nhãn giả
+                            test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
+                            pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
                             iteration = 0
 
-                            # Huấn luyện mô hình ban đầu trên 1% data
-                            st.subheader("Huấn luyện mô hình ban đầu trên 1% data")
-                            model_initial = build_model(params)
-                            history_initial = model_initial.fit(
-                                X_labeled, y_labeled,
-                                epochs=params["epochs"],
-                                batch_size=params["batch_size"],
-                                verbose=0
-                            )
-                            y_test_pred_initial = np.argmax(model_initial.predict(X_test, verbose=0), axis=1)
-                            acc_test_initial = accuracy_score(y_test, y_test_pred_initial)
-                            st.write(f"Độ chính xác trên tập test với 1% data: {acc_test_initial*100:.2f}%")
+                            # Callback để cập nhật thông tin trong quá trình huấn luyện
+                            class CustomCallback(tf.keras.callbacks.Callback):
+                                def __init__(self, iteration, max_iterations):
+                                    super().__init__()
+                                    self.iteration = iteration
+                                    self.max_iterations = max_iterations
+
+                                def on_epoch_end(self, epoch, logs=None):
+                                    epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
+                                    loss_text.write(f"Loss: {logs['loss']:.4f}")
+                                    acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
 
                             # Quá trình huấn luyện với Pseudo-Labeling
                             while iteration < max_iterations and len(unlabeled_indices) > 0:
                                 iteration += 1
-                                status_text.write(f"Vòng {iteration}/{max_iterations} ({(iteration / max_iterations * 100):.2f}%)")
+                                status_text.write(f"Vòng {iteration}/{max_iterations}")
 
                                 # Huấn luyện mô hình trên tập dữ liệu có nhãn hiện tại
                                 model = build_model(params)
@@ -890,6 +882,11 @@ def run_mnist_pseudo_labeling_app():
                                 loss_history.append(history.history['loss'][-1])
                                 accuracy_history.append(history.history['accuracy'][-1])
 
+                                # Đánh giá trên tập test sau mỗi vòng để kiểm chứng hiệu quả
+                                test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                                test_acc = accuracy_score(y_test, test_pred)
+                                test_acc_history.append(test_acc)
+
                                 # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                 predictions = model.predict(X_unlabeled, verbose=0)
                                 max_probs = np.max(predictions, axis=1)
@@ -900,25 +897,34 @@ def run_mnist_pseudo_labeling_app():
                                 if not np.any(high_confidence_mask):
                                     break
 
-                                # Lưu độ tin cậy của nhãn giả
-                                confidence_history.extend(max_probs[high_confidence_mask])
+                                pseudo_indices = unlabeled_indices[high_confidence_mask]
 
-                                # Minh họa các mẫu được gán nhãn giả
-                                st.subheader(f"Mẫu được gán nhãn giả ở vòng {iteration}")
-                                num_samples_to_show = min(5, len(X_unlabeled[high_confidence_mask]))
-                                fig, axes = plt.subplots(1, num_samples_to_show, figsize=(15, 3))
-                                for i, ax in enumerate(axes):
-                                    ax.imshow(X_unlabeled[high_confidence_mask][i].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {pseudo_labels[high_confidence_mask][i]}\nProb: {max_probs[high_confidence_mask][i]:.2f}")
-                                    ax.axis("off")
-                                st.pyplot(fig)
-                                plt.close(fig)
+                                # Thu thập thông tin mẫu được gán nhãn giả để minh họa
+                                if len(pseudo_indices) > 0:
+                                    selected_indices = np.random.choice(pseudo_indices, size=min(5, len(pseudo_indices)), replace=False)
+                                    samples = []
+                                    for idx in selected_indices:
+                                        i = np.where(unlabeled_indices == idx)[0][0]
+                                        image = X_unlabeled[i].copy()
+                                        pseudo_label = pseudo_labels[i]
+                                        confidence = max_probs[i]
+                                        true_label = y_train[idx]
+                                        samples.append({
+                                            'image': image,
+                                            'pseudo_label': pseudo_label,
+                                            'confidence': confidence,
+                                            'true_label': true_label
+                                        })
+                                    pseudo_samples.append({
+                                        'iteration': iteration,
+                                        'samples': samples,
+                                        'num_added': len(pseudo_indices),
+                                        'total_labeled': len(X_labeled) + len(pseudo_indices)
+                                    })
 
                                 # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
-                                pseudo_indices = unlabeled_indices[high_confidence_mask]
-                                pseudo_y = pseudo_labels[high_confidence_mask]
                                 X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
-                                y_labeled = np.hstack((y_labeled, pseudo_y))
+                                y_labeled = np.hstack((y_labeled, pseudo_labels[high_confidence_mask]))
 
                                 # Cập nhật tập dữ liệu không có nhãn
                                 unlabeled_indices = unlabeled_indices[~high_confidence_mask]
@@ -946,19 +952,18 @@ def run_mnist_pseudo_labeling_app():
                             cm_test = confusion_matrix(y_test, y_test_pred)
 
                             # Lưu kết quả vào MLflow
-                            mlflow.log_metric("accuracy_test_initial", acc_test_initial)
                             mlflow.log_metric("accuracy_test", acc_test)
                             mlflow.log_metric("training_time", time.time() - start_time)
                             mlflow.keras.log_model(model, "model")
 
                             # Lưu kết quả vào session_state
                             results = {
-                                'accuracy_test_initial': acc_test_initial,
                                 'accuracy_test': acc_test,
                                 'cm_test': cm_test,
                                 'loss_history': loss_history,
                                 'accuracy_history': accuracy_history,
-                                'confidence_history': confidence_history,
+                                'test_acc_history': test_acc_history,
+                                'pseudo_samples': pseudo_samples,
                                 'iterations': iteration,
                                 'training_time': time.time() - start_time,
                                 'run_id': run.info.run_id,
@@ -975,54 +980,58 @@ def run_mnist_pseudo_labeling_app():
                 st.subheader("📊 Kết quả Huấn luyện")
                 col1, col2 = st.columns(2)
                 col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
-                col2.metric("Độ chính xác Test (Pseudo-Labeling)", f"{results['accuracy_test']*100:.2f}%")
-                st.metric("Độ chính xác Test (1% data)", f"{results['accuracy_test_initial']*100:.2f}%")
+                col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
                 st.subheader("Ma trận Nhầm lẫn")
                 fig, ax = plt.subplots()
                 sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Test (Pseudo-Labeling)")
+                ax.set_title("Test")
                 st.pyplot(fig)
                 plt.close(fig)
 
                 # Biểu đồ Loss và Accuracy theo số vòng
                 st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], color='red')
+                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
                 ax1.set_title("Loss qua các vòng")
                 ax1.set_xlabel("Vòng")
                 ax1.set_ylabel("Loss")
-                ax1.grid(True)
-                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], color='green')
+                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'])
                 ax2.set_title("Accuracy qua các vòng")
                 ax2.set_xlabel("Vòng")
                 ax2.set_ylabel("Accuracy")
-                ax2.grid(True)
                 st.pyplot(fig)
                 plt.close(fig)
 
-                # Biểu đồ so sánh độ chính xác
-                st.subheader("So sánh độ chính xác")
-                fig, ax = plt.subplots(figsize=(6, 4))
-                ax.bar(["1% data", "Pseudo-Labeling"], [results['accuracy_test_initial'], results['accuracy_test']], 
-                       color=['blue', 'green'])
-                ax.set_title("So sánh độ chính xác trên tập test")
-                ax.set_ylabel("Độ chính xác")
-                ax.grid(True, axis='y')
-                st.pyplot(fig)
-                plt.close(fig)
-
-                # Biểu đồ phân phối độ tin cậy
-                if results['confidence_history']:
-                    st.subheader("Phân phối độ tin cậy của nhãn giả")
-                    fig, ax = plt.subplots(figsize=(8, 4))
-                    ax.hist(results['confidence_history'], bins=20, color='purple', alpha=0.7)
-                    ax.set_title("Phân phối độ tin cậy của nhãn giả")
-                    ax.set_xlabel("Độ tin cậy")
-                    ax.set_ylabel("Số lượng mẫu")
-                    ax.grid(True)
+                # Biểu đồ độ chính xác trên Test qua các vòng
+                if 'test_acc_history' in results:
+                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
+                    fig, ax = plt.subplots()
+                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'])
+                    ax.set_title("Độ chính xác trên Test qua các Vòng")
+                    ax.set_xlabel("Vòng")
+                    ax.set_ylabel("Độ chính xác")
                     st.pyplot(fig)
                     plt.close(fig)
+
+                # Minh họa các mẫu được gán nhãn Pseudo
+                if 'pseudo_samples' in results:
+                    st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
+                    for iter_data in results['pseudo_samples']:
+                        with st.expander(f"Vòng {iter_data['iteration']}"):
+                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
+                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
+                            num_samples = len(iter_data['samples'])
+                            if num_samples > 0:
+                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
+                                if num_samples == 1:
+                                    axes = [axes]
+                                for ax, sample in zip(axes, iter_data['samples']):
+                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
+                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
+                                    ax.axis('off')
+                                st.pyplot(fig)
+                                plt.close(fig)
 
                 # Tóm tắt kết quả huấn luyện
                 st.markdown("#### 📋 Tóm tắt Kết quả Huấn luyện")
@@ -1055,8 +1064,7 @@ def run_mnist_pseudo_labeling_app():
                     st.write(f"- ID: {results['run_id']}")
                     st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
                     st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
-                    st.write(f"- Độ chính xác Test (1% data): {results['accuracy_test_initial']*100:.2f}%")
-                    st.write(f"- Độ chính xác Test (Pseudo-Labeling): {results['accuracy_test']*100:.2f}%")
+                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
                     st.markdown("**Tham số đã chọn:**")
                     st.json({
                         "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
@@ -1103,18 +1111,8 @@ def run_mnist_pseudo_labeling_app():
                             st.image(image, caption="Hình ảnh tải lên", width=100)
                             image_array = np.array(image).reshape(1, 784) / 255.0
                             if st.button("Dự đoán"):
-                                pred = model.predict(image_array, verbose=0)[0]
+                                pred = model.predict(image_array, verbose=0)
                                 st.write(f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)")
-                                # Biểu đồ xác suất
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), pred, color='blue')
-                                ax.set_xticks(range(10))
-                                ax.set_title("Xác suất dự đoán")
-                                ax.set_xlabel("Lớp (0-9)")
-                                ax.set_ylabel("Xác suất")
-                                ax.grid(True, axis='y')
-                                st.pyplot(fig)
-                                plt.close(fig)
 
                     elif input_method == "Dữ liệu Test":
                         X_test = st.session_state['split_data']['X_test']
@@ -1122,18 +1120,8 @@ def run_mnist_pseudo_labeling_app():
                         idx = st.slider("Chọn mẫu", 0, len(X_test)-1, 0)
                         st.image(X_test[idx].reshape(28, 28), caption=f"Nhãn thực tế: {y_test[idx]}", width=100)
                         if st.button("Dự đoán"):
-                            pred = model.predict(X_test[idx:idx+1], verbose=0)[0]
+                            pred = model.predict(X_test[idx:idx+1], verbose=0)
                             st.write(f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)")
-                            # Biểu đồ xác suất
-                            fig, ax = plt.subplots(figsize=(6, 4))
-                            ax.bar(range(10), pred, color='blue')
-                            ax.set_xticks(range(10))
-                            ax.set_title("Xác suất dự đoán")
-                            ax.set_xlabel("Lớp (0-9)")
-                            ax.set_ylabel("Xác suất")
-                            ax.grid(True, axis='y')
-                            st.pyplot(fig)
-                            plt.close(fig)
 
                     elif input_method == "Vẽ trực tiếp":
                         canvas_result = st_canvas(stroke_width=20, stroke_color="#FFFFFF", background_color="#000000", 
@@ -1143,18 +1131,8 @@ def run_mnist_pseudo_labeling_app():
                             st.image(image, caption="Hình ảnh vẽ tay", width=100)
                             image_array = np.array(image).reshape(1, 784) / 255.0
                             if st.button("Dự đoán"):
-                                pred = model.predict(image_array, verbose=0)[0]
+                                pred = model.predict(image_array, verbose=0)
                                 st.write(f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)")
-                                # Biểu đồ xác suất
-                                fig, ax = plt.subplots(figsize=(6, 4))
-                                ax.bar(range(10), pred, color='blue')
-                                ax.set_xticks(range(10))
-                                ax.set_title("Xác suất dự đoán")
-                                ax.set_xlabel("Lớp (0-9)")
-                                ax.set_ylabel("Xác suất")
-                                ax.grid(True, axis='y')
-                                st.pyplot(fig)
-                                plt.close(fig)
 
     ### Tab 7: Thông tin huấn luyện
     with tab_log_info:
@@ -1235,8 +1213,7 @@ def run_mnist_pseudo_labeling_app():
                             run = client.get_run(run_id)
                             run_data = {
                                 "Tên": run.data.tags.get('mlflow.runName', run_id),
-                                "Accuracy Test (1% data)": run.data.metrics.get('accuracy_test_initial', 'N/A'),
-                                "Accuracy Test (Pseudo-Labeling)": run.data.metrics.get('accuracy_test', 'N/A'),
+                                "Accuracy Test": run.data.metrics.get('accuracy_test', 'N/A'),
                                 "Thời gian": run.data.metrics.get('training_time', 'N/A'),
                                 "Số lớp ẩn": run.data.params.get('hidden_layer_sizes', 'N/A'),
                                 "Learning Rate": run.data.params.get('learning_rate', 'N/A'),
