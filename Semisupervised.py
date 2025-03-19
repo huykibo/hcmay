@@ -74,7 +74,7 @@ def build_model(params):
     return model
 
 # Ứng dụng chính
-def   run_mnist_pseudo_labeling_app():
+def run_mnist_pseudo_labeling_app():
     """Chạy ứng dụng Streamlit để phân loại chữ số MNIST với Neural Network và Pseudo-Labeling."""
 
     ### Thiết lập MLflow
@@ -117,70 +117,13 @@ def   run_mnist_pseudo_labeling_app():
             y_full = y_full.astype(np.int32)
             st.session_state['full_data'] = (X_full, y_full)
 
-    st.title("Phân loại Chữ số MNIST với Neural Network")
+    st.title("Phân loại Chữ số MNIST với Neural Network và Pseudo-Labeling")
 
     ### CSS tùy chỉnh
     st.markdown("""
         <style>
-            .tooltip {
-                position: relative;
-                display: inline-block;
-                cursor: pointer;
-                color: #1f77b4;
-                font-weight: bold;
-                margin-left: 5px;
-            }
-            .tooltip .tooltiptext {
-                visibility: hidden;
-                width: 400px;
-                background-color: #f9f9f9;
-                color: #333;
-                text-align: left;
-                border-radius: 6px;
-                padding: 10px;
-                position: absolute;
-                z-index: 1;
-                right: 105%;
-                top: 50%;
-                transform: translateY(-50%);
-                opacity: 0;
-                transition: opacity 0.3s;
-                border: 1px solid #ccc;
-                font-size: 0.9em;
-                line-height: 1.4;
-            }
-            .tooltip:hover .tooltiptext {
-                visibility: visible;
-                opacity: 1;
-            }
             .section-title {
                 font-size: 1.5em;
-                font-weight: bold;
-                color: #2c3e50;
-                margin-bottom: 10px;
-            }
-            .info-box {
-                background-color: #f8f9fa;
-                padding: 10px;
-                border-left: 4px solid #3498db;
-                margin-bottom: 15px;
-            }
-            .action-container {
-                background-color: #ffffff;
-                padding: 15px;
-                border-radius: 5px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                margin-bottom: 20px;
-            }
-            .prediction-box {
-                margin-top: 10px;
-                padding: 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-                background-color: #f9f9f9;
-            }
-            .mode-title {
-                font-size: 1.2em;
                 font-weight: bold;
                 color: #2c3e50;
                 margin-bottom: 10px;
@@ -239,7 +182,6 @@ def   run_mnist_pseudo_labeling_app():
                 - **Đặc trưng:** Giá trị pixel từ 0 đến 255, biểu diễn dưới dạng vector 784 chiều.
                 - **Nhiệm vụ:** Dự đoán nhãn tương ứng với từng chữ số từ 0 đến 9.
                 """, unsafe_allow_html=True)
-               
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -633,7 +575,7 @@ def   run_mnist_pseudo_labeling_app():
                 - Quy định số lần mô hình dự đoán nhãn giả và huấn luyện lại trên dữ liệu mới.  
                 - Điều kiện dừng: Quy trình kết thúc khi hết dữ liệu không có nhãn hoặc đạt số vòng lặp tối đa.  
                 - Tác động: Giá trị lớn tăng cơ hội khai thác dữ liệu không nhãn nhưng kéo dài thời gian huấn luyện.
-""", unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
 
     ### Tab 2: Chọn số lượng dữ liệu
     with tab_load:
@@ -641,10 +583,10 @@ def   run_mnist_pseudo_labeling_app():
         X_full, y_full = st.session_state['full_data']
         st.subheader("Chọn số lượng mẫu")
         sample_options = {
-            "1000 mẫu (Thử nghiệm nhanh)": 1000,
-            "10,000 mẫu (Kiểm tra cơ bản)": 10000,
-            "50,000 mẫu (Cân bằng hiệu suất)": 50000,
-            "70,000 mẫu (Huấn luyện chuyên sâu)": 70000,
+            "1000 mẫu": 1000,
+            "10,000 mẫu": 10000,
+            "50,000 mẫu": 50000,
+            "70,000 mẫu": 70000,
             "Tùy chỉnh": "custom"
         }
         selected_option = st.selectbox("Chọn số lượng mẫu:", list(sample_options.keys()))
@@ -673,19 +615,7 @@ def   run_mnist_pseudo_labeling_app():
             st.info("Vui lòng chọn số lượng mẫu trước.")
         else:
             X, y = st.session_state['data']
-            if "data_original" not in st.session_state:
-                st.session_state["data_original"] = (X.copy(), y.copy())
-
-            st.subheader("Dữ liệu Gốc")
-            fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-            for i, ax in enumerate(axes.flat):
-                ax.imshow(X[i].reshape(28, 28), cmap='gray')
-                ax.set_title(f"Label: {y[i]}")
-                ax.axis("off")
-            st.pyplot(fig)
-            plt.close(fig)
-
-            if st.button("Chuẩn hóa dữ liệu (Normalization)", type="primary"):
+            if st.button("Chuẩn hóa dữ liệu", type="primary"):
                 with st.spinner("Đang chuẩn hóa dữ liệu về [0, 1]..."):
                     X_norm = X / 255.0
                     st.session_state["data_processed"] = (X_norm.copy(), y.copy())
@@ -693,17 +623,6 @@ def   run_mnist_pseudo_labeling_app():
                     del X, y, X_norm
                     gc.collect()
                     st.rerun()
-
-            if "data_processed" in st.session_state:
-                st.subheader("Dữ liệu sau khi xử lý")
-                X_proc, y_proc = st.session_state["data_processed"]
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
-                for i, ax in enumerate(axes.flat):
-                    ax.imshow(X_proc[i].reshape(28, 28), cmap='gray')
-                    ax.set_title(f"Label: {y_proc[i]}")
-                    ax.axis("off")
-                st.pyplot(fig)
-                plt.close(fig)
 
     ### Tab 4: Chia dữ liệu
     with tab_split:
@@ -717,51 +636,36 @@ def   run_mnist_pseudo_labeling_app():
             st.write(f"Tổng số mẫu: {total_samples}")
 
             test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20)
-            valid_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20)
-
             test_size = test_pct / 100
-            X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-            valid_size = (valid_pct / 100) / (1 - test_size) if test_size < 1 else 0
-            X_train, X_valid, y_train, y_valid = train_test_split(X_temp, y_temp, test_size=valid_size, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
 
-            st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Validation: {len(X_valid)}, Test: {len(X_test)}")
+            st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Test: {len(X_test)}")
             if st.button("Xác nhận phân chia", type="primary"):
                 with st.spinner("Đang chia dữ liệu..."):
                     st.session_state['split_data'] = {
                         "X_train": X_train.copy(), "y_train": y_train.copy(),
-                        "X_valid": X_valid.copy(), "y_valid": y_valid.copy(),
                         "X_test": X_test.copy(), "y_test": y_test.copy()
                     }
                     st.success("Đã chia dữ liệu thành công!")
-                    del X, y, X_temp, y_temp, X_test, y_test, X_train, X_valid, y_train, y_valid
+                    del X, y, X_train, X_test, y_train, y_test
                     gc.collect()
 
     ### Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
-        st.markdown('<div class="section-title">Huấn luyện và Đánh giá Mô hình</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Huấn luyện và Đánh giá</div>', unsafe_allow_html=True)
         if 'split_data' not in st.session_state:
             st.info("Vui lòng chia dữ liệu trước.")
         else:
             split_data = st.session_state['split_data'].copy()
             X_train = split_data["X_train"]
             y_train = split_data["y_train"]
-            X_valid = split_data["X_valid"]
-            y_valid = split_data["y_valid"]
             X_test = split_data["X_test"]
             y_test = split_data["y_test"]
 
             X_train = np.array(X_train, dtype=np.float32)
             y_train = np.array(y_train, dtype=np.int32)
-            X_valid = np.array(X_valid, dtype=np.float32)
-            y_valid = np.array(y_valid, dtype=np.int32)
             X_test = np.array(X_test, dtype=np.float32)
             y_test = np.array(y_test, dtype=np.int32)
-
-            if np.any(np.isnan(X_train)) or np.any(np.isnan(y_train)):
-                st.error("Dữ liệu huấn luyện chứa NaN. Đang xử lý...")
-                X_train = np.nan_to_num(X_train, nan=0.0)
-                y_train = np.nan_to_num(y_train, nan=0.0)
-                st.success("Đã thay thế NaN bằng 0!")
 
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
@@ -772,53 +676,35 @@ def   run_mnist_pseudo_labeling_app():
 
             #### Cấu hình mô hình
             st.subheader("⚙️ Cấu hình Mô hình")
-            with st.expander("Tham số Tham khảo", expanded=False):
-                st.markdown("""
-                | Số mẫu       | Số lớp ẩn | Kích thước lớp ẩn | Tốc độ học | Số lần lặp | Hàm kích hoạt | Trình tối ưu | Kích thước batch |
-                |--------------|-----------|-------------------|------------|------------|---------------|--------------|------------------|
-                | ≤ 1,000      | 1         | 32                | 0.001      | 30         | ReLU          | Adam         | 32               |
-                | ≤ 10,000     | 2         | (64, 32)          | 0.0005     | 50         | ReLU          | Adam         | 64               |
-                | ≤ 50,000     | 2         | (128, 64)         | 0.0003     | 70         | ReLU          | Adam         | 128              |
-                | > 50,000     | 3         | (128, 64, 32)     | 0.0001     | 100        | ReLU          | Adam         | 256              |
-                """, unsafe_allow_html=True)
-                st.info(f"Tham số tối ưu cho {num_samples} mẫu: {st.session_state['optimal_params']}")
-
             col_param1, col_param2 = st.columns(2)
             with col_param1:
-                with st.expander("🧠 Cấu trúc Mạng", expanded=True):
-                    num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, value=len(params["hidden_layer_sizes"]))
-                    hidden_sizes = []
-                    for i in range(num_hidden_layers):
-                        default_value = params["hidden_layer_sizes"][i] if i < len(params["hidden_layer_sizes"]) else 32
-                        hidden_size = st.number_input(f"Số nơ-ron lớp ẩn {i+1}", min_value=1, value=default_value)
-                        hidden_sizes.append(hidden_size)
-                    params["hidden_layer_sizes"] = tuple(hidden_sizes)
-                    params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "tanh", "softmax"], 
-                                                        index=["relu", "tanh", "softmax"].index(params["activation"]))
+                num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, value=len(params["hidden_layer_sizes"]))
+                hidden_sizes = []
+                for i in range(num_hidden_layers):
+                    default_value = params["hidden_layer_sizes"][i] if i < len(params["hidden_layer_sizes"]) else 32
+                    hidden_size = st.number_input(f"Số nơ-ron lớp ẩn {i+1}", min_value=1, value=default_value)
+                    hidden_sizes.append(hidden_size)
+                params["hidden_layer_sizes"] = tuple(hidden_sizes)
+                params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "tanh", "softmax"], 
+                                                    index=["relu", "tanh", "softmax"].index(params["activation"]))
 
             with col_param2:
-                with st.expander("🔧 Tối ưu hóa", expanded=True):
-                    params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.0, step=0.0001, 
-                                                              value=params["learning_rate"], format="%.4f")
-                    params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=1, value=params["epochs"])
-                    params["batch_size"] = st.number_input("Kích thước batch", min_value=1, value=params["batch_size"])
-                    params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
-                                                    index=["adam", "sgd"].index(params["solver"]))
-                    early_stopping = st.checkbox("Dừng sớm (Early Stopping)", value=False)
+                params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.0, step=0.0001, 
+                                                          value=params["learning_rate"], format="%.4f")
+                params["epochs"] = st.number_input("Số lần lặp (Epochs)", min_value=1, value=params["epochs"])
+                params["batch_size"] = st.number_input("Kích thước batch", min_value=1, value=params["batch_size"])
+                params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], 
+                                                index=["adam", "sgd"].index(params["solver"]))
 
-            #### Chế độ huấn luyện
-            st.subheader("🔄 Chế độ Huấn luyện")
-            training_mode = st.selectbox("Chọn chế độ huấn luyện", ["Standard", "Pseudo Labelling"])
-            pseudo_params = {}
-            if training_mode == "Pseudo Labelling":
-                with st.expander("⚙️ Cấu hình Pseudo Labelling", expanded=True):
-                    pseudo_params["labeled_pct"] = st.number_input("Tỷ lệ dữ liệu có nhãn ban đầu mỗi lớp (%)", 
-                                                                  min_value=0.1, max_value=100.0, value=1.0)
-                    pseudo_params["threshold"] = st.number_input("Ngưỡng tin cậy", min_value=0.0, max_value=1.0, value=0.95)
-                    pseudo_params["max_iterations"] = st.number_input("Số lần lặp tối đa", min_value=1, value=10)
+            #### Cấu hình Pseudo-Labeling
+            st.subheader("🔄 Cấu hình Pseudo-Labeling")
+            labeled_pct = st.number_input("Tỷ lệ dữ liệu có nhãn ban đầu mỗi lớp (%)", min_value=0.1, max_value=100.0, value=1.0)
+            st.write(f"**Số mẫu có nhãn ban đầu**: {int(len(X_train) * (labeled_pct / 100))}")
+            threshold = st.number_input("Ngưỡng tin cậy", min_value=0.0, max_value=1.0, value=0.95)
+            max_iterations = st.number_input("Số lần lặp tối đa", min_value=1, value=10)
 
             if st.button("Bắt đầu Huấn luyện", type="primary"):
-                with st.spinner(f"Đang huấn luyện mô hình ({training_mode})..."):
+                with st.spinner("Đang huấn luyện với Pseudo-Labeling..."):
                     start_time = time.time()
                     progress_bar = st.progress(0)
                     status_text = st.empty()
@@ -830,112 +716,70 @@ def   run_mnist_pseudo_labeling_app():
                             status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}")
 
                     callbacks_list = [ProgressCallback()]
-                    if early_stopping and training_mode == "Standard":
-                        callbacks_list.append(callbacks.EarlyStopping(monitor='val_loss', patience=10))
 
                     model_name = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                    if training_mode == "Standard":
+                    labeled_indices = []
+                    unlabeled_indices = []
+                    for digit in range(10):
+                        digit_indices = np.where(y_train == digit)[0]
+                        labeled_digit, unlabeled_digit = train_test_split(digit_indices, 
+                                                                          train_size=labeled_pct/100, 
+                                                                          random_state=42)
+                        labeled_indices.extend(labeled_digit)
+                        unlabeled_indices.extend(unlabeled_digit)
+                    labeled_indices = np.array(labeled_indices)
+                    unlabeled_indices = np.array(unlabeled_indices)
+                    X_labeled = X_train[labeled_indices]
+                    y_labeled = y_train[labeled_indices]
+
+                    loss_history = []
+                    accuracy_history = []
+                    with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
+                        mlflow.log_params({**params, "labeled_pct": labeled_pct, "threshold": threshold, "max_iterations": max_iterations})
                         model = build_model(params)
-                        history = model.fit(X_train, y_train, epochs=params["epochs"], batch_size=params["batch_size"],
-                                            validation_data=(X_valid, y_valid), callbacks=callbacks_list, verbose=0)
-                        y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                        y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                        acc_valid = accuracy_score(y_valid, y_valid_pred)
-                        acc_test = accuracy_score(y_test, y_test_pred)
-                        cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                        cm_test = confusion_matrix(y_test, y_test_pred)
+                        history = model.fit(X_labeled, y_labeled, epochs=params["epochs"], 
+                                            batch_size=params["batch_size"], callbacks=callbacks_list, verbose=0)
+                        loss_history.extend(history.history['loss'])
+                        accuracy_history.extend(history.history['accuracy'])
 
-                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
-                            mlflow.log_params(params)
-                            mlflow.log_metric("accuracy_val", acc_valid)
-                            mlflow.log_metric("accuracy_test", acc_test)
-                            mlflow.log_metric("training_time", time.time() - start_time)
-                            mlflow.keras.log_model(model, "model")
-
-                        results = {
-                            'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                            'cm_valid': cm_valid, 'cm_test': cm_test,
-                            'run_name': model_name, 'run_id': run.info.run_id,
-                            'params': params, 'training_time': time.time() - start_time,
-                            'loss_history': history.history['loss'],
-                            'val_loss_history': history.history.get('val_loss', []),
-                            'accuracy_history': history.history['accuracy'],
-                            'val_accuracy_history': history.history.get('val_accuracy', [])
-                        }
-
-                    else:  # Pseudo Labelling
-                        labeled_indices = []
-                        unlabeled_indices = []
-                        for digit in range(10):
-                            digit_indices = np.where(y_train == digit)[0]
-                            labeled_digit, unlabeled_digit = train_test_split(digit_indices, 
-                                                                              train_size=pseudo_params["labeled_pct"]/100, 
-                                                                              random_state=42)
-                            labeled_indices.extend(labeled_digit)
-                            unlabeled_indices.extend(unlabeled_digit)
-                        labeled_indices = np.array(labeled_indices)
-                        unlabeled_indices = np.array(unlabeled_indices)
-                        X_labeled = X_train[labeled_indices]
-                        y_labeled = y_train[labeled_indices]
-
-                        test_accuracies = []
-                        pseudo_counts = []
-                        with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
-                            mlflow.log_params({**params, **pseudo_params})
+                        for iteration in range(max_iterations):
+                            if len(unlabeled_indices) == 0:
+                                break
+                            X_unlabeled = X_train[unlabeled_indices]
+                            predictions = model.predict(X_unlabeled, verbose=0)
+                            max_probs = np.max(predictions, axis=1)
+                            pseudo_mask = max_probs > threshold
+                            if not np.any(pseudo_mask):
+                                break
+                            pseudo_indices = unlabeled_indices[pseudo_mask]
+                            pseudo_labels = np.argmax(predictions[pseudo_mask], axis=1)
+                            labeled_indices = np.concatenate((labeled_indices, pseudo_indices))
+                            y_labeled = np.concatenate((y_labeled, pseudo_labels))
+                            unlabeled_indices = unlabeled_indices[~pseudo_mask]
+                            X_labeled = X_train[labeled_indices]
                             model = build_model(params)
                             history = model.fit(X_labeled, y_labeled, epochs=params["epochs"], 
                                                 batch_size=params["batch_size"], callbacks=callbacks_list, verbose=0)
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            test_accuracies.append(acc_test)
-                            pseudo_counts.append(0)
-                            mlflow.log_metric("test_accuracy", acc_test, step=0)
+                            loss_history.extend(history.history['loss'])
+                            accuracy_history.extend(history.history['accuracy'])
 
-                            for iteration in range(pseudo_params["max_iterations"]):
-                                if len(unlabeled_indices) == 0:
-                                    break
-                                X_unlabeled = X_train[unlabeled_indices]
-                                predictions = model.predict(X_unlabeled, verbose=0)
-                                max_probs = np.max(predictions, axis=1)
-                                pseudo_mask = max_probs > pseudo_params["threshold"]
-                                if not np.any(pseudo_mask):
-                                    break
-                                pseudo_indices = unlabeled_indices[pseudo_mask]
-                                pseudo_labels = np.argmax(predictions[pseudo_mask], axis=1)
-                                labeled_indices = np.concatenate((labeled_indices, pseudo_indices))
-                                y_labeled = np.concatenate((y_labeled, pseudo_labels))
-                                unlabeled_indices = unlabeled_indices[~pseudo_mask]
-                                X_labeled = X_train[labeled_indices]
-                                model = build_model(params)
-                                history = model.fit(X_labeled, y_labeled, epochs=params["epochs"], 
-                                                    batch_size=params["batch_size"], callbacks=callbacks_list, verbose=0)
-                                y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                acc_test = accuracy_score(y_test, y_test_pred)
-                                test_accuracies.append(acc_test)
-                                pseudo_counts.append(len(pseudo_indices))
-                                mlflow.log_metric("test_accuracy", acc_test, step=iteration+1)
-                                mlflow.log_metric("pseudo_labeled_count", len(pseudo_indices), step=iteration+1)
-                                progress_bar.progress((iteration + 1) / pseudo_params["max_iterations"])
+                        y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
+                        acc_test = accuracy_score(y_test, y_test_pred)
+                        cm_test = confusion_matrix(y_test, y_test_pred)
+                        mlflow.log_metric("accuracy_test", acc_test)
+                        mlflow.log_metric("training_time", time.time() - start_time)
+                        mlflow.keras.log_model(model, "model")
 
-                            y_valid_pred = np.argmax(model.predict(X_valid, verbose=0), axis=1)
-                            y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                            acc_valid = accuracy_score(y_valid, y_valid_pred)
-                            acc_test = accuracy_score(y_test, y_test_pred)
-                            cm_valid = confusion_matrix(y_valid, y_valid_pred)
-                            cm_test = confusion_matrix(y_test, y_test_pred)
-                            mlflow.log_metric("accuracy_val", acc_valid)
-                            mlflow.log_metric("accuracy_test", acc_test)
-                            mlflow.log_metric("training_time", time.time() - start_time)
-                            mlflow.keras.log_model(model, "model")
-
-                            results = {
-                                'accuracy_val': acc_valid, 'accuracy_test': acc_test,
-                                'cm_valid': cm_valid, 'cm_test': cm_test,
-                                'run_name': model_name, 'run_id': run.info.run_id,
-                                'params': params, 'training_time': time.time() - start_time,
-                                'test_accuracies': test_accuracies,
-                                'pseudo_counts': pseudo_counts
-                            }
+                        results = {
+                            'accuracy_test': acc_test,
+                            'cm_test': cm_test,
+                            'run_name': model_name,
+                            'run_id': run.info.run_id,
+                            'params': params,
+                            'training_time': time.time() - start_time,
+                            'loss_history': loss_history,
+                            'accuracy_history': accuracy_history
+                        }
 
                     st.session_state['training_results'] = results
                     st.success(f"Đã huấn luyện xong! Thời gian: {results['training_time']:.2f} giây")
@@ -944,52 +788,39 @@ def   run_mnist_pseudo_labeling_app():
             if 'training_results' in st.session_state:
                 results = st.session_state['training_results']
                 st.subheader("📊 Kết quả Huấn luyện")
-                col1, col2, col3 = st.columns(3)
+                col1, col2 = st.columns(2)
                 col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
-                col2.metric("Độ chính xác Validation", f"{results['accuracy_val']*100:.2f}%")
-                col3.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+                col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
                 st.subheader("Ma trận Nhầm lẫn")
-                col_cm1, col_cm2 = st.columns(2)
-                with col_cm1:
-                    fig, ax = plt.subplots()
-                    sns.heatmap(results['cm_valid'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Validation")
-                    st.pyplot(fig)
-                    plt.close(fig)
-                with col_cm2:
-                    fig, ax = plt.subplots()
-                    sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                    ax.set_title("Test")
-                    st.pyplot(fig)
-                    plt.close(fig)
+                fig, ax = plt.subplots()
+                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Test")
+                st.pyplot(fig)
+                plt.close(fig)
 
-                if 'test_accuracies' in results:
-                    st.subheader("Kết quả Pseudo-Labeling")
-                    col_acc, col_count = st.columns(2)
-                    with col_acc:
-                        fig, ax = plt.subplots()
-                        ax.plot(results['test_accuracies'], marker='o')
-                        ax.set_title("Độ chính xác Test qua các vòng")
-                        ax.set_xlabel("Vòng lặp")
-                        ax.set_ylabel("Độ chính xác")
-                        st.pyplot(fig)
-                        plt.close(fig)
-                    with col_count:
-                        fig, ax = plt.subplots()
-                        ax.bar(range(len(results['pseudo_counts'])), results['pseudo_counts'])
-                        ax.set_title("Số mẫu gán nhãn mỗi vòng")
-                        ax.set_xlabel("Vòng lặp")
-                        ax.set_ylabel("Số mẫu")
-                        st.pyplot(fig)
-                        plt.close(fig)
+                st.subheader("Biểu đồ Loss và Accuracy")
+                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+                ax1.plot(results['loss_history'])
+                ax1.set_title("Loss qua các epoch")
+                ax1.set_xlabel("Epoch")
+                ax1.set_ylabel("Loss")
+                ax2.plot(results['accuracy_history'])
+                ax2.set_title("Accuracy qua các epoch")
+                ax2.set_xlabel("Epoch")
+                ax2.set_ylabel("Accuracy")
+                st.pyplot(fig)
+                plt.close(fig)
 
     ### Tab 6: Demo dự đoán
     with tab_demo:
-        st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Demo Dự đoán</div>', unsafe_allow_html=True)
         if 'split_data' not in st.session_state:
             st.warning("Vui lòng chia dữ liệu trước!")
         else:
+            if st.button("Làm mới danh sách mô hình"):
+                st.rerun()
+
             runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
             model_options = {run.info.run_id: run.data.tags.get('mlflow.runName', run.info.run_id) for run in runs}
             if not model_options:
@@ -1038,30 +869,97 @@ def   run_mnist_pseudo_labeling_app():
 
     ### Tab 7: Thông tin huấn luyện
     with tab_log_info:
-        st.markdown('<div class="section-title">Thông tin Huấn luyện</div>', unsafe_allow_html=True)
-        runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
-        if not runs:
-            st.info("Chưa có lần chạy nào.")
-        else:
-            run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', run.info.run_id) for run in runs}
-            selected_run_id = st.selectbox("Chọn lần chạy:", list(run_options.keys()), 
-                                           format_func=lambda x: run_options[x])
-            run = client.get_run(selected_run_id)
+        st.markdown('<div class="section-title">Theo dõi Kết quả</div>', unsafe_allow_html=True)
+        try:
+            with st.spinner("Đang tải thông tin huấn luyện..."):
+                client = MlflowClient()
+                runs = client.search_runs(experiment_ids=[EXPERIMENT_ID], order_by=["attributes.start_time DESC"])
+                if not runs:
+                    st.info(f"Chưa có lần chạy nào trong Experiment ID {EXPERIMENT_ID}.")
+                else:
+                    run_options = {run.info.run_id: run.data.tags.get('mlflow.runName', f"Run_{run.info.run_id}") for run in runs}
+                    selected_run_name = st.selectbox("Chọn run:", list(run_options.values()))
+                    selected_run_id = [k for k, v in run_options.items() if v == selected_run_name][0]
+                    selected_run = client.get_run(selected_run_id)
 
-            st.write(f"**Tên:** {run.data.tags.get('mlflow.runName', run.info.run_id)}")
-            st.write(f"**Tham số:** {run.data.params}")
-            st.write(f"**Số liệu:** {run.data.metrics}")
+                    st.subheader("Đổi tên Run")
+                    new_run_name = st.text_input("Nhập tên mới:", value=selected_run_name)
+                    if st.button("Cập nhật tên"):
+                        client.set_tag(selected_run_id, "mlflow.runName", new_run_name.strip())
+                        st.success(f"Đã đổi tên thành: {new_run_name.strip()}")
+                        st.rerun()
 
-            new_name = st.text_input("Đổi tên run:", value=run.data.tags.get('mlflow.runName', run.info.run_id))
-            if st.button("Cập nhật tên"):
-                client.set_tag(selected_run_id, "mlflow.runName", new_name)
-                st.success("Đã cập nhật tên!")
-                st.rerun()
+                    st.subheader("Xóa Run")
+                    if st.button("Xóa lần chạy"):
+                        client.delete_run(selected_run_id)
+                        st.success(f"Đã xóa: {selected_run_name}")
+                        st.rerun()
 
-            if st.button("Xóa run"):
-                client.delete_run(selected_run_id)
-                st.success("Đã xóa run!")
-                st.rerun()
+                    st.subheader("Thông tin chi tiết")
+                    st.write(f"**Tên:** {selected_run_name}")
+                    st.write(f"**ID:** {selected_run_id}")
+                    st.write(f"**Thời gian bắt đầu:** {datetime.fromtimestamp(selected_run.info.start_time / 1000)}")
+                    
+                    st.markdown("**Tham số huấn luyện:**")
+                    st.json(selected_run.data.params, expanded=True)
+                    
+                    st.markdown("**Số liệu huấn luyện:**")
+                    st.json(selected_run.data.metrics, expanded=True)
+
+                    st.subheader("📈 Lịch sử Huấn luyện")
+                    col_loss, col_acc = st.columns(2)
+                    with col_loss:
+                        if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
+                            results = st.session_state['training_results']
+                            if 'loss_history' in results:
+                                fig, ax = plt.subplots(figsize=(6, 4))
+                                ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
+                                        label='Training Loss', color='blue', linewidth=2)
+                                ax.set_xlabel("Epochs")
+                                ax.set_ylabel("Loss")
+                                ax.set_title("Lịch sử Mất mát")
+                                ax.legend()
+                                ax.grid(True)
+                                st.pyplot(fig)
+                                plt.close(fig)
+                    with col_acc:
+                        if 'training_results' in st.session_state and selected_run_id == st.session_state['training_results']['run_id']:
+                            results = st.session_state['training_results']
+                            if 'accuracy_history' in results:
+                                fig, ax = plt.subplots(figsize=(6, 4))
+                                ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
+                                        label='Training Accuracy', color='green', linewidth=2)
+                                ax.set_xlabel("Epochs")
+                                ax.set_ylabel("Accuracy")
+                                ax.set_title("Lịch sử Độ chính xác")
+                                ax.legend()
+                                ax.grid(True)
+                                st.pyplot(fig)
+                                plt.close(fig)
+
+                    st.subheader("So sánh các Run")
+                    selected_runs = st.multiselect("Chọn các run để so sánh:", list(run_options.values()), default=[selected_run_name])
+                    if selected_runs:
+                        selected_run_ids = [k for k, v in run_options.items() if v in selected_runs]
+                        comparison_data = []
+                        for run_id in selected_run_ids:
+                            run = client.get_run(run_id)
+                            run_data = {
+                                "Tên": run.data.tags.get('mlflow.runName', run_id),
+                                "Accuracy Test": run.data.metrics.get('accuracy_test', 'N/A'),
+                                "Thời gian": run.data.metrics.get('training_time', 'N/A'),
+                                "Số lớp ẩn": run.data.params.get('hidden_layer_sizes', 'N/A'),
+                                "Learning Rate": run.data.params.get('learning_rate', 'N/A'),
+                                "Epochs": run.data.params.get('epochs', 'N/A')
+                            }
+                            comparison_data.append(run_data)
+                        st.table(pd.DataFrame(comparison_data))
+
+        except Exception as e:
+            st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
+        mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+        st.markdown("---")
+        st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
 
 if __name__ == "__main__":
-      run_mnist_pseudo_labeling_app()
+    run_mnist_pseudo_labeling_app()
