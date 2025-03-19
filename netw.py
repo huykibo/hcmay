@@ -385,7 +385,7 @@ def run_mnist_neural_network_app():
             except Exception as e:
                 st.error(f"Lỗi khi tải ảnh: {e}")
 
-            st.subheader("🔧 Các tham số huấn luyện.")
+            st.subheader("🔧 Các tham số huấn luyện")
             st.markdown("""
             Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, được giải thích chi tiết với ý nghĩa, cách hoạt động, công thức (nếu có), ví dụ minh họa và lưu ý khi điều chỉnh:
 
@@ -1137,12 +1137,14 @@ def run_mnist_neural_network_app():
 
                     elif input_method == "Vẽ trực tiếp":
                         st.markdown('<p class="mode-title">Vẽ trực tiếp</p>', unsafe_allow_html=True)
-                        st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen):")
+                        st.write("Vẽ chữ số từ 0-9 (nét trắng trên nền đen). Nhấn 'Xóa bảng vẽ' để làm mới.")
 
-                        # Sử dụng key cố định cho canvas
-                        if 'canvas_result' not in st.session_state:
-                            st.session_state['canvas_result'] = None
+                        # Khởi tạo biến theo dõi phiên bản canvas
+                        if 'canvas_version' not in st.session_state:
+                            st.session_state['canvas_version'] = 0
 
+                        # Tạo key động dựa trên phiên bản canvas
+                        canvas_key = f"canvas_{st.session_state['canvas_version']}"
                         canvas_result = st_canvas(
                             fill_color="rgba(255, 165, 0, 0.3)",
                             stroke_width=20,
@@ -1151,21 +1153,20 @@ def run_mnist_neural_network_app():
                             height=280,
                             width=280,
                             drawing_mode="freedraw",
-                            key="canvas_fixed_key",  # Key cố định
-                            update_streamlit=False  # Ngăn rerender tự động
+                            key=canvas_key,  # Key động thay vì cố định
+                            update_streamlit=False  # Ngăn rerender tự động khi vẽ
                         )
 
-                        # Lưu kết quả canvas vào session_state
-                        if canvas_result.image_data is not None:
-                            st.session_state['canvas_result'] = canvas_result
-
+                        # Bố cục hai cột: Dự đoán và Xóa
                         col_pred, col_clear = st.columns([2, 1])
+                        
                         with col_pred:
                             if st.button("Dự đoán", key="predict_button"):
-                                if st.session_state['canvas_result'] is not None:
+                                if canvas_result.image_data is not None:
                                     with st.spinner("Đang xử lý hình vẽ..."):
+                                        # Xử lý hình ảnh từ canvas
                                         image = Image.fromarray(
-                                            st.session_state['canvas_result'].image_data.astype('uint8'), 'RGBA'
+                                            canvas_result.image_data.astype('uint8'), 'RGBA'
                                         ).convert('L')
                                         image_resized = image.resize((28, 28))
                                         image_array = np.array(image_resized, dtype=np.float32).reshape(1, 784)
@@ -1173,6 +1174,8 @@ def run_mnist_neural_network_app():
                                         prediction = model.predict(image_processed, verbose=0)[0]
                                         predicted_class = np.argmax(prediction)
                                         confidence = prediction[predicted_class] * 100
+                                        
+                                        # Hiển thị kết quả
                                         st.markdown(f"""
                                             <div>
                                                 <strong>Dự đoán:</strong> {predicted_class}<br>
@@ -1187,13 +1190,18 @@ def run_mnist_neural_network_app():
                                         st.pyplot(fig)
                                         plt.close(fig)
                                         st.success("Dự đoán hoàn tất!")
+                                        
+                                        # Giải phóng bộ nhớ
                                         del image, image_resized, image_array, image_processed, prediction
                                         gc.collect()
                                 else:
                                     st.warning("Vui lòng vẽ trước khi dự đoán!")
 
-            else:
-                st.warning("Chưa có mô hình nào được lưu trong MLflow.")
+                        with col_clear:
+                            if st.button("Xóa bảng vẽ", key="clear_canvas"):
+                                # Tăng phiên bản canvas để tạo key mới, làm mới canvas
+                                st.session_state['canvas_version'] += 1
+                                st.rerun()  # Chạy lại ứng dụng để áp dụng key mới
 
     # Tab 7: Thông tin huấn luyện
     with tab_log_info:
