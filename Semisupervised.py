@@ -268,7 +268,7 @@ def run_mnist_pseudo_labeling_app():
                         progress_bar.progress(i)
                         status_text.text(f"Đang tải thông tin... {i}%")
                         time.sleep(0.05)
-                    st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
+                    st.subheader("📊 Neural Network – Mạng nơ-ron nhân tạo")
                     st.markdown("""
                     **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                     """, unsafe_allow_html=True)
@@ -297,7 +297,7 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step1_init.png"), caption="Minh họa: Khởi tạo mô hình", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
+                        st.error("Không tìm thấy ảnh minh họa 'step1_init.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -317,7 +317,7 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step2_feedforward.png"), caption="Minh họa: Lan truyền thuận", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
+                        st.error("Không tìm thấy ảnh minh họa 'step2_feedforward.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -335,7 +335,7 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step3_loss.png"), caption="Minh họa: Tính hàm mất mát", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
+                        st.error("Không tìm thấy ảnh minh họa 'step3_loss.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -350,7 +350,7 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step4_backprop.png"), caption="Minh họa: Lan truyền ngược", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
+                        st.error("Không tìm thấy ảnh minh họa 'step4_backprop.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -368,7 +368,7 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step5_gradient.png"), caption="Minh họa: Cập nhật tham số", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
+                        st.error("Không tìm thấy ảnh minh họa 'step5_gradient.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
@@ -382,195 +382,93 @@ def run_mnist_pseudo_labeling_app():
                     try:
                         st.image(os.path.join("plnw", "step6_repeat.png"), caption="Minh họa: Lặp lại", width=700)
                     except FileNotFoundError:
-                        st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
+                        st.error("Không tìm thấy ảnh minh họa 'step6_repeat.png'.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
-                    st.subheader("🔧 Các tham số huấn luyện.")
+                    st.subheader("🔧 Các tham số huấn luyện")
                     st.markdown("""
-                    Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, được giải thích chi tiết với ý nghĩa, cách hoạt động, công thức (nếu có), ví dụ minh họa và lưu ý khi điều chỉnh:
+                    Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
-                    ---
+                    1. **Số lớp ẩn (Number of Hidden Layers):**  
+                       - **Ý nghĩa**: Quyết định độ sâu của mạng, ảnh hưởng đến khả năng học các đặc trưng phức tạp.  
+                       - **Hoạt động**: Tăng số lớp ẩn giúp mạng học được các đặc trưng cấp cao hơn, nhưng quá nhiều lớp có thể gây khó hội tụ hoặc overfitting.  
+                       - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm (trong ứng dụng này: từ 1 đến 5).  
 
-                    #### **1. Số lớp ẩn (Number of Hidden Layers)**  
-                    - **Ý nghĩa**: Quyết định độ sâu của mạng, tức là số lượng lớp nơ-ron nằm giữa lớp đầu vào và lớp đầu ra.  
-                    - **Hoạt động**:  
-                      - Mỗi lớp ẩn giúp mạng học được các đặc trưng phức tạp hơn từ dữ liệu đầu vào.  
-                      - Với bài toán đơn giản như MNIST, 1-2 lớp ẩn thường đủ; bài toán phức tạp hơn (như nhận diện ảnh tự nhiên) có thể cần nhiều lớp hơn.  
-                    - **Công thức**: Không có công thức cụ thể, thường được chọn dựa trên kinh nghiệm hoặc thử nghiệm.  
-                    - **Ví dụ**:  
-                      - **1 lớp ẩn**: Đủ để học các đặc trưng cơ bản trong bài toán tuyến tính hoặc gần tuyến tính.  
-                      - **2-3 lớp ẩn**: Phù hợp cho bài toán phi tuyến tính như phân loại chữ số MNIST.  
-                      - **5 lớp ẩn trở lên**: Thường dùng cho mạng sâu (deep learning) với dữ liệu phức tạp hơn.  
-                    - **Lưu ý**:  
-                      - Quá ít lớp ẩn có thể khiến mô hình không học được các đặc trưng đủ phức tạp (underfitting).  
-                      - Quá nhiều lớp ẩn làm tăng nguy cơ overfitting (mô hình học quá mức dữ liệu huấn luyện) và khó hội tụ nếu không đủ dữ liệu hoặc tài nguyên tính toán.  
-                      - Trong ứng dụng này, bạn có thể chọn từ 1 đến 5 lớp ẩn trong tab "Huấn luyện/Đánh giá".  
+                    2. **Số nơ-ron mỗi lớp ẩn (Number of Neurons per Layer):**  
+                       - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là khả năng biểu diễn thông tin trong mỗi lớp.  
+                       - **Hoạt động**: Nhiều nơ-ron hơn giúp mạng học được nhiều đặc trưng hơn, nhưng cũng tăng chi phí tính toán.  
+                       - **Công thức**: Không có, thường là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa phần cứng.  
 
-                    ---
+                    3. **Tốc độ học (Learning Rate - η):**  
+                       - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số trong mỗi lần cập nhật.  
+                       - **Hoạt động**: Giá trị nhỏ (ví dụ: 0.0001) làm mô hình học chậm nhưng ổn định; giá trị lớn (ví dụ: 0.01) học nhanh hơn nhưng dễ vượt qua điểm tối ưu.  
+                       - **Công thức**:  
+                         $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                         - $W_{t+1}$: Trọng số sau khi cập nhật.  
+                         - $W_t$: Trọng số tại bước hiện tại.  
+                         - $\\eta$: Tốc độ học.  
+                         - $\\frac{\\partial L}{\\partial W_t}$: Gradient của mất mát theo trọng số.  
 
-                    #### **2. Số nơ-ron mỗi lớp ẩn (Number of Neurons per Hidden Layer)**  
-                    - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là số lượng nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến khả năng biểu diễn thông tin.  
-                    - **Hoạt động**:  
-                      - Nhiều nơ-ron hơn cho phép mạng học được nhiều đặc trưng hơn từ dữ liệu, nhưng cũng tăng chi phí tính toán và nguy cơ overfitting.  
-                      - Số nơ-ron thường giảm dần qua các lớp (ví dụ: 128 → 64 → 32) để học từ các đặc trưng chung đến cụ thể.  
-                    - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, v.v.) để tối ưu hóa tính toán trên phần cứng như GPU.  
-                    - **Ví dụ**:  
-                      - **32 nơ-ron**: Phù hợp cho mạng nhỏ hoặc dữ liệu đơn giản.  
-                      - **128 nơ-ron**: Thường dùng cho lớp ẩn đầu tiên trong mạng sâu để học nhiều đặc trưng từ dữ liệu thô (như ảnh MNIST).  
-                      - **64 → 32**: Một cấu hình phổ biến cho mạng 2 lớp ẩn khi xử lý MNIST.  
-                    - **Lưu ý**:  
-                      - Quá nhiều nơ-ron có thể làm mô hình phức tạp không cần thiết, dẫn đến overfitting hoặc yêu cầu nhiều tài nguyên hơn.  
-                      - Quá ít nơ-ron khiến mô hình không học đủ đặc trưng, gây underfitting.  
-                      - Trong ứng dụng này, bạn có thể tùy chỉnh số nơ-ron cho từng lớp ẩn trong tab "Huấn luyện/Đánh giá".  
+                    4. **Số lần lặp (Epochs):**  
+                       - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng.  
+                       - **Hoạt động**: Tăng số lần lặp giúp mạng học tốt hơn, nhưng quá nhiều có thể dẫn đến overfitting.  
+                       - **Công thức**: Không có, là tham số người dùng chọn (trong ứng dụng này: 10-200).  
 
-                    ---
+                    5. **Kích thước batch (Batch Size):**  
+                       - **Ý nghĩa**: Số mẫu được xử lý trước khi cập nhật trọng số.  
+                       - **Hoạt động**: Batch nhỏ (ví dụ: 16) giúp cập nhật thường xuyên hơn nhưng chậm; batch lớn (ví dụ: 512) nhanh hơn nhưng cần nhiều bộ nhớ.  
+                       - **Công thức**: Không có, thường là lũy thừa của 2 để tối ưu hóa tính toán.  
 
-                    #### **3. Tốc độ học (Learning Rate - η)**  
-                    - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số và bias trong mỗi lần cập nhật, ảnh hưởng đến tốc độ và chất lượng hội tụ của mô hình.  
-                    - **Hoạt động**:  
-                      - Giá trị nhỏ (ví dụ: 0.0001) giúp mô hình học chậm nhưng ổn định, ít vượt qua điểm tối ưu của hàm mất mát.  
-                      - Giá trị lớn (ví dụ: 0.01) làm mô hình học nhanh hơn nhưng có thể dao động hoặc không hội tụ.  
-                    - **Công thức**:  
-                      $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                      $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
-                      - $W_{t+1}$, $b_{t+1}$: Trọng số và bias sau khi cập nhật.  
-                      - $W_t$, $b_t$: Trọng số và bias hiện tại.  
-                      - $\\eta$: Tốc độ học.  
-                      - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient của hàm mất mát theo trọng số và bias.  
-                    - **Ví dụ**:  
-                      - **$\\eta = 0.001$**: Phù hợp cho bài toán phức tạp như MNIST, cần hội tụ chậm và ổn định.  
-                      - **$\\eta = 0.01$**: Có thể dùng cho bài toán đơn giản hoặc khi muốn thử nghiệm nhanh.  
-                      - **$\\eta = 0.0001$**: Thích hợp khi mạng sâu hoặc dữ liệu lớn, tránh dao động quá mức.  
-                    - **Lưu ý**:  
-                      - Tốc độ học quá cao khiến mô hình không hội tụ, dao động quanh điểm tối ưu.  
-                      - Tốc độ học quá thấp làm quá trình huấn luyện chậm, tốn thời gian.  
-                      - Trong ứng dụng này, giá trị mặc định thường là 0.001, nhưng bạn có thể điều chỉnh trong tab "Huấn luyện/Đánh giá".  
+                    6. **Hàm kích hoạt (Activation Function):**  
+                       - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào.  
+                       - **Hoạt động**: Chuyển đổi đầu ra tuyến tính thành phi tuyến để mạng học được các đặc trưng phức tạp.  
+                       - **Chi tiết các hàm kích hoạt phổ biến:**  
+                         - **ReLU (Rectified Linear Unit):**  
+                           - **Ý nghĩa**: Đơn giản, nhanh, tránh vấn đề biến mất gradient.  
+                           - **Hoạt động**: Chỉ cho phép các giá trị dương đi qua, đặt giá trị âm về 0.  
+                           - **Công thức**:  
+                             $$ f(x) = \\max(0, x) $$  
+                             - $x$: Đầu vào của hàm.  
+                         - **Tanh (Hyperbolic Tangent):**  
+                           - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm/dương.  
+                           - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient với mạng sâu.  
+                           - **Công thức**:  
+                             $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
+                             - $x$: Đầu vào của hàm.  
+                         - **Softmax:**  
+                           - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi thành xác suất cho phân loại đa lớp.  
+                           - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp dự đoán lớp có xác suất cao nhất.  
+                           - **Công thức**:  
+                             $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                             - $x_i$: Đầu vào của nơ-ron thứ $i$.  
+                             - $k$: Số lớp (ở đây là 10).  
 
-                    ---
-
-                    #### **4. Số lần lặp (Epochs)**  
-                    - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng, quyết định mức độ tinh chỉnh của mô hình.  
-                    - **Hoạt động**:  
-                      - Mỗi epoch là một lần mạng học từ toàn bộ dữ liệu, giúp cập nhật trọng số và bias để giảm hàm mất mát.  
-                      - Tăng số epoch cải thiện hiệu suất, nhưng quá nhiều có thể dẫn đến overfitting nếu không kiểm soát.  
-                    - **Công thức**: Không có công thức cụ thể, là tham số do người dùng chọn.  
-                    - **Ví dụ**:  
-                      - **10 epochs**: Phù hợp cho thử nghiệm nhanh hoặc dữ liệu lớn khi tài nguyên hạn chế.  
-                      - **50 epochs**: Thường dùng cho huấn luyện cơ bản với dữ liệu vừa phải (như 10,000 mẫu MNIST).  
-                      - **100 epochs**: Dùng cho huấn luyện chuyên sâu để đạt độ chính xác cao (như 70,000 mẫu MNIST).  
-                    - **Lưu ý**:  
-                      - Quá ít epoch khiến mô hình chưa học đủ, dẫn đến underfitting.  
-                      - Quá nhiều epoch làm tăng nguy cơ overfitting, đặc biệt nếu không dùng kỹ thuật như Early Stopping.  
-                      - Trong ứng dụng này, bạn có thể chọn từ 10 đến 200 epochs, và nên dùng Early Stopping để dừng khi mô hình không cải thiện thêm.  
-
-                    ---
-
-                    #### **5. Kích thước batch (Batch Size)**  
-                    - **Ý nghĩa**: Số mẫu dữ liệu được xử lý trong một lần lan truyền thuận và ngược trước khi cập nhật trọng số.  
-                    - **Hoạt động**:  
-                      - **Batch nhỏ** (ví dụ: 16): Cập nhật trọng số thường xuyên, giúp học chi tiết hơn nhưng chậm và có thể dao động.  
-                      - **Batch lớn** (ví dụ: 256): Cập nhật ít thường xuyên hơn, tăng tốc huấn luyện nhưng cần nhiều bộ nhớ và có thể bỏ qua chi tiết.  
-                    - **Công thức**: Không có công thức cố định, thường chọn là lũy thừa của 2 (16, 32, 64, 128, 256, v.v.) để tối ưu hóa tính toán trên phần cứng.  
-                    - **Ví dụ**:  
-                      - **Batch size = 32**: Phù hợp cho dữ liệu nhỏ hoặc thử nghiệm nhanh (như 1,000 mẫu MNIST).  
-                      - **Batch size = 128**: Thường dùng cho dữ liệu vừa (như 50,000 mẫu MNIST) để cân bằng tốc độ và độ chính xác.  
-                      - **Batch size = 256**: Dùng cho dữ liệu lớn (như 70,000 mẫu MNIST) để tăng tốc huấn luyện.  
-                    - **Lưu ý**:  
-                      - Batch quá nhỏ làm huấn luyện không ổn định, dễ dao động quanh điểm tối ưu.  
-                      - Batch quá lớn có thể khiến mô hình không học được các đặc trưng chi tiết, đặc biệt với dữ liệu phức tạp.  
-                      - Trong ứng dụng này, giá trị mặc định phụ thuộc vào số lượng mẫu (32, 64, 128, hoặc 256), nhưng bạn có thể tùy chỉnh.  
-
-                    ---
-
-                    #### **6. Hàm kích hoạt (Activation Function)**  
-                    - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào, giúp mạng học được các mối quan hệ phi tuyến tính.  
-                    - **Hoạt động**:  
-                      - Chuyển đổi giá trị tuyến tính (tổng trọng số) thành phi tuyến để mô hình học được các đặc trưng phức tạp.  
-                      - Được áp dụng sau mỗi lớp (trừ lớp đầu ra trong một số trường hợp).  
-                    - **Các hàm kích hoạt phổ biến**:  
-                      - **ReLU (Rectified Linear Unit)**:  
-                        - **Ý nghĩa**: Đơn giản, nhanh, giúp tránh vấn đề biến mất gradient trong mạng sâu.  
-                        - **Hoạt động**: Chỉ cho phép giá trị dương đi qua, đặt tất cả giá trị âm về 0.  
-                        - **Công thức**:  
-                          $$ f(x) = \\max(0, x) $$  
-                        - **Ví dụ**:  
-                          - Nếu $x = 3$, thì $f(3) = 3$.  
-                          - Nếu $x = -1$, thì $f(-1) = 0$.  
-                        - **Lưu ý**:  
-                          - Thường dùng cho lớp ẩn vì hiệu quả và đơn giản.  
-                          - Có thể gây "dead neurons" (nơ-ron không hoạt động) nếu đầu vào luôn âm.  
-                      - **Tanh (Hyperbolic Tangent)**:  
-                        - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm và dương.  
-                        - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient trong mạng sâu.  
-                        - **Công thức**:  
-                          $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
-                        - **Ví dụ**:  
-                          - Nếu $x = 0$, thì $f(0) = 0$.  
-                          - Nếu $x = 1$, thì $f(1) \\approx 0.76$.  
-                          - Nếu $x = -1$, thì $f(-1) \\approx -0.76$.  
-                        - **Lưu ý**:  
-                          - Ít dùng hơn ReLU do vấn đề biến mất gradient, nhưng vẫn hữu ích trong một số trường hợp.  
-                      - **Softmax**:  
-                        - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi đầu ra thành xác suất cho bài toán phân loại đa lớp (như MNIST).  
-                        - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp chọn lớp có xác suất cao nhất.  
-                        - **Công thức**:  
-                          $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
-                          - $x_i$: Đầu vào của nơ-ron thứ $i$.  
-                          - $k$: Số lớp (ở đây là 10, từ 0-9).  
-                        - **Ví dụ**:  
-                          - Nếu $x = [1, 2, 3]$, thì $f(x) \\approx [0.09, 0.24, 0.67]$.  
-                          - Tổng xác suất luôn bằng 1.  
-                        - **Lưu ý**:  
-                          - Bắt buộc dùng ở lớp đầu ra cho bài toán phân loại đa lớp như MNIST.  
-                    - **Lưu ý chung**:  
-                      - ReLU là lựa chọn mặc định cho lớp ẩn trong ứng dụng này vì tính hiệu quả và phổ biến.  
-                      - Softmax luôn được dùng ở lớp đầu ra để dự đoán chữ số từ 0-9.  
-                      - Bạn có thể chọn giữa ReLU, Tanh, hoặc Softmax trong tab "Huấn luyện/Đánh giá" cho lớp ẩn.  
-
-                    ---
-
-                    #### **7. Trình tối ưu (Optimizer)**  
-                    - **Ý nghĩa**: Thuật toán điều chỉnh trọng số và bias để giảm hàm mất mát, quyết định cách mô hình học.  
-                    - **Hoạt động**:  
-                      - Dùng gradient (đạo hàm của hàm mất mát) để cập nhật tham số, với cách tiếp cận khác nhau tùy thuật toán.  
-                    - **Các trình tối ưu phổ biến**:  
-                      - **SGD (Stochastic Gradient Descent)**:  
-                        - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu hoặc mini-batch, là phiên bản ngẫu nhiên của Gradient Descent.  
-                        - **Hoạt động**: Tính gradient cho từng batch và điều chỉnh tham số theo hướng giảm mất mát.  
-                        - **Công thức**:  
-                          $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                          $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
-                          - $W_t$, $b_t$: Trọng số và bias hiện tại.  
-                          - $\\eta$: Tốc độ học.  
-                          - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient.  
-                        - **Ví dụ**:  
-                          - Với $\\eta = 0.01$, nếu gradient $\\frac{\\partial L}{\\partial W_t} = 0.5$, thì $W_{t+1} = W_t - 0.01 \\cdot 0.5 = W_t - 0.005$.  
-                        - **Ưu điểm**: Đơn giản, hiệu quả với dữ liệu lớn khi dùng mini-batch.  
-                        - **Nhược điểm**: Dao động quanh điểm tối ưu, hội tụ chậm nếu không điều chỉnh tốt.  
-                      - **Adam (Adaptive Moment Estimation)**:  
-                        - **Ý nghĩa**: Kết hợp phương pháp động lượng và RMSProp, thích nghi tốc độ học cho từng tham số.  
-                        - **Hoạt động**: Dùng hai moment (bậc 1 và bậc 2) của gradient để điều chỉnh cập nhật, giúp hội tụ nhanh và ổn định hơn SGD.  
-                        - **Công thức**:  
-                          1. $m_t = \\beta_1 \\cdot m_{t-1} + (1 - \\beta_1) \\cdot g_t$ (moment bậc 1 - trung bình động của gradient).  
-                          2. $v_t = \\beta_2 \\cdot v_{t-1} + (1 - \\beta_2) \\cdot g_t^2$ (moment bậc 2 - trung bình động của bình phương gradient).  
-                          3. $\\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t}$, $\\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t}$ (hiệu chỉnh bias).  
-                          4. $W_{t+1} = W_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$ (cập nhật trọng số).  
-                          - $g_t$: Gradient tại bước $t$.  
-                          - $\\beta_1 \\approx 0.9$, $\\beta_2 \\approx 0.999$: Hệ số giảm dần.  
-                          - $\\epsilon \\approx 10^{-8}$: Hằng số nhỏ để tránh chia cho 0.  
-                        - **Ví dụ**:  
-                          - Với gradient $g_t = 0.5$, Adam tự động điều chỉnh tốc độ học dựa trên $m_t$ và $v_t$, giúp cập nhật ổn định hơn SGD.  
-                        - **Ưu điểm**: Nhanh, ổn định, hiệu quả với hầu hết bài toán, đặc biệt là mạng sâu.  
-                        - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém hiệu quả trên hàm mất mát không lồi.  
-                    - **Lưu ý**:  
-                      - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
-                      - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
-                      - Bạn có thể chọn giữa SGD và Adam trong tab "Huấn luyện/Đánh giá".  
-
-                    ---
-
-                    Các tham số trên được điều chỉnh trong tab **"Huấn luyện/Đánh giá"** của ứng dụng này. Việc hiểu rõ ý nghĩa và cách hoạt động của chúng sẽ giúp bạn tối ưu hóa mô hình Neural Network để đạt hiệu suất tốt nhất trên tập dữ liệu MNIST!
+                    7. **Trình tối ưu (Optimizer):**  
+                       - **Ý nghĩa**: Thuật toán điều chỉnh trọng số để giảm hàm mất mát.  
+                       - **Hoạt động**: Dùng gradient để cập nhật tham số, với cách tiếp cận khác nhau tùy thuật toán.  
+                       - **Ví dụ phổ biến:**  
+                         - **SGD (Stochastic Gradient Descent):**  
+                           - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu/mini-batch.  
+                           - **Công thức**:  
+                             $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
+                             - $W_t$: Trọng số hiện tại.  
+                             - $\\eta$: Tốc độ học.  
+                             - $\\frac{\\partial L}{\\partial W_t}$: Gradient.  
+                           - **Ưu điểm**: Đơn giản, nhanh với dữ liệu lớn.  
+                           - **Nhược điểm**: Dao động, hội tụ chậm.  
+                         - **Adam (Adaptive Moment Estimation):**  
+                           - **Ý nghĩa**: Kết hợp động lượng và RMSProp, thích nghi tốc độ học cho từng tham số.  
+                           - **Công thức**:  
+                             1. $m_t = \\beta_1 \\cdot m_{t-1} + (1 - \\beta_1) \\cdot g_t$ (moment bậc 1).  
+                             2. $v_t = \\beta_2 \\cdot v_{t-1} + (1 - \\beta_2) \\cdot g_t^2$ (moment bậc 2).  
+                             3. $\\hat{m}_t = \\frac{m_t}{1 - \\beta_1^t}, \\hat{v}_t = \\frac{v_t}{1 - \\beta_2^t}$ (hiệu chỉnh).  
+                             4. $W_{t+1} = W_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon}$.  
+                             - $g_t$: Gradient.  
+                             - $\\beta_1 \\approx 0.9, \\beta_2 \\approx 0.999, \\epsilon \\approx 10^{-8}$.  
+                           - **Ưu điểm**: Nhanh, ổn định, hiệu quả.  
+                           - **Nhược điểm**: Phức tạp, đôi khi kém trên hàm không lồi.  
+                       - **So sánh**: SGD chậm, dao động; Adam nhanh, ổn định.  
                     """, unsafe_allow_html=True)
 
                     st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
@@ -953,8 +851,6 @@ def run_mnist_pseudo_labeling_app():
                             accuracy_history = []
                             test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
                             pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
-                            epoch_loss_history = []  # Lưu lịch sử loss theo epoch
-                            epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch
                             iteration = 0
 
                             # Callback để cập nhật thông tin trong quá trình huấn luyện
@@ -968,10 +864,6 @@ def run_mnist_pseudo_labeling_app():
                                     epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
                                     loss_text.write(f"Loss: {logs['loss']:.4f}")
                                     acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
-                                    # Lưu lịch sử loss và accuracy theo epoch
-                                    if self.iteration == 1:  # Chỉ lưu cho lần lặp đầu tiên để kiểm tra 1% dữ liệu
-                                        epoch_loss_history.append(logs['loss'])
-                                        epoch_acc_history.append(logs['accuracy'])
 
                             # Quá trình huấn luyện với Pseudo-Labeling
                             while iteration < max_iterations and len(unlabeled_indices) > 0:
@@ -1077,9 +969,7 @@ def run_mnist_pseudo_labeling_app():
                                 'run_id': run.info.run_id,
                                 'run_name': model_name.strip(),
                                 'params': params,
-                                'n_iter_actual': iteration,
-                                'epoch_loss_history': epoch_loss_history,
-                                'epoch_acc_history': epoch_acc_history
+                                'n_iter_actual': iteration
                             }
                             st.session_state['training_results'] = results
                             st.success(f"Đã huấn luyện xong sau {iteration} vòng! Thời gian: {results['training_time']:.2f} giây")
@@ -1091,10 +981,6 @@ def run_mnist_pseudo_labeling_app():
                 col1, col2 = st.columns(2)
                 col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                 col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
-
-                # Hiển thị độ chính xác sau lần huấn luyện đầu tiên với 1% dữ liệu
-                if 'test_acc_history' in results and len(results['test_acc_history']) > 0:
-                    st.write(f"**Độ chính xác sau lần huấn luyện đầu tiên (với {labeled_pct}% dữ liệu)**: {results['test_acc_history'][0]*100:.2f}%")
 
                 st.subheader("Ma trận Nhầm lẫn")
                 fig, ax = plt.subplots()
@@ -1171,17 +1057,6 @@ def run_mnist_pseudo_labeling_app():
                         st.session_state['display_iterations'] = 5
                         st.rerun()
 
-                # Thêm chi tiết epoch cho lần lặp đầu tiên
-                if 'epoch_loss_history' in results and 'epoch_acc_history' in results:
-                    with st.expander("Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)", expanded=False):
-                        epoch_data = {
-                            "Epoch": list(range(1, len(results['epoch_loss_history']) + 1)),
-                            "Loss": results['epoch_loss_history'],
-                            "Accuracy": results['epoch_acc_history']
-                        }
-                        df_epochs = pd.DataFrame(epoch_data)
-                        st.table(df_epochs)
-
                 # Thêm phần chi tiết kết quả huấn luyện
                 with st.expander("Xem chi tiết", expanded=False):
                     st.markdown("**Thông tin lần chạy:**")
@@ -1249,42 +1124,15 @@ def run_mnist_pseudo_labeling_app():
                             st.write(f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)")
 
                     elif input_method == "Vẽ trực tiếp":
-                        # Khởi tạo session state cho canvas và lịch sử dự đoán
-                        if 'canvas_key' not in st.session_state:
-                            st.session_state['canvas_key'] = 0
-                        if 'predictions' not in st.session_state:
-                            st.session_state['predictions'] = []
-
-                        # Nút làm mới canvas
-                        if st.button("Xóa Canvas"):
-                            st.session_state['canvas_key'] += 1
-                            st.session_state['predictions'] = []  # Xóa lịch sử dự đoán
-
-                        canvas_result = st_canvas(
-                            stroke_width=20,
-                            stroke_color="#FFFFFF",
-                            background_color="#000000",
-                            height=280,
-                            width=280,
-                            drawing_mode="freedraw",
-                            key=f"canvas_{st.session_state['canvas_key']}"
-                        )
-
+                        canvas_result = st_canvas(stroke_width=20, stroke_color="#FFFFFF", background_color="#000000", 
+                                                  height=280, width=280, drawing_mode="freedraw")
                         if canvas_result.image_data is not None:
                             image = Image.fromarray(canvas_result.image_data).convert('L').resize((28, 28))
                             st.image(image, caption="Hình ảnh vẽ tay", width=100)
                             image_array = np.array(image).reshape(1, 784) / 255.0
                             if st.button("Dự đoán"):
                                 pred = model.predict(image_array, verbose=0)
-                                prediction = f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)"
-                                st.session_state['predictions'].append(prediction)
-                                st.write(prediction)
-
-                        # Hiển thị lịch sử dự đoán
-                        if st.session_state['predictions']:
-                            st.subheader("Lịch sử dự đoán")
-                            for p in st.session_state['predictions']:
-                                st.write(p)
+                                st.write(f"Dự đoán: {np.argmax(pred)} (Độ tin cậy: {np.max(pred)*100:.2f}%)")
 
     ### Tab 7: Thông tin huấn luyện
     with tab_log_info:
