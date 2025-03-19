@@ -18,7 +18,6 @@ import sys
 import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc
-
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
     """Xác định tham số tối ưu cho mô hình dựa trên số lượng mẫu."""
@@ -66,7 +65,6 @@ def get_optimal_params(num_samples):
             "threshold": 0.95,
             "max_iterations": 20
         }
-
 # Hàm xây dựng mô hình Neural Network
 def build_model(params):
     """Xây dựng mô hình Neural Network dựa trên tham số."""
@@ -78,11 +76,9 @@ def build_model(params):
     optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
     model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return model
-
 # Ứng dụng chính
 def run_mnist_pseudo_labeling_app():
     """Chạy ứng dụng Streamlit để phân loại chữ số MNIST với Neural Network và Pseudo-Labeling."""
-
     ### Thiết lập MLflow
     mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
     try:
@@ -92,7 +88,6 @@ def run_mnist_pseudo_labeling_app():
     except KeyError as e:
         st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets.")
         st.stop()
-
     try:
         response = requests.get(mlflow_tracking_uri, timeout=5)
         if response.status_code != 200:
@@ -101,7 +96,6 @@ def run_mnist_pseudo_labeling_app():
     except requests.exceptions.RequestException as e:
         st.error(f"Không thể kết nối MLflow: {e}.")
         st.stop()
-
     EXPERIMENT_ID = "6"
     try:
         client = MlflowClient()
@@ -112,7 +106,6 @@ def run_mnist_pseudo_labeling_app():
     except Exception as e:
         st.error(f"Lỗi truy xuất Experiment ID {EXPERIMENT_ID}: {e}.")
         st.stop()
-
     ### Tải dữ liệu MNIST
     if 'full_data' not in st.session_state:
         with st.spinner("Đang tải dữ liệu MNIST..."):
@@ -122,9 +115,7 @@ def run_mnist_pseudo_labeling_app():
             X_full = X_full.reshape(-1, 784).astype(np.float32)
             y_full = y_full.astype(np.int32)
             st.session_state['full_data'] = (X_full, y_full)
-
     st.title("Phân loại Chữ số MNIST với Neural Network và Pseudo-Labeling")
-
     ### CSS tùy chỉnh
     st.markdown("""
         <style>
@@ -167,19 +158,16 @@ def run_mnist_pseudo_labeling_app():
             }
         </style>
     """, unsafe_allow_html=True)
-
     ### Tạo các tab
     tab_names = ["Thông tin", "Chọn số lượng dữ liệu", "Xử lý dữ liệu", "Chia dữ liệu", 
                  "Huấn luyện/Đánh giá", "Demo dự đoán", "Thông tin huấn luyện"]
     tab_info, tab_load, tab_preprocess, tab_split, tab_train_eval, tab_demo, tab_log_info = st.tabs(tab_names)
-
     # Tab 1: Thông tin
     with tab_info:
         st.header("Giới thiệu Ứng dụng Phân loại Chữ số MNIST với Neural Network và Pseudo-Labeling")
         st.markdown("""
         Chào mừng bạn đến với ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** sử dụng **Mạng nơ-ron nhân tạo (Neural Network)** kết hợp với kỹ thuật **Pseudo-Labeling**. Ứng dụng này được thiết kế để cung cấp trải nghiệm trực quan, hỗ trợ học tập và nghiên cứu về các thuật toán học máy hiện đại.
         """, unsafe_allow_html=True)
-
         st.subheader("Chọn nội dung để khám phá")
         info_option = st.selectbox(
             "",
@@ -192,13 +180,10 @@ def run_mnist_pseudo_labeling_app():
             label_visibility="collapsed",
             help="Khám phá chi tiết về ứng dụng, dữ liệu, mô hình và kỹ thuật Pseudo-Labeling."
         )
-
         # Tạo placeholder để chứa nội dung động
         content_placeholder = st.empty()
-
         # Xóa nội dung cũ trước khi hiển thị nội dung mới
         content_placeholder.empty()
-
         # Hiển thị nội dung mới dựa trên lựa chọn
         with content_placeholder.container():
             if info_option == "Tổng quan về ứng dụng và mục tiêu":
@@ -212,12 +197,10 @@ def run_mnist_pseudo_labeling_app():
                     st.subheader("📌 Tổng quan về ứng dụng và mục tiêu")
                     st.markdown("""
                     Ứng dụng này tập trung vào việc phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, một bộ dữ liệu tiêu chuẩn trong lĩnh vực học máy. Kết hợp **Neural Network** và **Pseudo-Labeling**, ứng dụng không chỉ tối ưu hóa hiệu suất mô hình mà còn tận dụng dữ liệu không có nhãn để nâng cao khả năng học tập.
-
                     **Mục tiêu chính:**
                     - Phát triển một mô hình Neural Network có khả năng nhận diện chính xác các chữ số từ 0 đến 9.
                     - Áp dụng kỹ thuật Pseudo-Labeling để khai thác dữ liệu không có nhãn, mô phỏng các tình huống thực tế khi dữ liệu có nhãn hạn chế.
                     - Cung cấp giao diện trực quan để người dùng thực hành, đánh giá và tùy chỉnh mô hình.
-
                     **Thông tin cơ bản về dữ liệu:**
                     - **Quy mô:** 70,000 ảnh, mỗi ảnh kích thước 28x28 pixel (tổng cộng 784 đặc trưng).
                     - **Đặc trưng:** Giá trị pixel từ 0 đến 255, biểu diễn dưới dạng vector 784 chiều.
@@ -226,7 +209,6 @@ def run_mnist_pseudo_labeling_app():
                     time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
-
             elif info_option == "Tập dữ liệu MNIST: Đặc điểm và ý nghĩa":
                 with st.spinner("Đang tải thông tin..."):
                     progress_bar = st.progress(0)
@@ -238,12 +220,10 @@ def run_mnist_pseudo_labeling_app():
                     st.subheader("📌 Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
                     st.markdown("""
                     **MNIST** là một tập dữ liệu tiêu chuẩn trong học máy, được phát triển bởi Yann LeCun và các cộng sự, thường được sử dụng để đánh giá hiệu suất của các mô hình phân loại.
-
                     **Đặc điểm nổi bật:**
                     - **Nguồn gốc:** Bao gồm ảnh chữ số viết tay từ học sinh trung học và nhân viên điều tra dân số Hoa Kỳ.
                     - **Kích thước:** Mỗi ảnh có độ phân giải 28x28 pixel, thang độ xám với giá trị từ 0 đến 255.
                     - **Quy mô:** Tổng cộng 70,000 ảnh, chia thành tập huấn luyện (60,000 ảnh) và tập kiểm tra (10,000 ảnh).
-
                     **Ý nghĩa:**
                     - Là nền tảng lý tưởng để thử nghiệm các thuật toán học máy, từ cơ bản đến nâng cao.
                     - Giúp đánh giá khả năng phân biệt các lớp tương tự (ví dụ: 4 và 9) trong các mô hình Neural Network.
@@ -259,7 +239,6 @@ def run_mnist_pseudo_labeling_app():
                     time.sleep(0.5)
                     status_text.empty()
                     progress_bar.empty()
-
             elif info_option == "Neural Network – Mạng nơ-ron nhân tạo":
                 with st.spinner("Đang tải thông tin..."):
                     progress_bar = st.progress(0)
@@ -272,19 +251,16 @@ def run_mnist_pseudo_labeling_app():
                     st.markdown("""
                     **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                     """, unsafe_allow_html=True)
-
                     st.subheader("🌐 Cấu trúc cơ bản của Neural Network")
                     st.markdown("""
                     - **Lớp đầu vào (Input Layer)**: Nhận dữ liệu thô (ví dụ: $784$ pixel từ ảnh MNIST $28 \\times 28$).  
                     - **Lớp ẩn (Hidden Layers)**: Xử lý thông tin thông qua các phép tính tuyến tính và phi tuyến.  
                     - **Lớp đầu ra (Output Layer)**: Đưa ra dự đoán (10 lớp, tương ứng với các chữ số $0$-$9$).  
                     """, unsafe_allow_html=True)
-
                     st.subheader("🔧 Quy trình hoạt động")
                     st.markdown("""
                     Neural Network hoạt động qua các bước sau, được tối ưu hóa dựa trên các tham số bạn có thể điều chỉnh trong tab **Huấn luyện/Đánh giá**:
                     """, unsafe_allow_html=True)
-
                     st.subheader("1. Khởi tạo mô hình")
                     st.markdown("""
                     - Xác định cấu trúc mạng (số lớp ẩn, số nơ-ron mỗi lớp) và khởi tạo **trọng số** ($W$) và **bias** ($b$) ngẫu nhiên (thường từ phân phối Gaussian).  
@@ -300,12 +276,11 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 1.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("2. Lan truyền thuận (Feedforward)")
                     st.markdown("""
                     - Tính toán đầu ra dự đoán ($\\hat{Y}$) từ đầu vào $X$ qua các lớp:  
-                      $$ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $$  
-                      $$ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $$  
+                      $ Z^{(l)} = A^{(l-1)} \\cdot W^{(l)} + b^{(l)} $  
+                      $ A^{(l)} = \\text{hàm kích hoạt}(Z^{(l)}) $  
                     - **Chú thích**:  
                       - $Z^{(l)}$: Tổng trọng số đầu vào tại lớp $l$ (trước khi áp dụng hàm kích hoạt).  
                       - $A^{(l-1)}$: Đầu ra của lớp trước ($l-1$), là đầu vào của lớp $l$.  
@@ -320,11 +295,10 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 2.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("3. Tính hàm mất mát (Loss Function)")
                     st.markdown("""
                     - Đo độ sai lệch giữa dự đoán ($\\hat{Y}$) và nhãn thực ($Y$) bằng **Cross-Entropy**:  
-                      $$ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $$  
+                      $ L = -\\frac{1}{N} \\sum_{i=1}^{N} \\sum_{j=0}^{9} y_{ij} \\cdot \\log(\\hat{y}_{ij}) $  
                     - **Chú thích**:  
                       - $L$: Giá trị mất mát (loss) tổng thể của mô hình.  
                       - $N$: Số lượng mẫu trong tập dữ liệu.  
@@ -338,7 +312,6 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 3.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("4. Lan truyền ngược (Backpropagation)")
                     st.markdown("""
                     - Tính đạo hàm của $L$ để cập nhật $W^{(l)}$ và $b^{(l)}$ nhằm giảm sai số dự đoán.  
@@ -353,12 +326,11 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 4.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("5. Cập nhật tham số (Gradient Descent)")
                     st.markdown("""
                     - Điều chỉnh $W^{(l)}$ và $b^{(l)}$ để giảm mất mát:  
-                      $$ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $$  
-                      $$ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $$  
+                      $ W^{(l)} = W^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial W^{(l)}} $  
+                      $ b^{(l)} = b^{(l)} - \\eta \\cdot \\frac{\\partial L}{\\partial b^{(l)}} $  
                     - **Chú thích**:  
                       - $\\eta$: Tốc độ học (learning rate), kiểm soát mức độ thay đổi của $W$ và $b$.  
                       - $\\frac{\\partial L}{\\partial W^{(l)}}$: Gradient của $L$ theo $W^{(l)}$.  
@@ -371,7 +343,6 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 5.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("6. Lặp lại")
                     st.markdown("""
                     - Lặp lại từ bước 2 qua nhiều **epoch** cho đến khi mất mát $L$ hội tụ.  
@@ -385,13 +356,10 @@ def run_mnist_pseudo_labeling_app():
                         st.error("Không tìm thấy ảnh minh họa cho Bước 6.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.subheader("🔧 Các tham số huấn luyện.")
                     st.markdown("""
                     Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, được giải thích chi tiết với ý nghĩa, cách hoạt động, công thức (nếu có), ví dụ minh họa và lưu ý khi điều chỉnh:
-
                     ---
-
                     #### **1. Số lớp ẩn (Number of Hidden Layers)**  
                     - **Ý nghĩa**: Quyết định độ sâu của mạng, tức là số lượng lớp nơ-ron nằm giữa lớp đầu vào và lớp đầu ra.  
                     - **Hoạt động**:  
@@ -406,9 +374,7 @@ def run_mnist_pseudo_labeling_app():
                       - Quá ít lớp ẩn có thể khiến mô hình không học được các đặc trưng đủ phức tạp (underfitting).  
                       - Quá nhiều lớp ẩn làm tăng nguy cơ overfitting (mô hình học quá mức dữ liệu huấn luyện) và khó hội tụ nếu không đủ dữ liệu hoặc tài nguyên tính toán.  
                       - Trong ứng dụng này, bạn có thể chọn từ 1 đến 5 lớp ẩn trong tab "Huấn luyện/Đánh giá".  
-
                     ---
-
                     #### **2. Số nơ-ron mỗi lớp ẩn (Number of Neurons per Hidden Layer)**  
                     - **Ý nghĩa**: Quyết định độ rộng của mạng, tức là số lượng nơ-ron trong mỗi lớp ẩn, ảnh hưởng đến khả năng biểu diễn thông tin.  
                     - **Hoạt động**:  
@@ -423,17 +389,15 @@ def run_mnist_pseudo_labeling_app():
                       - Quá nhiều nơ-ron có thể làm mô hình phức tạp không cần thiết, dẫn đến overfitting hoặc yêu cầu nhiều tài nguyên hơn.  
                       - Quá ít nơ-ron khiến mô hình không học đủ đặc trưng, gây underfitting.  
                       - Trong ứng dụng này, bạn có thể tùy chỉnh số nơ-ron cho từng lớp ẩn trong tab "Huấn luyện/Đánh giá".  
-
                     ---
-
                     #### **3. Tốc độ học (Learning Rate - η)**  
                     - **Ý nghĩa**: Điều chỉnh mức độ thay đổi của trọng số và bias trong mỗi lần cập nhật, ảnh hưởng đến tốc độ và chất lượng hội tụ của mô hình.  
                     - **Hoạt động**:  
                       - Giá trị nhỏ (ví dụ: 0.0001) giúp mô hình học chậm nhưng ổn định, ít vượt qua điểm tối ưu của hàm mất mát.  
                       - Giá trị lớn (ví dụ: 0.01) làm mô hình học nhanh hơn nhưng có thể dao động hoặc không hội tụ.  
                     - **Công thức**:  
-                      $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                      $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
+                      $ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $  
+                      $ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $  
                       - $W_{t+1}$, $b_{t+1}$: Trọng số và bias sau khi cập nhật.  
                       - $W_t$, $b_t$: Trọng số và bias hiện tại.  
                       - $\\eta$: Tốc độ học.  
@@ -446,9 +410,7 @@ def run_mnist_pseudo_labeling_app():
                       - Tốc độ học quá cao khiến mô hình không hội tụ, dao động quanh điểm tối ưu.  
                       - Tốc độ học quá thấp làm quá trình huấn luyện chậm, tốn thời gian.  
                       - Trong ứng dụng này, giá trị mặc định thường là 0.001, nhưng bạn có thể điều chỉnh trong tab "Huấn luyện/Đánh giá".  
-
                     ---
-
                     #### **4. Số lần lặp (Epochs)**  
                     - **Ý nghĩa**: Số lần toàn bộ dữ liệu huấn luyện được đưa qua mạng, quyết định mức độ tinh chỉnh của mô hình.  
                     - **Hoạt động**:  
@@ -463,9 +425,7 @@ def run_mnist_pseudo_labeling_app():
                       - Quá ít epoch khiến mô hình chưa học đủ, dẫn đến underfitting.  
                       - Quá nhiều epoch làm tăng nguy cơ overfitting, đặc biệt nếu không dùng kỹ thuật như Early Stopping.  
                       - Trong ứng dụng này, bạn có thể chọn từ 10 đến 200 epochs, và nên dùng Early Stopping để dừng khi mô hình không cải thiện thêm.  
-
                     ---
-
                     #### **5. Kích thước batch (Batch Size)**  
                     - **Ý nghĩa**: Số mẫu dữ liệu được xử lý trong một lần lan truyền thuận và ngược trước khi cập nhật trọng số.  
                     - **Hoạt động**:  
@@ -480,9 +440,7 @@ def run_mnist_pseudo_labeling_app():
                       - Batch quá nhỏ làm huấn luyện không ổn định, dễ dao động quanh điểm tối ưu.  
                       - Batch quá lớn có thể khiến mô hình không học được các đặc trưng chi tiết, đặc biệt với dữ liệu phức tạp.  
                       - Trong ứng dụng này, giá trị mặc định phụ thuộc vào số lượng mẫu (32, 64, 128, hoặc 256), nhưng bạn có thể tùy chỉnh.  
-
                     ---
-
                     #### **6. Hàm kích hoạt (Activation Function)**  
                     - **Ý nghĩa**: Quyết định cách nơ-ron "kích hoạt" đầu ra dựa trên đầu vào, giúp mạng học được các mối quan hệ phi tuyến tính.  
                     - **Hoạt động**:  
@@ -493,7 +451,7 @@ def run_mnist_pseudo_labeling_app():
                         - **Ý nghĩa**: Đơn giản, nhanh, giúp tránh vấn đề biến mất gradient trong mạng sâu.  
                         - **Hoạt động**: Chỉ cho phép giá trị dương đi qua, đặt tất cả giá trị âm về 0.  
                         - **Công thức**:  
-                          $$ f(x) = \\max(0, x) $$  
+                          $ f(x) = \\max(0, x) $  
                         - **Ví dụ**:  
                           - Nếu $x = 3$, thì $f(3) = 3$.  
                           - Nếu $x = -1$, thì $f(-1) = 0$.  
@@ -504,7 +462,7 @@ def run_mnist_pseudo_labeling_app():
                         - **Ý nghĩa**: Chuẩn hóa đầu ra về khoảng [-1, 1], phù hợp khi cần cân bằng giá trị âm và dương.  
                         - **Hoạt động**: Tạo đầu ra phi tuyến, nhưng dễ gặp vấn đề biến mất gradient trong mạng sâu.  
                         - **Công thức**:  
-                          $$ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $$  
+                          $ f(x) = \\frac{e^x - e^{-x}}{e^x + e^{-x}} $  
                         - **Ví dụ**:  
                           - Nếu $x = 0$, thì $f(0) = 0$.  
                           - Nếu $x = 1$, thì $f(1) \\approx 0.76$.  
@@ -515,7 +473,7 @@ def run_mnist_pseudo_labeling_app():
                         - **Ý nghĩa**: Dùng ở lớp đầu ra để chuyển đổi đầu ra thành xác suất cho bài toán phân loại đa lớp (như MNIST).  
                         - **Hoạt động**: Chuẩn hóa tổng các đầu ra thành 1, giúp chọn lớp có xác suất cao nhất.  
                         - **Công thức**:  
-                          $$ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $$  
+                          $ f(x_i) = \\frac{e^{x_i}}{\\sum_{j=0}^{k} e^{x_j}} $  
                           - $x_i$: Đầu vào của nơ-ron thứ $i$.  
                           - $k$: Số lớp (ở đây là 10, từ 0-9).  
                         - **Ví dụ**:  
@@ -527,9 +485,7 @@ def run_mnist_pseudo_labeling_app():
                       - ReLU là lựa chọn mặc định cho lớp ẩn trong ứng dụng này vì tính hiệu quả và phổ biến.  
                       - Softmax luôn được dùng ở lớp đầu ra để dự đoán chữ số từ 0-9.  
                       - Bạn có thể chọn giữa ReLU, Tanh, hoặc Softmax trong tab "Huấn luyện/Đánh giá" cho lớp ẩn.  
-
                     ---
-
                     #### **7. Trình tối ưu (Optimizer)**  
                     - **Ý nghĩa**: Thuật toán điều chỉnh trọng số và bias để giảm hàm mất mát, quyết định cách mô hình học.  
                     - **Hoạt động**:  
@@ -539,8 +495,8 @@ def run_mnist_pseudo_labeling_app():
                         - **Ý nghĩa**: Cập nhật trọng số dựa trên gradient của một mẫu hoặc mini-batch, là phiên bản ngẫu nhiên của Gradient Descent.  
                         - **Hoạt động**: Tính gradient cho từng batch và điều chỉnh tham số theo hướng giảm mất mát.  
                         - **Công thức**:  
-                          $$ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $$  
-                          $$ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $$  
+                          $ W_{t+1} = W_t - \\eta \\cdot \\frac{\\partial L}{\\partial W_t} $  
+                          $ b_{t+1} = b_t - \\eta \\cdot \\frac{\\partial L}{\\partial b_t} $  
                           - $W_t$, $b_t$: Trọng số và bias hiện tại.  
                           - $\\eta$: Tốc độ học.  
                           - $\\frac{\\partial L}{\\partial W_t}$, $\\frac{\\partial L}{\\partial b_t}$: Gradient.  
@@ -566,13 +522,9 @@ def run_mnist_pseudo_labeling_app():
                     - **Lưu ý**:  
                       - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
                       - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
-                      - Bạn có thể chọn giữa SGD và Adam trong tab "Huấn luyện/Đánh giá".  
-
                     ---
-
                     Các tham số trên được điều chỉnh trong tab **"Huấn luyện/Đánh giá"** của ứng dụng này. Việc hiểu rõ ý nghĩa và cách hoạt động của chúng sẽ giúp bạn tối ưu hóa mô hình Neural Network để đạt hiệu suất tốt nhất trên tập dữ liệu MNIST!
                     """, unsafe_allow_html=True)
-
                     st.subheader("🌟 Ưu điểm và nhược điểm của Neural Network")
                     st.markdown("""
                     #### **Ưu điểm:**  
@@ -580,14 +532,12 @@ def run_mnist_pseudo_labeling_app():
                     - **Khả năng mở rộng**: Có thể xử lý dữ liệu lớn và nhiều chiều (như ảnh, âm thanh) khi được huấn luyện đúng cách.  
                     - **Tính linh hoạt**: Có thể áp dụng cho nhiều bài toán khác nhau (phân loại, hồi quy, nhận diện hình ảnh, v.v.).  
                     - **Tự động học đặc trưng**: Không cần trích xuất đặc trưng thủ công, mạng tự động học từ dữ liệu thô.  
-
                     #### **Nhược điểm:**  
                     - **Đòi hỏi tài nguyên lớn**: Cần nhiều dữ liệu và sức mạnh tính toán (CPU/GPU) để huấn luyện hiệu quả.  
                     - **Khó giải thích**: Mạng hoạt động như "hộp đen", khó hiểu tại sao lại đưa ra dự đoán cụ thể.  
                     - **Dễ bị overfitting**: Nếu không được điều chỉnh tốt (ví dụ: thiếu dữ liệu hoặc không dùng regularization), mô hình có thể học quá mức dữ liệu huấn luyện.  
                     - **Thời gian huấn luyện lâu**: Đặc biệt với mạng sâu hoặc dữ liệu lớn.  
                     """, unsafe_allow_html=True)
-
             elif info_option == "Pseudo-Labeling – Kỹ thuật học bán giám sát":
                 with st.spinner("Đang tải thông tin..."):
                     progress_bar = st.progress(0)
@@ -599,7 +549,6 @@ def run_mnist_pseudo_labeling_app():
                     st.subheader("📌 Pseudo-Labeling – Kỹ thuật học bán giám sát")
                     st.markdown("""
                     **Pseudo-Labeling** là một phương pháp học bán giám sát (semi-supervised learning) giúp tận dụng cả dữ liệu có nhãn và không có nhãn để nâng cao hiệu suất mô hình, đặc biệt hữu ích khi dữ liệu có nhãn khan hiếm. Kỹ thuật này sử dụng mô hình đã huấn luyện để dự đoán nhãn giả (pseudo-labels) cho dữ liệu không có nhãn, sau đó kết hợp chúng vào quá trình huấn luyện.
-
                     **Các bước thực hiện Pseudo-Labeling với Neural Network:**
                     1. **Chuẩn bị dữ liệu và chia tập train/test**  
                        - Chuẩn hóa dữ liệu (ví dụ: đưa về thang [0, 1]) và chia thành tập huấn luyện (train) và tập kiểm tra (test).  
@@ -688,32 +637,26 @@ def run_mnist_pseudo_labeling_app():
                         st.warning("Không tìm thấy ảnh minh họa 'pseudo_step8.png'. Vui lòng kiểm tra đường dẫn.")
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
-
                     st.markdown("""
                     **Lợi ích:**
                     - Tối ưu hóa hiệu suất mô hình bằng cách khai thác dữ liệu không có nhãn.
                     - Giảm chi phí gắn nhãn thủ công trong các dự án thực tế.
-
                     **Thách thức:**
                     - Nhãn giả có thể chứa nhiễu nếu mô hình ban đầu chưa đủ chính xác.
                     - Yêu cầu điều chỉnh ngưỡng tin cậy để cân bằng giữa chất lượng và số lượng nhãn giả.
                     """, unsafe_allow_html=True)
-
                     st.subheader("⚙️ Các tham số của Pseudo-Labeling trong Huấn luyện")
                     st.markdown("""
                     Trong quá trình huấn luyện bài toán phân loại MNIST với Pseudo-Labeling, các tham số sau được sử dụng để điều khiển kỹ thuật học bán giám sát này:
-
                     | **Tham số**            | **Mô tả**                                                                |
                     |------------------------|--------------------------------------------------------------------------|
                     | **Ngưỡng tin cậy**     | Mức độ tin cậy tối thiểu để gán nhãn giả cho dữ liệu không có nhãn.      |
-                    | **Số vòng lặp tối đa** | Số lần lặp tối đa của quy trình Pseudo-Labeling để gắn nhãn và huấn luyện.|
-
+                    | **Số vòng lặp tối đa** | Số lần lặp tối đa của quy trình Pseudo-Labeling để gán nhãn và huấn luyện.|
                     **Chi tiết:**
                     - **Ngưỡng tin cậy (threshold)**:  
                       - Công thức: Nếu độ tin cậy dự đoán $P(y|x) \geq \text{threshold}$, mẫu sẽ được gán nhãn giả.  
                       - Ví dụ: Với threshold = 0.95, chỉ các dự đoán có độ tin cậy ≥ 95% được chấp nhận.  
-                      - Tác động: Giá trị cao đảm bảo chất lượng nhãn giả nhưng giảm số lượng mẫu được gắn nhãn; giá trị thấp tăng số lượng mẫu nhưng có thể gây nhiễu.
-
+                      - Tác động: Giá trị cao đảm bảo chất lượng nhãn giả nhưng giảm số lượng mẫu được gán nhãn; giá trị thấp tăng số lượng mẫu nhưng có thể gây nhiễu.
                     - **Số vòng lặp tối đa (max_iterations)**:  
                       - Quy định số lần mô hình dự đoán nhãn giả và huấn luyện lại trên dữ liệu mới.  
                       - Điều kiện dừng: Quy trình kết thúc khi hết dữ liệu không có nhãn hoặc đạt số vòng lặp tối đa.  
@@ -736,7 +679,6 @@ def run_mnist_pseudo_labeling_app():
             num_samples = st.number_input("Nhập số lượng mẫu:", min_value=1, max_value=len(X_full), value=1000)
         else:
             num_samples = sample_options[selected_option]
-
         if st.button("Xác nhận số lượng", type="primary"):
             with st.spinner(f"Đang lấy {num_samples} mẫu..."):
                 indices = np.random.choice(len(X_full), size=num_samples, replace=False)
@@ -749,7 +691,6 @@ def run_mnist_pseudo_labeling_app():
                 st.success(f"Đã chọn {num_samples} mẫu!")
                 del X_sampled, y_sampled
                 gc.collect()
-
     ### Tab 3: Xử lý dữ liệu
     with tab_preprocess:
         st.markdown('<div class="section-title">Xử lý Dữ liệu</div>', unsafe_allow_html=True)
@@ -759,7 +700,6 @@ def run_mnist_pseudo_labeling_app():
             X, y = st.session_state['data']
             if "data_original" not in st.session_state:
                 st.session_state["data_original"] = (X.copy(), y.copy())
-
             st.subheader("Dữ liệu Gốc")
             fig, axes = plt.subplots(2, 5, figsize=(10, 4))
             for i, ax in enumerate(axes.flat):
@@ -768,7 +708,6 @@ def run_mnist_pseudo_labeling_app():
                 ax.axis("off")
             st.pyplot(fig)
             plt.close(fig)
-
             col1, col2 = st.columns([3, 1])
             with col1:
                 if st.button("Chuẩn hóa dữ liệu (Normalization)", type="primary"):
@@ -786,7 +725,6 @@ def run_mnist_pseudo_labeling_app():
                         </span>
                     </div>
                 """, unsafe_allow_html=True)
-
             if "data_processed" in st.session_state:
                 X_processed, y_processed = st.session_state["data_processed"]
                 st.subheader("Dữ liệu sau khi xử lý")
@@ -797,7 +735,6 @@ def run_mnist_pseudo_labeling_app():
                     ax.axis("off")
                 st.pyplot(fig)
                 plt.close(fig)
-
     ### Tab 4: Chia dữ liệu
     with tab_split:
         st.markdown('<div class="section-title">Chia Tập Dữ liệu</div>', unsafe_allow_html=True)
@@ -808,11 +745,9 @@ def run_mnist_pseudo_labeling_app():
             X, y = data_source
             total_samples = len(X)
             st.write(f"Tổng số mẫu: {total_samples}")
-
             test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20)
             test_size = test_pct / 100
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
-
             st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Test: {len(X_test)}")
             if st.button("Xác nhận phân chia", type="primary"):
                 with st.spinner("Đang chia dữ liệu..."):
@@ -823,7 +758,6 @@ def run_mnist_pseudo_labeling_app():
                     st.success("Đã chia dữ liệu thành công!")
                     del X_train, X_test, y_train, y_test
                     gc.collect()
-
     ### Tab 5: Huấn luyện/Đánh giá
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá</div>', unsafe_allow_html=True)
@@ -835,14 +769,11 @@ def run_mnist_pseudo_labeling_app():
             y_train = split_data["y_train"]
             X_test = split_data["X_test"]
             y_test = split_data["y_test"]
-
             num_samples = len(X_train)
             st.write(f"**Số mẫu huấn luyện**: {num_samples}")
-
             if "optimal_params" not in st.session_state:
                 st.session_state["optimal_params"] = get_optimal_params(num_samples)
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
-
             with st.expander("🔧 Tham số tối ưu đề xuất", expanded=False):
                 optimal_table = pd.DataFrame({
                     "Số mẫu": ["≤ 1,000", "≤ 10,000", "≤ 50,000", "> 50,000"],
@@ -860,14 +791,12 @@ def run_mnist_pseudo_labeling_app():
                 if st.button("Sử dụng tham số đề xuất"):
                     st.session_state["training_params"] = st.session_state["optimal_params"].copy()
                     st.rerun()
-
             st.subheader("📊 Tỷ lệ mẫu ban đầu")
             st.write("Tỷ lệ dữ liệu có nhãn ban đầu được cố định ở 1% tổng số mẫu.")
             num_labeled_total = int(num_samples * 0.01)  # 1% tổng số mẫu
             num_unlabeled = num_samples - num_labeled_total
             st.write(f"**Số mẫu có nhãn ban đầu**: {num_labeled_total}")
             st.write(f"**Số mẫu không có nhãn**: {num_unlabeled}")
-
             st.subheader("⚙️ Cấu hình Mô hình")
             col_param1, col_param2 = st.columns(2)
             with col_param1:
@@ -879,23 +808,19 @@ def run_mnist_pseudo_labeling_app():
                     hidden_sizes.append(hidden_size)
                 params["hidden_layer_sizes"] = tuple(hidden_sizes)
                 params["activation"] = st.selectbox("Hàm kích hoạt", ["relu", "tanh"], index=["relu", "tanh"].index(params["activation"]))
-
             with col_param2:
                 params["learning_rate"] = st.number_input("Tốc độ học", min_value=0.0, step=0.0001, value=params["learning_rate"], format="%.4f")
                 params["epochs"] = st.number_input("Số epoch", min_value=1, value=params["epochs"])
                 params["batch_size"] = st.number_input("Kích thước batch", min_value=1, value=params["batch_size"])
                 params["solver"] = st.selectbox("Trình tối ưu", ["adam", "sgd"], index=["adam", "sgd"].index(params["solver"]))
-
             st.subheader("🔄 Cấu hình Pseudo-Labeling")
             threshold = st.number_input("Ngưỡng tin cậy", min_value=0.0, max_value=1.0, value=params["threshold"])
             max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, value=params["max_iterations"])
-
             st.subheader("Đặt tên cho mô hình")
             if 'model_name' not in st.session_state:
                 st.session_state['model_name'] = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             model_name = st.text_input("Nhập tên mô hình:", value=st.session_state['model_name'])
             st.session_state['model_name'] = model_name
-
             if st.button("Bắt đầu Huấn luyện", type="primary"):
                 if not model_name.strip():
                     st.error("Tên mô hình không được để trống!")
@@ -903,7 +828,6 @@ def run_mnist_pseudo_labeling_app():
                     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name.strip()) as run:
                         mlflow.log_params({**params, "labeled_pct": 1.0, "threshold": threshold, "max_iterations": max_iterations})
                         run_id = run.info.run_id
-
                         with st.spinner("Đang huấn luyện với Pseudo-Labeling..."):
                             start_time = time.time()
                             progress_bar = st.progress(0)
@@ -911,7 +835,6 @@ def run_mnist_pseudo_labeling_app():
                             epoch_text = st.empty()
                             loss_text = st.empty()
                             acc_text = st.empty()
-
                             num_per_class = num_labeled_total // 10
                             labeled_indices = []
                             for digit in range(10):
@@ -921,10 +844,8 @@ def run_mnist_pseudo_labeling_app():
                                     if train_size > 0:
                                         labeled_digit = np.random.choice(digit_indices, size=train_size, replace=False)
                                         labeled_indices.extend(labeled_digit)
-
                             labeled_indices = np.array(labeled_indices)
                             unlabeled_indices = np.setdiff1d(np.arange(len(X_train)), labeled_indices)
-
                             if len(labeled_indices) < num_labeled_total:
                                 remaining_indices = np.setdiff1d(np.arange(len(X_train)), labeled_indices)
                                 additional_indices = np.random.choice(remaining_indices, 
@@ -933,17 +854,10 @@ def run_mnist_pseudo_labeling_app():
                                 labeled_indices = np.concatenate([labeled_indices, additional_indices])
                             elif len(labeled_indices) > num_labeled_total:
                                 labeled_indices = np.random.choice(labeled_indices, size=num_labeled_total, replace=False)
-
                             unlabeled_indices = np.setdiff1d(np.arange(len(X_train)), labeled_indices)
-
                             X_labeled = X_train[labeled_indices]
                             y_labeled = y_train[labeled_indices]
                             X_unlabeled = X_train[unlabeled_indices]
-
-                            st.write(f"**Kiểm tra sau khi lấy dữ liệu**:")
-                            st.write(f"Số mẫu có nhãn: {len(labeled_indices)} (Dự kiến: {num_labeled_total})")
-                            st.write(f"Số mẫu không có nhãn: {len(unlabeled_indices)} (Dự kiến: {num_unlabeled})")
-
                             loss_history = []
                             accuracy_history = []
                             test_acc_history = []
@@ -951,13 +865,11 @@ def run_mnist_pseudo_labeling_app():
                             epoch_loss_history = []
                             epoch_acc_history = []
                             iteration = 0
-
                             class CustomCallback(tf.keras.callbacks.Callback):
                                 def __init__(self, iteration, max_iterations):
                                     super().__init__()
                                     self.iteration = iteration
                                     self.max_iterations = max_iterations
-
                                 def on_epoch_end(self, epoch, logs=None):
                                     epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
                                     loss_text.write(f"Loss: {logs['loss']:.4f}")
@@ -965,11 +877,9 @@ def run_mnist_pseudo_labeling_app():
                                     if self.iteration == 1:
                                         epoch_loss_history.append(logs['loss'])
                                         epoch_acc_history.append(logs['accuracy'])
-
                             while iteration < max_iterations and len(unlabeled_indices) > 0:
                                 iteration += 1
                                 status_text.write(f"Vòng {iteration}/{max_iterations}")
-
                                 model = build_model(params)
                                 history = model.fit(
                                     X_labeled, y_labeled,
@@ -980,21 +890,16 @@ def run_mnist_pseudo_labeling_app():
                                 )
                                 loss_history.append(history.history['loss'][-1])
                                 accuracy_history.append(history.history['accuracy'][-1])
-
                                 test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                                 test_acc = accuracy_score(y_test, test_pred)
                                 test_acc_history.append(test_acc)
-
                                 predictions = model.predict(X_unlabeled, verbose=0)
                                 max_probs = np.max(predictions, axis=1)
                                 pseudo_labels = np.argmax(predictions, axis=1)
-
                                 high_confidence_mask = max_probs >= threshold
                                 if not np.any(high_confidence_mask):
                                     break
-
                                 pseudo_indices = unlabeled_indices[high_confidence_mask]
-
                                 if len(pseudo_indices) > 0:
                                     selected_indices = np.random.choice(pseudo_indices, size=min(5, len(pseudo_indices)), replace=False)
                                     samples = []
@@ -1012,14 +917,11 @@ def run_mnist_pseudo_labeling_app():
                                         'num_added': len(pseudo_indices),
                                         'total_labeled': len(X_labeled) + len(pseudo_indices)
                                     })
-
                                 X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
                                 y_labeled = np.hstack((y_labeled, pseudo_labels[high_confidence_mask]))
                                 unlabeled_indices = unlabeled_indices[~high_confidence_mask]
                                 X_unlabeled = X_unlabeled[~high_confidence_mask]
-
                                 progress_bar.progress(min(iteration / max_iterations, 1.0))
-
                             model = build_model(params)
                             history = model.fit(
                                 X_labeled, y_labeled,
@@ -1030,15 +932,12 @@ def run_mnist_pseudo_labeling_app():
                             )
                             loss_history.append(history.history['loss'][-1])
                             accuracy_history.append(history.history['accuracy'][-1])
-
                             y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                             acc_test = accuracy_score(y_test, y_test_pred)
                             cm_test = confusion_matrix(y_test, y_test_pred)
-
                             mlflow.log_metric("accuracy_test", acc_test)
                             mlflow.log_metric("training_time", time.time() - start_time)
                             mlflow.keras.log_model(model, "model")
-
                             results = {
                                 'accuracy_test': acc_test,
                                 'cm_test': cm_test,
@@ -1056,18 +955,14 @@ def run_mnist_pseudo_labeling_app():
                             }
                             st.session_state['training_results'] = results
                             st.success(f"Đã huấn luyện xong sau {iteration} vòng! Thời gian: {results['training_time']:.2f} giây")
-
         if 'training_results' in st.session_state:
             results = st.session_state['training_results']
             st.subheader("📊 Kết quả Huấn luyện")
-
             col1, col2 = st.columns(2)
             col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
             col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
-
             if 'test_acc_history' in results and len(results['test_acc_history']) > 0:
                 st.write(f"**Độ chính xác sau lần đầu (với 1% dữ liệu)**: {results['test_acc_history'][0]*100:.2f}%")
-
             if 'pseudo_samples' in results:
                 st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
                 with st.expander("Xem toàn bộ vòng lặp", expanded=False):
@@ -1078,7 +973,7 @@ def run_mnist_pseudo_labeling_app():
                             st.write(f"Tổng số mẫu có nhãn: {iter_data['total_labeled']}")
                             fig, axes = plt.subplots(1, len(iter_data['samples']), figsize=(3*len(iter_data['samples']), 3))
                             if len(iter_data['samples']) == 1:
-                             axes = [axes]
+                                axes = [axes]
                             for ax, sample in zip(axes, iter_data['samples']):
                                 ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
                                 ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
@@ -1086,7 +981,6 @@ def run_mnist_pseudo_labeling_app():
                             st.pyplot(fig)
                             plt.close(fig)
                             st.markdown("---")  # Dòng phân cách giữa các vòng
-
             with st.expander("📋 Tóm tắt Kết quả", expanded=False):
                 df_full = pd.DataFrame({
                     "Vòng": range(1, len(results['loss_history']) + 1),
@@ -1094,7 +988,6 @@ def run_mnist_pseudo_labeling_app():
                     "Accuracy": results['accuracy_history']
                 })
                 st.table(df_full)
-
             if 'epoch_loss_history' in results:
                 with st.expander("Chi tiết Epoch lần đầu", expanded=False):
                     df_epochs = pd.DataFrame({
@@ -1103,7 +996,6 @@ def run_mnist_pseudo_labeling_app():
                         "Accuracy": results['epoch_acc_history']
                     })
                     st.table(df_epochs)
-
             st.subheader("Biểu đồ Loss và Accuracy")
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
             ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
@@ -1112,7 +1004,6 @@ def run_mnist_pseudo_labeling_app():
             ax2.set_title("Accuracy qua các vòng")
             st.pyplot(fig)
             plt.close(fig)
-
             if 'test_acc_history' in results:
                 st.subheader("Độ chính xác Test qua các vòng")
                 fig, ax = plt.subplots()
@@ -1120,20 +1011,17 @@ def run_mnist_pseudo_labeling_app():
                 ax.set_title("Độ chính xác Test")
                 st.pyplot(fig)
                 plt.close(fig)
-
             st.subheader("Ma trận Nhầm lẫn")
             fig, ax = plt.subplots()
             sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
             st.pyplot(fig)
             plt.close(fig)
-
             with st.expander("Chi tiết lần chạy", expanded=False):
                 st.write(f"Tên: {results['run_name']}")
                 st.write(f"ID: {results['run_id']}")
                 st.write(f"Thời gian: {results['training_time']:.2f} giây")
                 st.write(f"Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
                 st.json(results['params'])
-
     ### Tab 6: Demo dự đoán
     with tab_demo:
         st.markdown('<div class="section-title">Demo Dự đoán</div>', unsafe_allow_html=True)
