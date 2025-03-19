@@ -386,7 +386,7 @@ def run_mnist_pseudo_labeling_app():
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
-                    st.subheader("🔧 Các tham số huấn luyện")
+                    st.subheader("🔧 Các tham số huấn luyện:")
                     st.markdown("""
                     Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
