@@ -74,7 +74,7 @@ def build_model(params):
     return model
 
 # Ứng dụng chính
-def run_mnist_neural_network_app():
+def   run_mnist_pseudo_labeling_app():
     """Chạy ứng dụng Streamlit để phân loại chữ số MNIST với Neural Network và Pseudo-Labeling."""
 
     ### Thiết lập MLflow
@@ -1064,4 +1064,4 @@ def run_mnist_neural_network_app():
                 st.rerun()
 
 if __name__ == "__main__":
-    run_mnist_neural_network_app()
+      run_mnist_pseudo_labeling_app()
