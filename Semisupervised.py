@@ -205,12 +205,12 @@ def run_mnist_pseudo_labeling_app():
 
     # Tab 1: Thông tin
     with tab_info:
-        st.header("Giới thiệu Ứng dụng Phân loại Chữ số MNIST với Neural Network và Pseudo-Labeling")
+        st.header("Giới thiệu về Ứng dụng và Mạng Neural Network")
         st.markdown("""
-        Chào mừng bạn đến với ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** sử dụng **Mạng nơ-ron nhân tạo (Neural Network)** kết hợp với kỹ thuật **Pseudo-Labeling**. Ứng dụng này được thiết kế để cung cấp trải nghiệm trực quan, hỗ trợ học tập và nghiên cứu về các thuật toán học máy hiện đại.
+        Chào bạn! Đây là ứng dụng phân loại chữ số viết tay từ tập dữ liệu **MNIST** bằng **Mạng nơ-ron nhân tạo (Neural Network)**. Hãy khám phá các tính năng và cách hoạt động của nó nhé!
         """, unsafe_allow_html=True)
 
-        st.subheader("Chọn nội dung để khám phá")
+        st.subheader("Chọn thông tin để xem")
         info_option = st.selectbox(
             "",
             [
@@ -223,28 +223,29 @@ def run_mnist_pseudo_labeling_app():
             help="Khám phá chi tiết về ứng dụng, dữ liệu, mô hình và kỹ thuật Pseudo-Labeling."
         )
 
-        if info_option == "Tổng quan về ứng dụng và mục tiêu":
+
+        if info_option == "Ứng dụng này là gì và mục tiêu của nó?":
             with st.spinner("Đang tải thông tin..."):
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải nội dung... {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📌 Tổng quan về ứng dụng và mục tiêu")
+                st.subheader("📘 1. Ứng dụng này là gì và mục tiêu của nó?")
                 st.markdown("""
-                Ứng dụng này tập trung vào việc phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, một bộ dữ liệu tiêu chuẩn trong lĩnh vực học máy. Kết hợp **Neural Network** và **Pseudo-Labeling**, ứng dụng không chỉ tối ưu hóa hiệu suất mô hình mà còn tận dụng dữ liệu không có nhãn để nâng cao khả năng học tập.
+                Đây là một ứng dụng phân loại chữ số viết tay dựa trên tập dữ liệu **MNIST**, sử dụng **Mạng nơ-ron nhân tạo (Neural Network)**.  
+                - **MNIST**: Tập dữ liệu gồm $70,000$ ảnh chữ số từ $0$ đến $9$, mỗi ảnh kích thước $28 \\times 28$ pixel (tổng cộng $784$ đặc trưng).  
+                - **Mục tiêu**:  
+                  - Xây dựng và huấn luyện một mạng nơ-ron để nhận diện chính xác các chữ số.  
+                  - Cung cấp công cụ trực quan để học tập và đánh giá hiệu quả của thuật toán.  
 
-                **Mục tiêu chính:**
-                - Phát triển một mô hình Neural Network có khả năng nhận diện chính xác các chữ số từ 0 đến 9.
-                - Áp dụng kỹ thuật Pseudo-Labeling để khai thác dữ liệu không có nhãn, mô phỏng các tình huống thực tế khi dữ liệu có nhãn hạn chế.
-                - Cung cấp giao diện trực quan để người dùng thực hành, đánh giá và tùy chỉnh mô hình.
-
-                **Thông tin cơ bản về dữ liệu:**
-                - **Quy mô:** 70,000 ảnh, mỗi ảnh kích thước 28x28 pixel (tổng cộng 784 đặc trưng).
-                - **Đặc trưng:** Giá trị pixel từ 0 đến 255, biểu diễn dưới dạng vector 784 chiều.
-                - **Nhiệm vụ:** Dự đoán nhãn tương ứng với từng chữ số từ 0 đến 9.
+                **Thông tin cơ bản**:  
+                - **$784$ đặc trưng**: Mỗi ảnh được biểu diễn dưới dạng vector $784$ chiều (giá trị pixel từ $0$ đến $255$).  
+                - **$70,000$ mẫu**: Tổng số ảnh, được chia thành tập huấn luyện và kiểm tra.  
+                - **Nhiệm vụ**: Dự đoán nhãn ($0$-$9$) dựa trên đặc trưng pixel.  
                 """, unsafe_allow_html=True)
+                status_text.text("Đã tải xong! 100%")
                 time.sleep(0.5)
                 status_text.empty()
                 progress_bar.empty()
@@ -255,26 +256,30 @@ def run_mnist_pseudo_labeling_app():
                 status_text = st.empty()
                 for i in range(0, 101, 10):
                     progress_bar.progress(i)
-                    status_text.text(f"Đang tải nội dung... {i}%")
+                    status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📌 Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
+                st.subheader("📘 2. Tập dữ liệu MNIST: Đặc điểm và ý nghĩa")
                 st.markdown("""
-                **MNIST** là một tập dữ liệu tiêu chuẩn trong học máy, được phát triển bởi Yann LeCun và các cộng sự, thường được sử dụng để đánh giá hiệu suất của các mô hình phân loại.
+                **MNIST** là tập dữ liệu chuẩn trong học máy, được tạo bởi Yann LeCun và các cộng sự.  
+                - **Đặc điểm**:  
+                  - Gồm các ảnh chữ số viết tay từ học sinh trung học và nhân viên điều tra dân số Mỹ.  
+                  - Chuẩn hóa thành kích thước $28 \\times 28$ pixel, thang độ xám (giá trị từ $0$ đến $255$).  
 
-                **Đặc điểm nổi bật:**
-                - **Nguồn gốc:** Bao gồm ảnh chữ số viết tay từ học sinh trung học và nhân viên điều tra dân số Hoa Kỳ.
-                - **Kích thước:** Mỗi ảnh có độ phân giải 28x28 pixel, thang độ xám với giá trị từ 0 đến 255.
-                - **Quy mô:** Tổng cộng 70,000 ảnh, chia thành tập huấn luyện (60,000 ảnh) và tập kiểm tra (10,000 ảnh).
+                **Ý nghĩa**:  
+                - Là bài toán cơ bản để kiểm tra khả năng phân loại của các mô hình học máy.  
+                - Đơn giản nhưng đủ phức tạp để đánh giá khả năng phân biệt các lớp tương tự (ví dụ: "$4$" và "$9$").  
+                - Phù hợp cho cả người mới bắt đầu và nghiên cứu mô hình phức tạp.  
+                """, unsafe_allow_html=True)
 
-                **Ý nghĩa:**
-                - Là nền tảng lý tưởng để thử nghiệm các thuật toán học máy, từ cơ bản đến nâng cao.
-                - Giúp đánh giá khả năng phân biệt các lớp tương tự (ví dụ: 4 và 9) trong các mô hình Neural Network.
-                - Hỗ trợ nghiên cứu và đào tạo cho cả người mới bắt đầu lẫn các chuyên gia trong lĩnh vực học sâu.
+                st.subheader("📷 Minh họa dữ liệu MNIST")
+                st.markdown("""
+                Dưới đây là ảnh minh họa $10$ chữ số từ $0$ đến $9$ từ tập dữ liệu MNIST để bạn hình dung. Mỗi chữ số được biểu diễn dưới dạng ma trận $28 \\times 28$ pixel.
                 """, unsafe_allow_html=True)
                 try:
-                    st.image(os.path.join("mnist.png"), caption="Tổng quan về tập dữ liệu MNIST", width=800)
+                    mnist_image = Image.open("mnist.png")
+                    st.image(mnist_image, caption="Ảnh minh họa $10$ chữ số từ $0$ đến $9$ trong MNIST", width=800)
                 except FileNotFoundError:
-                    st.warning("Không tìm thấy ảnh minh họa 'mnist_overview.png'. Vui lòng kiểm tra đường dẫn.")
+                    st.error("Không tìm thấy file `mnist.png`. Vui lòng kiểm tra đường dẫn.")
                 except Exception as e:
                     st.error(f"Lỗi khi tải ảnh: {e}")
                 status_text.text("Đã tải xong! 100%")
@@ -290,7 +295,7 @@ def run_mnist_pseudo_labeling_app():
                     progress_bar.progress(i)
                     status_text.text(f"Đang tải thông tin... {i}%")
                     time.sleep(0.05)
-                st.subheader("📊 Neural Network – Mạng nơ-ron nhân tạo")
+                st.subheader("📊 3. Neural Network – Mạng nơ-ron nhân tạo")
                 st.markdown("""
                 **Neural Network (Mạng nơ-ron nhân tạo)** là một mô hình học máy mô phỏng cách hoạt động của mạng nơ-ron sinh học trong não người. Nó được thiết kế để học các đặc trưng phức tạp từ dữ liệu, đặc biệt hiệu quả với bài toán nhận diện hình ảnh như MNIST.
                 """, unsafe_allow_html=True)
@@ -639,6 +644,12 @@ def run_mnist_pseudo_labeling_app():
                 - Điều kiện dừng: Quy trình kết thúc khi hết dữ liệu không có nhãn hoặc đạt số vòng lặp tối đa.  
                 - Tác động: Giá trị lớn tăng cơ hội khai thác dữ liệu không nhãn nhưng kéo dài thời gian huấn luyện.
                 """, unsafe_allow_html=True)
+
+                status_text.text("Đã tải xong! 100%")
+                time.sleep(0.5)
+                status_text.empty()
+                progress_bar.empty()
+
 
     ### Tab 2: Chọn số lượng dữ liệu
     with tab_load:
