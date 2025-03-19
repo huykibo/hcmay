@@ -30,8 +30,8 @@ def get_optimal_params(num_samples):
             "activation": "relu",
             "solver": "adam",
             "batch_size": 32,
-            "threshold": 0.95,
-            "max_iterations": 5
+            "threshold": 0.95,  # Pseudo-Labeling
+            "max_iterations": 5  # Pseudo-Labeling
         }
     elif num_samples <= 10000:
         return {
@@ -264,7 +264,7 @@ def run_mnist_pseudo_labeling_app():
                 with st.spinner("Đang tải thông tin..."):
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    for i in range(0, 101, 10):
+                    for i in range(0, 101, 10): 
                         progress_bar.progress(i)
                         status_text.text(f"Đang tải thông tin... {i}%")
                         time.sleep(0.05)
@@ -386,7 +386,7 @@ def run_mnist_pseudo_labeling_app():
                     except Exception as e:
                         st.error(f"Lỗi khi tải ảnh: {e}")
 
-                    st.subheader("🔧 Các tham số huấn luyện:")
+                    st.subheader("🔧 Các tham số huấn luyện: Ý nghĩa, hoạt động và công thức")
                     st.markdown("""
                     Dưới đây là các tham số chính trong quá trình huấn luyện Neural Network, ý nghĩa của chúng, cách hoạt động và công thức (nếu có):
 
@@ -618,6 +618,7 @@ def run_mnist_pseudo_labeling_app():
                       - Tác động: Giá trị lớn tăng cơ hội khai thác dữ liệu không nhãn nhưng kéo dài thời gian huấn luyện.
                     """, unsafe_allow_html=True)
 
+
     ### Tab 2: Chọn số lượng dữ liệu
     with tab_load:
         st.markdown('<div class="section-title">Chọn Số lượng Dữ liệu</div>', unsafe_allow_html=True)
@@ -652,7 +653,6 @@ def run_mnist_pseudo_labeling_app():
     ### Tab 3: Xử lý dữ liệu
     with tab_preprocess:
         st.markdown('<div class="section-title">Xử lý Dữ liệu</div>', unsafe_allow_html=True)
-
         if 'data' not in st.session_state:
             st.info("Vui lòng chọn số lượng mẫu trước.")
         else:
@@ -661,11 +661,12 @@ def run_mnist_pseudo_labeling_app():
                 st.session_state["data_original"] = (X.copy(), y.copy())
 
             st.subheader("Dữ liệu Gốc")
-            fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+            fig, axes = plt.subplots(2, 5, figsize=(12, 5))
             for i, ax in enumerate(axes.flat):
                 ax.imshow(X[i].reshape(28, 28), cmap='gray')
                 ax.set_title(f"Label: {y[i]}")
                 ax.axis("off")
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close(fig)
 
@@ -692,11 +693,12 @@ def run_mnist_pseudo_labeling_app():
             if "data_processed" in st.session_state:
                 X_processed, y_processed = st.session_state["data_processed"]
                 st.subheader("Dữ liệu sau khi xử lý")
-                fig, axes = plt.subplots(2, 5, figsize=(10, 4))
+                fig, axes = plt.subplots(2, 5, figsize=(12, 5))
                 for i, ax in enumerate(axes.flat):
                     ax.imshow(X_processed[i].reshape(28, 28), cmap='gray')
                     ax.set_title(f"Label: {y_processed[i]}")
                     ax.axis("off")
+                plt.tight_layout()
                 st.pyplot(fig)
                 plt.close(fig)
 
@@ -824,10 +826,10 @@ def run_mnist_pseudo_labeling_app():
                         with st.spinner("Đang huấn luyện với Pseudo-Labeling..."):
                             start_time = time.time()
                             progress_bar = st.progress(0)
-                            status_text = st.empty()  # Placeholder cho vòng hiện tại
-                            epoch_text = st.empty()   # Placeholder cho epoch hiện tại
-                            loss_text = st.empty()    # Placeholder cho loss
-                            acc_text = st.empty()     # Placeholder cho accuracy
+                            status_text = st.empty()
+                            epoch_text = st.empty()
+                            loss_text = st.empty()
+                            acc_text = st.empty()
 
                             # Tạo tập dữ liệu có nhãn ban đầu (dựa trên labeled_pct mỗi lớp)
                             labeled_indices = []
@@ -836,7 +838,7 @@ def run_mnist_pseudo_labeling_app():
                                 if len(digit_indices) > 0:
                                     train_size = min(int(len(digit_indices) * (labeled_pct / 100)), len(digit_indices))
                                     if train_size < 1 and len(digit_indices) > 0:
-                                        train_size = 1  # Đảm bảo lấy ít nhất 1 mẫu nếu lớp có dữ liệu
+                                        train_size = 1
                                     if train_size > 0:
                                         labeled_digit, _ = train_test_split(digit_indices, train_size=train_size, random_state=42)
                                         labeled_indices.extend(labeled_digit)
@@ -849,8 +851,7 @@ def run_mnist_pseudo_labeling_app():
 
                             loss_history = []
                             accuracy_history = []
-                            test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
-                            pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
+                            pseudo_samples_history = []  # Lưu trữ mẫu Pseudo-Labeling
                             iteration = 0
 
                             # Callback để cập nhật thông tin trong quá trình huấn luyện
@@ -882,11 +883,6 @@ def run_mnist_pseudo_labeling_app():
                                 loss_history.append(history.history['loss'][-1])
                                 accuracy_history.append(history.history['accuracy'][-1])
 
-                                # Đánh giá trên tập test sau mỗi vòng để kiểm chứng hiệu quả
-                                test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                test_acc = accuracy_score(y_test, test_pred)
-                                test_acc_history.append(test_acc)
-
                                 # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                 predictions = model.predict(X_unlabeled, verbose=0)
                                 max_probs = np.max(predictions, axis=1)
@@ -897,34 +893,23 @@ def run_mnist_pseudo_labeling_app():
                                 if not np.any(high_confidence_mask):
                                     break
 
-                                pseudo_indices = unlabeled_indices[high_confidence_mask]
-
-                                # Thu thập thông tin mẫu được gán nhãn giả để minh họa
-                                if len(pseudo_indices) > 0:
-                                    selected_indices = np.random.choice(pseudo_indices, size=min(5, len(pseudo_indices)), replace=False)
-                                    samples = []
-                                    for idx in selected_indices:
-                                        i = np.where(unlabeled_indices == idx)[0][0]
-                                        image = X_unlabeled[i].copy()
-                                        pseudo_label = pseudo_labels[i]
-                                        confidence = max_probs[i]
-                                        true_label = y_train[idx]
-                                        samples.append({
-                                            'image': image,
-                                            'pseudo_label': pseudo_label,
-                                            'confidence': confidence,
-                                            'true_label': true_label
-                                        })
-                                    pseudo_samples.append({
-                                        'iteration': iteration,
-                                        'samples': samples,
-                                        'num_added': len(pseudo_indices),
-                                        'total_labeled': len(X_labeled) + len(pseudo_indices)
-                                    })
-
                                 # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
+                                pseudo_indices = unlabeled_indices[high_confidence_mask]
+                                pseudo_y = pseudo_labels[high_confidence_mask]
+                                pseudo_probs = max_probs[high_confidence_mask]
+                                X_pseudo = X_unlabeled[high_confidence_mask]
+
+                                # Lưu trữ một số mẫu Pseudo-Labeling để minh họa (tối đa 5 mẫu mỗi vòng)
+                                num_samples_to_show = min(5, len(X_pseudo))
+                                pseudo_samples_history.append({
+                                    'iteration': iteration,
+                                    'X_pseudo': X_pseudo[:num_samples_to_show],
+                                    'pseudo_labels': pseudo_y[:num_samples_to_show],
+                                    'confidence': pseudo_probs[:num_samples_to_show]
+                                })
+
                                 X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
-                                y_labeled = np.hstack((y_labeled, pseudo_labels[high_confidence_mask]))
+                                y_labeled = np.hstack((y_labeled, pseudo_y))
 
                                 # Cập nhật tập dữ liệu không có nhãn
                                 unlabeled_indices = unlabeled_indices[~high_confidence_mask]
@@ -962,8 +947,7 @@ def run_mnist_pseudo_labeling_app():
                                 'cm_test': cm_test,
                                 'loss_history': loss_history,
                                 'accuracy_history': accuracy_history,
-                                'test_acc_history': test_acc_history,
-                                'pseudo_samples': pseudo_samples,
+                                'pseudo_samples_history': pseudo_samples_history,
                                 'iterations': iteration,
                                 'training_time': time.time() - start_time,
                                 'run_id': run.info.run_id,
@@ -978,105 +962,100 @@ def run_mnist_pseudo_labeling_app():
             if 'training_results' in st.session_state:
                 results = st.session_state['training_results']
                 st.subheader("📊 Kết quả Huấn luyện")
+
+                # Thông tin cơ bản
                 col1, col2 = st.columns(2)
                 col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                 col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
-                st.subheader("Ma trận Nhầm lẫn")
-                fig, ax = plt.subplots()
-                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Test")
-                st.pyplot(fig)
-                plt.close(fig)
+                # Tham số huấn luyện
+                st.subheader("⚙️ Tham số Huấn luyện")
+                st.json({
+                    "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
+                    "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
+                    "Tốc độ học": results['params']['learning_rate'],
+                    "Số lần lặp": results['params']['epochs'],
+                    "Kích thước batch": results['params']['batch_size'],
+                    "Hàm kích hoạt": results['params']['activation'],
+                    "Trình tối ưu": results['params']['solver'],
+                    "Ngưỡng tin cậy": threshold,
+                    "Số vòng lặp tối đa": max_iterations
+                })
 
-                # Biểu đồ Loss và Accuracy theo số vòng
-                st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
-                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
-                ax1.set_title("Loss qua các vòng")
-                ax1.set_xlabel("Vòng")
-                ax1.set_ylabel("Loss")
-                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'])
-                ax2.set_title("Accuracy qua các vòng")
-                ax2.set_xlabel("Vòng")
-                ax2.set_ylabel("Accuracy")
-                st.pyplot(fig)
-                plt.close(fig)
-
-                # Biểu đồ độ chính xác trên Test qua các vòng
-                if 'test_acc_history' in results:
-                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
-                    fig, ax = plt.subplots()
-                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'])
-                    ax.set_title("Độ chính xác trên Test qua các Vòng")
-                    ax.set_xlabel("Vòng")
-                    ax.set_ylabel("Độ chính xác")
+                # Biểu đồ Loss và Accuracy
+                st.subheader("📈 Biểu đồ Loss và Accuracy")
+                col_loss, col_acc = st.columns(2)
+                with col_loss:
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
+                            color='blue', label='Loss', linewidth=2)
+                    ax.set_title("Loss qua các vòng", fontsize=12)
+                    ax.set_xlabel("Vòng", fontsize=10)
+                    ax.set_ylabel("Loss", fontsize=10)
+                    ax.grid(True, linestyle='--', alpha=0.7)
+                    ax.legend()
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    plt.close(fig)
+                with col_acc:
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
+                            color='green', label='Accuracy', linewidth=2)
+                    ax.set_title("Accuracy qua các vòng", fontsize=12)
+                    ax.set_xlabel("Vòng", fontsize=10)
+                    ax.set_ylabel("Accuracy", fontsize=10)
+                    ax.grid(True, linestyle='--', alpha=0.7)
+                    ax.legend()
+                    plt.tight_layout()
                     st.pyplot(fig)
                     plt.close(fig)
 
-                # Minh họa các mẫu được gán nhãn Pseudo
-                if 'pseudo_samples' in results:
-                    st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
-                    for iter_data in results['pseudo_samples']:
-                        with st.expander(f"Vòng {iter_data['iteration']}"):
-                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
-                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
-                            num_samples = len(iter_data['samples'])
-                            if num_samples > 0:
-                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
-                                if num_samples == 1:
-                                    axes = [axes]
-                                for ax, sample in zip(axes, iter_data['samples']):
-                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                    ax.axis('off')
-                                st.pyplot(fig)
-                                plt.close(fig)
+                # Ma trận Nhầm lẫn
+                st.subheader("🔢 Ma trận Nhầm lẫn")
+                fig, ax = plt.subplots(figsize=(8, 6))
+                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Ma trận Nhầm lẫn trên tập Test", fontsize=14)
+                ax.set_xlabel("Dự đoán", fontsize=12)
+                ax.set_ylabel("Thực tế", fontsize=12)
+                plt.tight_layout()
+                st.pyplot(fig)
+                plt.close(fig)
+
+                # Minh họa các mẫu Pseudo-Labeling
+                st.subheader("🔄 Minh họa Pseudo-Labeling")
+                if results['pseudo_samples_history']:
+                    for pseudo_data in results['pseudo_samples_history']:
+                        st.markdown(f"**Vòng {pseudo_data['iteration']}**")
+                        fig, axes = plt.subplots(1, len(pseudo_data['X_pseudo']), figsize=(len(pseudo_data['X_pseudo']) * 2, 2.5))
+                        if len(pseudo_data['X_pseudo']) == 1:
+                            axes = [axes]  # Đảm bảo axes là danh sách ngay cả khi chỉ có 1 mẫu
+                        for i, ax in enumerate(axes):
+                            ax.imshow(pseudo_data['X_pseudo'][i].reshape(28, 28), cmap='gray')
+                            ax.set_title(f"Label: {pseudo_data['pseudo_labels'][i]}\nConf: {pseudo_data['confidence'][i]:.2f}", fontsize=10)
+                            ax.axis("off")
+                        plt.tight_layout()
+                        st.pyplot(fig)
+                        plt.close(fig)
+                else:
+                    st.info("Không có mẫu Pseudo-Labeling nào được gán.")
 
                 # Tóm tắt kết quả huấn luyện
-                st.markdown("#### 📋 Tóm tắt Kết quả Huấn luyện")
+                st.subheader("📋 Tóm tắt Kết quả")
                 full_data = {
                     "Vòng": list(range(1, len(results['loss_history']) + 1)),
                     "Loss": results['loss_history'],
                     "Accuracy": results['accuracy_history'],
                 }
                 df_full = pd.DataFrame(full_data)
+                st.table(df_full)
 
-                if 'display_iterations' not in st.session_state:
-                    st.session_state['display_iterations'] = 5
-
-                st.table(df_full.head(st.session_state['display_iterations']))
-
-                if len(results['loss_history']) > st.session_state['display_iterations']:
-                    if st.button("Xem thêm 5 vòng", key="show_more_iterations"):
-                        st.session_state['display_iterations'] += 5
-                        st.rerun()
-
-                if st.session_state['display_iterations'] > 5:
-                    if st.button("Thu gọn", key="collapse_iterations"):
-                        st.session_state['display_iterations'] = 5
-                        st.rerun()
-
-                # Thêm phần chi tiết kết quả huấn luyện
-                with st.expander("Xem chi tiết", expanded=False):
+                # Chi tiết lần chạy
+                with st.expander("Xem chi tiết lần chạy", expanded=False):
                     st.markdown("**Thông tin lần chạy:**")
                     st.write(f"- Tên: {results['run_name']}")
                     st.write(f"- ID: {results['run_id']}")
                     st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
                     st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
-                    st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
-                    st.markdown("**Tham số đã chọn:**")
-                    st.json({
-                        "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
-                        "Số nơ-ron mỗi lớp": results['params']['hidden_layer_sizes'],
-                        "Tốc độ học": results['params']['learning_rate'],
-                        "Số lần lặp": results['params']['epochs'],
-                        "Kích thước batch": results['params']['batch_size'],
-                        "Hàm kích hoạt": results['params']['activation'],
-                        "Trình tối ưu": results['params']['solver'],
-                        "Ngưỡng tin cậy": threshold,
-                        "Số vòng lặp tối đa": max_iterations
-                    })
 
     ### Tab 6: Demo dự đoán
     with tab_demo:
@@ -1182,11 +1161,12 @@ def run_mnist_pseudo_labeling_app():
                                 fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
                                         label='Training Loss', color='blue', linewidth=2)
-                                ax.set_xlabel("Vòng")
-                                ax.set_ylabel("Loss")
-                                ax.set_title("Lịch sử Mất mát")
+                                ax.set_xlabel("Vòng", fontsize=10)
+                                ax.set_ylabel("Loss", fontsize=10)
+                                ax.set_title("Lịch sử Mất mát", fontsize=12)
                                 ax.legend()
-                                ax.grid(True)
+                                ax.grid(True, linestyle='--', alpha=0.7)
+                                plt.tight_layout()
                                 st.pyplot(fig)
                                 plt.close(fig)
                     with col_acc:
@@ -1196,11 +1176,12 @@ def run_mnist_pseudo_labeling_app():
                                 fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
                                         label='Training Accuracy', color='green', linewidth=2)
-                                ax.set_xlabel("Vòng")
-                                ax.set_ylabel("Accuracy")
-                                ax.set_title("Lịch sử Độ chính xác")
+                                ax.set_xlabel("Vòng", fontsize=10)
+                                ax.set_ylabel("Accuracy", fontsize=10)
+                                ax.set_title("Lịch sử Độ chính xác", fontsize=12)
                                 ax.legend()
-                                ax.grid(True)
+                                ax.grid(True, linestyle='--', alpha=0.7)
+                                plt.tight_layout()
                                 st.pyplot(fig)
                                 plt.close(fig)
 
