@@ -805,9 +805,12 @@ def run_mnist_pseudo_labeling_app():
             threshold = st.number_input("Ngưỡng tin cậy", min_value=0.0, max_value=1.0, value=params["threshold"])
             max_iterations = st.number_input("Số vòng lặp tối đa", min_value=1, value=params["max_iterations"])
 
-            # Đặt tên cho mô hình
+            # Đặt tên cho mô hình (Tham khảo từ code 1)
             st.subheader("Đặt tên cho mô hình")
-            model_name = st.text_input("Nhập tên mô hình:", value=f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+            if 'model_name' not in st.session_state:
+                st.session_state['model_name'] = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            model_name = st.text_input("Nhập tên mô hình:", value=st.session_state['model_name'])
+            st.session_state['model_name'] = model_name
 
             if st.button("Bắt đầu Huấn luyện", type="primary"):
                 # Kiểm tra tên mô hình không trống
@@ -1030,7 +1033,7 @@ def run_mnist_pseudo_labeling_app():
             else:
                 selected_run_id = st.selectbox("Chọn mô hình:", list(model_options.keys()), 
                                                format_func=lambda x: model_options[x])
-                if st.button("Tải mô hình"):
+                if st.button("Sử dụng mô hình này"):  # Thay đổi nút thành "Sử dụng mô hình này"
                     with st.spinner("Đang tải mô hình..."):
                         model = mlflow.keras.load_model(f"runs:/{selected_run_id}/model")
                         st.session_state['selected_model'] = model
