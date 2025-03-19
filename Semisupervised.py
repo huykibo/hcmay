@@ -125,11 +125,68 @@ def run_mnist_pseudo_labeling_app():
 
     st.title("Phân loại Chữ số MNIST với Neural Network và Pseudo-Labeling")
 
-    ### CSS tùy chỉnh
+    # CSS tùy chỉnh
     st.markdown("""
         <style>
+            .tooltip {
+                position: relative;
+                display: inline-block;
+                cursor: pointer;
+                color: #1f77b4;
+                font-weight: bold;
+                margin-left: 5px;
+            }
+            .tooltip .tooltiptext {
+                visibility: hidden;
+                width: 400px;
+                background-color: #f9f9f9;
+                color: #333;
+                text-align: left;
+                border-radius: 6px;
+                padding: 10px;
+                position: absolute;
+                z-index: 1;
+                right: 105%;
+                top: 50%;
+                transform: translateY(-50%);
+                opacity: 0;
+                transition: opacity 0.3s;
+                border: 1px solid #ccc;
+                font-size: 0.9em;
+                line-height: 1.4;
+            }
+            .tooltip:hover .tooltiptext {
+                visibility: visible;
+                opacity: 1;
+            }
             .section-title {
                 font-size: 1.5em;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 10px;
+            }
+            .info-box {
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-left: 4px solid #3498db;
+                margin-bottom: 15px;
+            }
+            .action-container {
+                background-color: #ffffff;
+                padding: 15px;
+                border-radius: 5px;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                margin-bottom: 20px;
+            }
+            .prediction-box {
+                margin-top: 10px;
+                padding: 10px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                background-color: #f9f9f9;
+            }
+            .mode-title {
+                font-size: 1.2em;
                 font-weight: bold;
                 color: #2c3e50;
                 margin-bottom: 10px;
