@@ -1148,20 +1148,20 @@ def run_mnist_pseudo_labeling_app():
                     with st.expander("Minh họa các mẫu được gán nhãn Pseudo", expanded=False):
                         st.markdown("*Phần này hiển thị các mẫu được gán nhãn giả trong từng vòng lặp của quá trình Pseudo-Labeling.*")
                         for iter_data in results['pseudo_samples']:
-                            with st.expander(f"Vòng {iter_data['iteration']}"):
-                                st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
-                                st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
-                                num_samples = len(iter_data['samples'])
-                                if num_samples > 0:
-                                    fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
-                                    if num_samples == 1:
-                                        axes = [axes]
-                                    for ax, sample in zip(axes, iter_data['samples']):
-                                        ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                        ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                        ax.axis('off')
-                                    st.pyplot(fig)
-                                    plt.close(fig)
+                            st.subheader(f"Vòng {iter_data['iteration']}")  # Sử dụng subheader thay vì expander lồng nhau
+                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
+                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
+                            num_samples = len(iter_data['samples'])
+                            if num_samples > 0:
+                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
+                                if num_samples == 1:
+                                    axes = [axes]  # Đảm bảo axes là iterable khi chỉ có 1 mẫu
+                                for ax, sample in zip(axes, iter_data['samples']):
+                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
+                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
+                                    ax.axis('off')
+                                st.pyplot(fig)
+                                plt.close(fig)
 
                 # Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)
                 if 'epoch_loss_history' in results and 'epoch_acc_history' in results:
