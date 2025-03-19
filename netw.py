@@ -991,10 +991,10 @@ def run_mnist_neural_network_app():
                         })
 
     # Tab 6: Demo dự đoán
-with tab_demo:
-    st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
-    st.header("Dự đoán số viết tay")
-    st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
+    with tab_demo:
+        st.markdown('<div class="section-title">Demo Dự đoán Chữ số</div>', unsafe_allow_html=True)
+        st.header("Dự đoán số viết tay")
+        st.write("Chọn cách nhập liệu: tải lên hình ảnh, sử dụng dữ liệu Test hoặc vẽ trực tiếp.")
 
     if 'split_data' not in st.session_state:
         st.warning("⚠️ Vui lòng chia dữ liệu trước trong tab 'Chia dữ liệu'!")
