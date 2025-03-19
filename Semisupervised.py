@@ -1106,72 +1106,64 @@ def run_mnist_pseudo_labeling_app():
                 # Biểu đồ Loss và Accuracy theo số vòng
                 st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
+                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], color='blue', linewidth=2)
                 ax1.set_title("Loss qua các vòng")
                 ax1.set_xlabel("Vòng")
                 ax1.set_ylabel("Loss")
-                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'])
+                ax1.grid(True)
+                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], color='green', linewidth=2)
                 ax2.set_title("Accuracy qua các vòng")
                 ax2.set_xlabel("Vòng")
                 ax2.set_ylabel("Accuracy")
+                ax2.grid(True)
                 st.pyplot(fig)
+                st.markdown("*Giải thích: Biểu đồ Loss thể hiện sự giảm dần của hàm mất mát qua các vòng lặp, cho thấy mô hình học tốt hơn theo thời gian. Biểu đồ Accuracy cho thấy độ chính xác trên tập huấn luyện tăng dần qua các vòng, phản ánh khả năng học của mô hình.*")
                 plt.close(fig)
 
                 # Biểu đồ độ chính xác trên Test qua các vòng
                 if 'test_acc_history' in results:
                     st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
-                    fig, ax = plt.subplots()
-                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'])
+                    fig, ax = plt.subplots(figsize=(6, 4))
+                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'], color='purple', linewidth=2)
                     ax.set_title("Độ chính xác trên Test qua các Vòng")
                     ax.set_xlabel("Vòng")
                     ax.set_ylabel("Độ chính xác")
+                    ax.grid(True)
                     st.pyplot(fig)
+                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập kiểm tra qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
                     plt.close(fig)
+
+                # Tóm tắt Kết quả Huấn luyện trong expander
+                with st.expander("📋 Tóm tắt Kết quả Huấn luyện", expanded=False):
+                    full_data = {
+                        "Vòng": list(range(1, len(results['loss_history']) + 1)),
+                        "Loss": results['loss_history'],
+                        "Accuracy": results['accuracy_history'],
+                    }
+                    df_full = pd.DataFrame(full_data)
+                    st.table(df_full)
 
                 # Minh họa các mẫu được gán nhãn Pseudo
                 if 'pseudo_samples' in results:
-                    st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
-                    for iter_data in results['pseudo_samples']:
-                        with st.expander(f"Vòng {iter_data['iteration']}"):
-                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
-                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
-                            num_samples = len(iter_data['samples'])
-                            if num_samples > 0:
-                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
-                                if num_samples == 1:
-                                    axes = [axes]
-                                for ax, sample in zip(axes, iter_data['samples']):
-                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                    ax.axis('off')
-                                st.pyplot(fig)
-                                plt.close(fig)
+                    with st.expander("Minh họa các mẫu được gán nhãn Pseudo", expanded=False):
+                        st.markdown("*Phần này hiển thị các mẫu được gán nhãn giả trong từng vòng lặp của quá trình Pseudo-Labeling.*")
+                        for iter_data in results['pseudo_samples']:
+                            with st.expander(f"Vòng {iter_data['iteration']}"):
+                                st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
+                                st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
+                                num_samples = len(iter_data['samples'])
+                                if num_samples > 0:
+                                    fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
+                                    if num_samples == 1:
+                                        axes = [axes]
+                                    for ax, sample in zip(axes, iter_data['samples']):
+                                        ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
+                                        ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
+                                        ax.axis('off')
+                                    st.pyplot(fig)
+                                    plt.close(fig)
 
-                # Tóm tắt kết quả huấn luyện
-                st.markdown("#### 📋 Tóm tắt Kết quả Huấn luyện")
-                full_data = {
-                    "Vòng": list(range(1, len(results['loss_history']) + 1)),
-                    "Loss": results['loss_history'],
-                    "Accuracy": results['accuracy_history'],
-                }
-                df_full = pd.DataFrame(full_data)
-
-                if 'display_iterations' not in st.session_state:
-                    st.session_state['display_iterations'] = 5
-
-                st.table(df_full.head(st.session_state['display_iterations']))
-
-                if len(results['loss_history']) > st.session_state['display_iterations']:
-                    if st.button("Xem thêm 5 vòng", key="show_more_iterations"):
-                        st.session_state['display_iterations'] += 5
-                        st.rerun()
-
-                if st.session_state['display_iterations'] > 5:
-                    if st.button("Thu gọn", key="collapse_iterations"):
-                        st.session_state['display_iterations'] = 5
-                        st.rerun()
-
-                # Thêm chi tiết epoch cho lần lặp đầu tiên
+                # Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)
                 if 'epoch_loss_history' in results and 'epoch_acc_history' in results:
                     with st.expander("Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)", expanded=False):
                         epoch_data = {
@@ -1180,7 +1172,17 @@ def run_mnist_pseudo_labeling_app():
                             "Accuracy": results['epoch_acc_history']
                         }
                         df_epochs = pd.DataFrame(epoch_data)
-                        st.table(df_epochs)
+                        if 'display_epochs' not in st.session_state:
+                            st.session_state['display_epochs'] = 10
+                        st.table(df_epochs.head(st.session_state['display_epochs']))
+                        if len(df_epochs) > st.session_state['display_epochs']:
+                            if st.button("Hiển thị thêm 10 epoch", key="show_more_epochs"):
+                                st.session_state['display_epochs'] += 10
+                                st.rerun()
+                        if st.session_state['display_epochs'] > 10:
+                            if st.button("Thu gọn", key="collapse_epochs"):
+                                st.session_state['display_epochs'] = 10
+                                st.rerun()
 
                 # Thêm phần chi tiết kết quả huấn luyện
                 with st.expander("Xem chi tiết", expanded=False):
