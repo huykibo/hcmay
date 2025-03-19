@@ -19,6 +19,18 @@ import tensorflow as tf
 from tensorflow.keras import layers, models, callbacks
 import gc
 
+# Hàm xây dựng mô hình Neural Network
+def build_model(params):
+    """Xây dựng mô hình Neural Network dựa trên tham số."""
+    model = models.Sequential()
+    model.add(layers.Input(shape=(784,)))
+    for units in params["hidden_layer_sizes"]:
+        model.add(layers.Dense(units, activation=params["activation"]))
+    model.add(layers.Dense(10, activation="softmax"))
+    optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+    model.compile(optimizer=optimizer, loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+    return model
+
 # Hàm chọn tham số tối ưu dựa trên số mẫu
 def get_optimal_params(num_samples):
     """Xác định tham số tối ưu cho mô hình dựa trên số lượng mẫu."""
@@ -58,20 +70,6 @@ def get_optimal_params(num_samples):
             "solver": "adam",
             "batch_size": 256
         }
-
-# Hàm xây dựng mô hình Neural Network
-def build_model(params):
-    """Xây dựng và biên dịch mô hình Neural Network với tham số được cung cấp."""
-    model = models.Sequential()
-    model.add(layers.Input(shape=(784,)))
-    for neurons in params["hidden_layer_sizes"]:
-        model.add(layers.Dense(neurons, activation=params["activation"]))
-    model.add(layers.Dense(10, activation='softmax'))
-    optimizer = (tf.keras.optimizers.Adam(learning_rate=params["learning_rate"])
-                 if params["solver"] == "adam" else
-                 tf.keras.optimizers.SGD(learning_rate=params["learning_rate"]))
-    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    return model
 
 # Ứng dụng chính
 def run_mnist_pseudo_labeling_app():
@@ -601,7 +599,7 @@ def run_mnist_pseudo_labeling_app():
                 X_sampled = X_full[indices]
                 y_sampled = y_full[indices]
                 st.session_state['data'] = (X_sampled.copy(), y_sampled.copy())
-                st.session_state['optimal_params'] = get_optimal_params(num_samples)
+                st.session_state['optimal_params'] = get_optimal_params(num_samples)  # Tự động chọn tham số tối ưu
                 with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name="Data_Sample"):
                     mlflow.log_param("num_samples", num_samples)
                 st.success(f"Đã chọn {num_samples} mẫu!")
@@ -674,8 +672,20 @@ def run_mnist_pseudo_labeling_app():
                 st.session_state["optimal_params"] = get_optimal_params(num_samples)
             params = st.session_state.get("training_params", st.session_state["optimal_params"].copy())
 
-            #### Cấu hình mô hình
+            #### Bảng tham số tối ưu có thể thu gọn/mở ra
             st.subheader("⚙️ Cấu hình Mô hình")
+            if "optimal_params" in st.session_state:
+                with st.expander("Xem tham số tối ưu đề xuất", expanded=False):
+                    optimal_params = st.session_state["optimal_params"]
+                    st.write(f"**Số lớp ẩn:** {len(optimal_params['hidden_layer_sizes'])}")
+                    st.write(f"**Số nơ-ron mỗi lớp ẩn:** {optimal_params['hidden_layer_sizes']}")
+                    st.write(f"**Tốc độ học:** {optimal_params['learning_rate']}")
+                    st.write(f"**Số lần lặp (Epochs):** {optimal_params['epochs']}")
+                    st.write(f"**Kích thước batch:** {optimal_params['batch_size']}")
+                    st.write(f"**Hàm kích hoạt:** {optimal_params['activation']}")
+                    st.write(f"**Trình tối ưu:** {optimal_params['solver']}")
+
+            #### Cấu hình tham số mô hình
             col_param1, col_param2 = st.columns(2)
             with col_param1:
                 num_hidden_layers = st.number_input("Số lớp ẩn", min_value=1, value=len(params["hidden_layer_sizes"]))
@@ -703,21 +713,16 @@ def run_mnist_pseudo_labeling_app():
             threshold = st.number_input("Ngưỡng tin cậy", min_value=0.0, max_value=1.0, value=0.95)
             max_iterations = st.number_input("Số lần lặp tối đa", min_value=1, value=10)
 
+            #### Đặt tên mô hình
+            model_name = st.text_input("Đặt tên cho mô hình:", value=f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+
+            #### Huấn luyện mô hình
             if st.button("Bắt đầu Huấn luyện", type="primary"):
-                with st.spinner("Đang huấn luyện với Pseudo-Labeling..."):
+                with st.spinner(f"Đang huấn luyện mô hình '{model_name}' với Pseudo-Labeling..."):
                     start_time = time.time()
                     progress_bar = st.progress(0)
                     status_text = st.empty()
 
-                    class ProgressCallback(callbacks.Callback):
-                        def on_epoch_end(self, epoch, logs=None):
-                            progress = (epoch + 1) / params["epochs"]
-                            progress_bar.progress(min(progress, 1.0))
-                            status_text.text(f"Epoch {epoch+1}/{params['epochs']}, Loss: {logs['loss']:.4f}, Accuracy: {logs['accuracy']:.4f}")
-
-                    callbacks_list = [ProgressCallback()]
-
-                    model_name = f"Model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
                     labeled_indices = []
                     unlabeled_indices = []
                     for digit in range(10):
@@ -737,19 +742,30 @@ def run_mnist_pseudo_labeling_app():
                     with mlflow.start_run(experiment_id=EXPERIMENT_ID, run_name=model_name) as run:
                         mlflow.log_params({**params, "labeled_pct": labeled_pct, "threshold": threshold, "max_iterations": max_iterations})
                         model = build_model(params)
+                        # Huấn luyện Neural Network trước trên tập dữ liệu có nhãn ban đầu
+                        st.write(f"Bắt đầu huấn luyện ban đầu trên tập dữ liệu có nhãn...")
                         history = model.fit(X_labeled, y_labeled, epochs=params["epochs"], 
-                                            batch_size=params["batch_size"], callbacks=callbacks_list, verbose=0)
+                                            batch_size=params["batch_size"], verbose=0)
                         loss_history.extend(history.history['loss'])
                         accuracy_history.extend(history.history['accuracy'])
 
+                        # Hiển thị tiến trình huấn luyện ban đầu
+                        for epoch in range(params["epochs"]):
+                            progress = (epoch + 1) / (params["epochs"] * (max_iterations + 1))
+                            progress_bar.progress(min(progress, 1.0))
+                            status_text.text(f"Vòng 0/{max_iterations}, Epoch {epoch+1}/{params['epochs']}, Loss: {history.history['loss'][epoch]:.4f}, Accuracy: {history.history['accuracy'][epoch]:.4f}")
+
+                        # Pseudo-Labeling với Neural Network
                         for iteration in range(max_iterations):
                             if len(unlabeled_indices) == 0:
+                                st.write("Hết dữ liệu không nhãn, dừng Pseudo-Labeling.")
                                 break
                             X_unlabeled = X_train[unlabeled_indices]
                             predictions = model.predict(X_unlabeled, verbose=0)
                             max_probs = np.max(predictions, axis=1)
                             pseudo_mask = max_probs > threshold
                             if not np.any(pseudo_mask):
+                                st.write(f"Vòng {iteration+1}: Không có mẫu nào đạt ngưỡng tin cậy, dừng Pseudo-Labeling.")
                                 break
                             pseudo_indices = unlabeled_indices[pseudo_mask]
                             pseudo_labels = np.argmax(predictions[pseudo_mask], axis=1)
@@ -757,12 +773,20 @@ def run_mnist_pseudo_labeling_app():
                             y_labeled = np.concatenate((y_labeled, pseudo_labels))
                             unlabeled_indices = unlabeled_indices[~pseudo_mask]
                             X_labeled = X_train[labeled_indices]
-                            model = build_model(params)
+                            model = build_model(params)  # Xây dựng lại mô hình
+                            st.write(f"Bắt đầu vòng Pseudo-Labeling {iteration+1}/{max_iterations}")
                             history = model.fit(X_labeled, y_labeled, epochs=params["epochs"], 
-                                                batch_size=params["batch_size"], callbacks=callbacks_list, verbose=0)
+                                                batch_size=params["batch_size"], verbose=0)
                             loss_history.extend(history.history['loss'])
                             accuracy_history.extend(history.history['accuracy'])
 
+                            # Hiển thị số vòng và epoch
+                            for epoch in range(params["epochs"]):
+                                step = (iteration * params["epochs"] + epoch + params["epochs"] + 1) / (params["epochs"] * (max_iterations + 1))
+                                progress_bar.progress(min(step, 1.0))
+                                status_text.text(f"Vòng {iteration+1}/{max_iterations}, Epoch {epoch+1}/{params['epochs']}, Loss: {history.history['loss'][epoch]:.4f}, Accuracy: {history.history['accuracy'][epoch]:.4f}")
+
+                        # Đánh giá mô hình
                         y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                         acc_test = accuracy_score(y_test, y_test_pred)
                         cm_test = confusion_matrix(y_test, y_test_pred)
@@ -782,7 +806,7 @@ def run_mnist_pseudo_labeling_app():
                         }
 
                     st.session_state['training_results'] = results
-                    st.success(f"Đã huấn luyện xong! Thời gian: {results['training_time']:.2f} giây")
+                    st.success(f"Đã huấn luyện xong mô hình '{model_name}'! Thời gian: {results['training_time']:.2f} giây")
 
             #### Hiển thị kết quả
             if 'training_results' in st.session_state:
@@ -799,18 +823,44 @@ def run_mnist_pseudo_labeling_app():
                 st.pyplot(fig)
                 plt.close(fig)
 
+                # Biểu đồ Loss và Accuracy theo số vòng
                 st.subheader("Biểu đồ Loss và Accuracy")
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(results['loss_history'])
-                ax1.set_title("Loss qua các epoch")
-                ax1.set_xlabel("Epoch")
+                steps = list(range(1, len(results['loss_history']) + 1))
+                ax1.plot(steps, results['loss_history'])
+                ax1.set_title("Loss qua các Step")
+                ax1.set_xlabel("Step")
                 ax1.set_ylabel("Loss")
-                ax2.plot(results['accuracy_history'])
-                ax2.set_title("Accuracy qua các epoch")
-                ax2.set_xlabel("Epoch")
+                ax2.plot(steps, results['accuracy_history'])
+                ax2.set_title("Accuracy qua các Step")
+                ax2.set_xlabel("Step")
                 ax2.set_ylabel("Accuracy")
                 st.pyplot(fig)
                 plt.close(fig)
+
+                # Tóm tắt kết quả huấn luyện
+                st.markdown("#### 📋 Tóm tắt Kết quả Huấn luyện")
+                full_data = {
+                    "Step": list(range(1, len(results['loss_history']) + 1)),
+                    "Loss": results['loss_history'],
+                    "Accuracy": results['accuracy_history'],
+                }
+                df_full = pd.DataFrame(full_data)
+
+                if 'display_steps' not in st.session_state:
+                    st.session_state['display_steps'] = 5
+
+                st.table(df_full.head(st.session_state['display_steps']))
+
+                if len(results['loss_history']) > st.session_state['display_steps']:
+                    if st.button("Xem thêm 10 step", key="show_more"):
+                        st.session_state['display_steps'] += 10
+                        st.rerun()
+
+                if st.session_state['display_steps'] > 5:
+                    if st.button("Thu gọn", key="collapse"):
+                        st.session_state['display_steps'] = 5
+                        st.rerun()
 
     ### Tab 6: Demo dự đoán
     with tab_demo:
@@ -915,7 +965,7 @@ def run_mnist_pseudo_labeling_app():
                                 fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], 
                                         label='Training Loss', color='blue', linewidth=2)
-                                ax.set_xlabel("Epochs")
+                                ax.set_xlabel("Steps")
                                 ax.set_ylabel("Loss")
                                 ax.set_title("Lịch sử Mất mát")
                                 ax.legend()
@@ -929,7 +979,7 @@ def run_mnist_pseudo_labeling_app():
                                 fig, ax = plt.subplots(figsize=(6, 4))
                                 ax.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], 
                                         label='Training Accuracy', color='green', linewidth=2)
-                                ax.set_xlabel("Epochs")
+                                ax.set_xlabel("Steps")
                                 ax.set_ylabel("Accuracy")
                                 ax.set_title("Lịch sử Độ chính xác")
                                 ax.legend()
