@@ -953,8 +953,8 @@ def run_mnist_pseudo_labeling_app():
                             accuracy_history = []
                             test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
                             pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
-                            epoch_loss_history = []  # Lưu lịch sử loss theo epoch
-                            epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch
+                            epoch_loss_history = []  # Lưu lịch sử loss theo epoch cho lần lặp đầu tiên
+                            epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch cho lần lặp đầu tiên
                             iteration = 0
 
                             # Callback để cập nhật thông tin trong quá trình huấn luyện
@@ -968,8 +968,8 @@ def run_mnist_pseudo_labeling_app():
                                     epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
                                     loss_text.write(f"Loss: {logs['loss']:.4f}")
                                     acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
-                                    # Lưu lịch sử loss và accuracy theo epoch
-                                    if self.iteration == 1:  # Chỉ lưu cho lần lặp đầu tiên để kiểm tra 1% dữ liệu
+                                    # Lưu lịch sử loss và accuracy theo epoch cho lần lặp đầu tiên
+                                    if self.iteration == 1:
                                         epoch_loss_history.append(logs['loss'])
                                         epoch_acc_history.append(logs['accuracy'])
 
@@ -1088,52 +1088,41 @@ def run_mnist_pseudo_labeling_app():
             if 'training_results' in st.session_state:
                 results = st.session_state['training_results']
                 st.subheader("📊 Kết quả Huấn luyện")
+
+                # 1. Thời gian huấn luyện và Độ chính xác Test
                 col1, col2 = st.columns(2)
                 col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                 col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
-                # Hiển thị độ chính xác sau lần huấn luyện đầu tiên với 1% dữ liệu
+                # 2. Độ chính xác sau lần huấn luyện đầu tiên với 1% dữ liệu
                 if 'test_acc_history' in results and len(results['test_acc_history']) > 0:
                     st.write(f"**Độ chính xác sau lần huấn luyện đầu tiên (với {labeled_pct}% dữ liệu)**: {results['test_acc_history'][0]*100:.2f}%")
 
-                st.subheader("Ma trận Nhầm lẫn")
-                fig, ax = plt.subplots()
-                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
-                ax.set_title("Test")
-                st.pyplot(fig)
-                plt.close(fig)
+                # 3. Minh họa các mẫu được gán nhãn Pseudo
+                if 'pseudo_samples' in results:
+                    st.subheader("Minh họa các mẫu được gán nhãn Pseudo")
+                    st.markdown("""
+                    Phần này hiển thị một số mẫu dữ liệu không có nhãn đã được gán nhãn giả trong quá trình huấn luyện. 
+                    Mỗi vòng lặp của Pseudo-Labeling sẽ chọn các mẫu có độ tin cậy cao để thêm vào tập dữ liệu có nhãn.
+                    """, unsafe_allow_html=True)
+                    with st.expander("Xem toàn bộ vòng lặp Pseudo-Labeling", expanded=False):
+                        for iter_data in results['pseudo_samples']:
+                            with st.expander(f"Vòng {iter_data['iteration']}"):
+                                st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
+                                st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
+                                num_samples = len(iter_data['samples'])
+                                if num_samples > 0:
+                                    fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
+                                    if num_samples == 1:
+                                        axes = [axes]
+                                    for ax, sample in zip(axes, iter_data['samples']):
+                                        ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
+                                        ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
+                                        ax.axis('off')
+                                    st.pyplot(fig)
+                                    plt.close(fig)
 
-                # Biểu đồ Loss và Accuracy theo số vòng
-                st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
-                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'], color='blue', linewidth=2)
-                ax1.set_title("Loss qua các vòng")
-                ax1.set_xlabel("Vòng")
-                ax1.set_ylabel("Loss")
-                ax1.grid(True)
-                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'], color='green', linewidth=2)
-                ax2.set_title("Accuracy qua các vòng")
-                ax2.set_xlabel("Vòng")
-                ax2.set_ylabel("Accuracy")
-                ax2.grid(True)
-                st.pyplot(fig)
-                st.markdown("*Giải thích: Biểu đồ Loss thể hiện sự giảm dần của hàm mất mát qua các vòng lặp, cho thấy mô hình học tốt hơn theo thời gian. Biểu đồ Accuracy cho thấy độ chính xác trên tập huấn luyện tăng dần qua các vòng, phản ánh khả năng học của mô hình.*")
-                plt.close(fig)
-
-                # Biểu đồ độ chính xác trên Test qua các vòng
-                if 'test_acc_history' in results:
-                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
-                    fig, ax = plt.subplots(figsize=(6, 4))
-                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'], color='purple', linewidth=2)
-                    ax.set_title("Độ chính xác trên Test qua các Vòng")
-                    ax.set_xlabel("Vòng")
-                    ax.set_ylabel("Độ chính xác")
-                    ax.grid(True)
-                    st.pyplot(fig)
-                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập kiểm tra qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
-                    plt.close(fig)
-
-                # Tóm tắt Kết quả Huấn luyện trong expander
+                # 4. Tóm tắt Kết quả Huấn luyện
                 with st.expander("📋 Tóm tắt Kết quả Huấn luyện", expanded=False):
                     full_data = {
                         "Vòng": list(range(1, len(results['loss_history']) + 1)),
@@ -1143,28 +1132,7 @@ def run_mnist_pseudo_labeling_app():
                     df_full = pd.DataFrame(full_data)
                     st.table(df_full)
 
-                # Minh họa các mẫu được gán nhãn Pseudo
-                if 'pseudo_samples' in results:
-                    with st.expander("Minh họa các mẫu được gán nhãn Pseudo", expanded=False):
-                        st.markdown("*Phần này hiển thị các mẫu được gán nhãn giả trong từng vòng lặp của quá trình Pseudo-Labeling.*")
-                        for iter_data in results['pseudo_samples']:
-                            st.markdown(f"### Vòng {iter_data['iteration']}")
-                            st.write(f"Số mẫu được thêm vào: {iter_data['num_added']}")
-                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {iter_data['total_labeled']}")
-                            num_samples = len(iter_data['samples'])
-                            if num_samples > 0:
-                                fig, axes = plt.subplots(1, num_samples, figsize=(3*num_samples, 3))
-                                if num_samples == 1:
-                                    axes = [axes]
-                                for ax, sample in zip(axes, iter_data['samples']):
-                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                    ax.axis('off')
-                                st.pyplot(fig)
-                                plt.close(fig)
-                            st.markdown("---")  # Optional: Adds a horizontal line between iterations
-
-                # Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)
+                # 5. Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)
                 if 'epoch_loss_history' in results and 'epoch_acc_history' in results:
                     with st.expander("Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)", expanded=False):
                         epoch_data = {
@@ -1185,7 +1153,50 @@ def run_mnist_pseudo_labeling_app():
                                 st.session_state['display_epochs'] = 10
                                 st.rerun()
 
-                # Thêm phần chi tiết kết quả huấn luyện
+                # 6. Biểu đồ Loss và Accuracy theo vòng
+                st.subheader("Biểu đồ Loss và Accuracy theo Vòng")
+                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+                ax1.plot(range(1, len(results['loss_history']) + 1), results['loss_history'])
+                ax1.set_title("Loss qua các vòng")
+                ax1.set_xlabel("Vòng")
+                ax1.set_ylabel("Loss")
+                ax2.plot(range(1, len(results['accuracy_history']) + 1), results['accuracy_history'])
+                ax2.set_title("Accuracy qua các vòng")
+                ax2.set_xlabel("Vòng")
+                ax2.set_ylabel("Accuracy")
+                st.pyplot(fig)
+                plt.close(fig)
+                st.markdown("""
+                - **Biểu đồ Loss**: Thể hiện sự giảm dần của hàm mất mát qua các vòng lặp Pseudo-Labeling, cho thấy mô hình học tốt hơn khi thêm dữ liệu giả.
+                - **Biểu đồ Accuracy**: Hiển thị độ chính xác huấn luyện tăng dần qua các vòng, phản ánh hiệu quả của kỹ thuật Pseudo-Labeling.
+                """, unsafe_allow_html=True)
+
+                # 7. Biểu đồ độ chính xác trên Test qua các vòng
+                if 'test_acc_history' in results:
+                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
+                    fig, ax = plt.subplots()
+                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'])
+                    ax.set_title("Độ chính xác trên Test qua các Vòng")
+                    ax.set_xlabel("Vòng")
+                    ax.set_ylabel("Độ chính xác")
+                    st.pyplot(fig)
+                    plt.close(fig)
+                    st.markdown("""
+                    - **Biểu đồ này**: Cho thấy độ chính xác trên tập kiểm tra tăng dần qua các vòng, minh chứng khả năng khái quát hóa của mô hình khi sử dụng nhãn giả.
+                    """, unsafe_allow_html=True)
+
+                # 8. Ma trận Nhầm lẫn
+                st.subheader("Ma trận Nhầm lẫn")
+                fig, ax = plt.subplots()
+                sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
+                ax.set_title("Test")
+                st.pyplot(fig)
+                plt.close(fig)
+                st.markdown("""
+                - **Ma trận Nhầm lẫn**: Hiển thị số lượng dự đoán đúng và sai cho từng lớp trên tập kiểm tra, giúp đánh giá chi tiết hiệu suất mô hình.
+                """, unsafe_allow_html=True)
+
+                # 9. Thông tin chi tiết lần chạy
                 with st.expander("Xem chi tiết", expanded=False):
                     st.markdown("**Thông tin lần chạy:**")
                     st.write(f"- Tên: {results['run_name']}")
