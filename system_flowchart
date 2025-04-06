@@ -1,0 +1,23 @@
+// Sơ đồ luồng hoạt động của hệ thống
+digraph {
+	rankdir=TB
+	A [label="Bắt đầu"]
+	B [label="ESP32 nhận dữ liệu từ cảm biến
+- DHT22: Nhiệt độ, độ ẩm không khí
+- Cảm biến độ ẩm đất: Độ ẩm đất"]
+	C [label="Xử lý dữ liệu
+- Phân tích và so sánh với ngưỡng"]
+	D [label="Hiển thị kết quả
+- OLED: Nhiệt độ, độ ẩm không khí, độ ẩm đất"]
+	E [label="Kiểm tra ngưỡng
+- Giá trị có vượt ngưỡng không?" shape=diamond]
+	F [label="Kích hoạt LED cảnh báo"]
+	G [label="Kết thúc"]
+	A -> B
+	B -> C
+	C -> D
+	D -> E
+	E -> F [label="Có"]
+	E -> G [label="Không"]
+	F -> G
+}

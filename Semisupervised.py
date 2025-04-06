@@ -67,41 +67,11 @@ def get_optimal_params(num_samples):
             "max_iterations": 20
         }
 
-# Hàm xây dựng mô hình Neural Network
-def build_model(params):
-    """Xây dựng mô hình Neural Network dựa trên tham số."""
-    model = models.Sequential()
-    model.add(layers.InputLayer(input_shape=(784,)))
-    for units in params["hidden_layer_sizes"]:
-        model.add(layers.Dense(units, activation=params["activation"]))
-    model.add(layers.Dense(10, activation='softmax'))
-    optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-    return model
-
 # Ứng dụng chính
 def run_mnist_pseudo_labeling_app():
     """Chạy ứng dụng Streamlit để phân loại chữ số MNIST với Neural Network và Pseudo-Labeling."""
 
-    ### Thiết lập MLflow
-    mlflow_tracking_uri = "https://dagshub.com/huykibo/streamlit_mlflow.mlflow"
-    try:
-        os.environ["MLFLOW_TRACKING_USERNAME"] = st.secrets["mlflow"]["MLFLOW_TRACKING_USERNAME"]
-        os.environ["MLFLOW_TRACKING_PASSWORD"] = st.secrets["mlflow"]["MLFLOW_TRACKING_PASSWORD"]
-        mlflow.set_tracking_uri(mlflow_tracking_uri)
-    except KeyError as e:
-        st.error(f"Lỗi: Không tìm thấy khóa {e} trong st.secrets.")
-        st.stop()
-
-    try:
-        response = requests.get(mlflow_tracking_uri, timeout=5)
-        if response.status_code != 200:
-            st.error(f"Kết nối MLflow thất bại. Mã trạng thái: {response.status_code}.")
-            st.stop()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Không thể kết nối MLflow: {e}.")
-        st.stop()
-
+    # ### Thiết lập MLflow
     EXPERIMENT_ID = "6"
     try:
         client = MlflowClient()
@@ -813,22 +783,35 @@ def run_mnist_pseudo_labeling_app():
             total_samples = len(X)
             st.write(f"Tổng số mẫu: {total_samples}")
 
+            # Thêm slider cho tỷ lệ test và validation
             test_pct = st.slider("Tỷ lệ Test (%)", 0, 50, 20)
+            val_pct = st.slider("Tỷ lệ Validation (%)", 0, 50, 20)
             test_size = test_pct / 100
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+            val_size = val_pct / 100
 
-            st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Test: {len(X_test)}")
-            if st.button("Xác nhận phân chia", type="primary"):
-                with st.spinner("Đang chia dữ liệu..."):
-                    st.session_state['split_data'] = {
-                        "X_train": X_train.copy(), "y_train": y_train.copy(),
-                        "X_test": X_test.copy(), "y_test": y_test.copy()
-                    }
-                    st.success("Đã chia dữ liệu thành công!")
-                    del X, y, X_train, X_test, y_train, y_test
-                    gc.collect()
+            # Kiểm tra tổng tỷ lệ không vượt quá 100%
+            if test_size + val_size > 1:
+                st.error("Tổng tỷ lệ Test và Validation không được vượt quá 100%.")
+            else:
+                # Chia dữ liệu thành train+val và test
+                X_train_val, X_test, y_train_val, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+                # Chia train+val thành train và val
+                val_size_adjusted = val_size / (1 - test_size)  # Điều chỉnh tỷ lệ dựa trên dữ liệu còn lại
+                X_train, X_val, y_train, y_val = train_test_split(X_train_val, y_train_val, test_size=val_size_adjusted, random_state=42)
 
-    ### Tab 5: Huấn luyện/Đánh giá
+                st.write(f"**Phân bổ dữ liệu**: Train: {len(X_train)}, Validation: {len(X_val)}, Test: {len(X_test)}")
+                if st.button("Xác nhận phân chia", type="primary"):
+                    with st.spinner("Đang chia dữ liệu..."):
+                        st.session_state['split_data'] = {
+                            "X_train": X_train.copy(), "y_train": y_train.copy(),
+                            "X_val": X_val.copy(), "y_val": y_val.copy(),
+                            "X_test": X_test.copy(), "y_test": y_test.copy()
+                        }
+                        st.success("Đã chia dữ liệu thành công!")
+                        del X, y, X_train, X_val, X_test, y_train, y_val, y_test
+                        gc.collect()
+
+    ### Tab 5: Huấn luyện/Đánh giá (Đã cập nhật - loại bỏ build_model)
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá</div>', unsafe_allow_html=True)
         if 'split_data' not in st.session_state:
@@ -837,11 +820,15 @@ def run_mnist_pseudo_labeling_app():
             split_data = st.session_state['split_data'].copy()
             X_train = split_data["X_train"]
             y_train = split_data["y_train"]
+            X_val = split_data["X_val"]
+            y_val = split_data["y_val"]
             X_test = split_data["X_test"]
             y_test = split_data["y_test"]
 
             X_train = np.array(X_train, dtype=np.float32)
             y_train = np.array(y_train, dtype=np.int32)
+            X_val = np.array(X_val, dtype=np.float32)
+            y_val = np.array(y_val, dtype=np.int32)
             X_test = np.array(X_test, dtype=np.float32)
             y_test = np.array(y_test, dtype=np.int32)
 
@@ -951,7 +938,7 @@ def run_mnist_pseudo_labeling_app():
 
                             loss_history = []
                             accuracy_history = []
-                            test_acc_history = []  # Lưu độ chính xác trên tập test sau mỗi vòng
+                            val_acc_history = []  # Lưu độ chính xác trên tập validation sau mỗi vòng
                             pseudo_samples = []    # Lưu thông tin mẫu được gán nhãn giả
                             epoch_loss_history = []  # Lưu lịch sử loss theo epoch
                             epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch
@@ -978,22 +965,32 @@ def run_mnist_pseudo_labeling_app():
                                 iteration += 1
                                 status_text.write(f"Vòng {iteration}/{max_iterations}")
 
+                                # Xây dựng mô hình trực tiếp trong vòng lặp
+                                model = models.Sequential()
+                                model.add(layers.InputLayer(input_shape=(784,)))
+                                for units in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(units, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
                                 # Huấn luyện mô hình trên tập dữ liệu có nhãn hiện tại
-                                model = build_model(params)
                                 history = model.fit(
                                     X_labeled, y_labeled,
                                     epochs=params["epochs"],
                                     batch_size=params["batch_size"],
+                                    validation_data=(X_val, y_val),
                                     verbose=0,
                                     callbacks=[CustomCallback(iteration, max_iterations)]
                                 )
                                 loss_history.append(history.history['loss'][-1])
                                 accuracy_history.append(history.history['accuracy'][-1])
+                                val_acc_history.append(history.history['val_accuracy'][-1])
 
-                                # Đánh giá trên tập test sau mỗi vòng để kiểm chứng hiệu quả
-                                test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
-                                test_acc = accuracy_score(y_test, test_pred)
-                                test_acc_history.append(test_acc)
+                                # Đánh giá trên tập validation sau mỗi vòng để kiểm chứng hiệu quả
+                                val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
+                                val_acc = accuracy_score(y_val, val_pred)
+                                val_acc_history.append(val_acc)
 
                                 # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                 predictions = model.predict(X_unlabeled, verbose=0)
@@ -1027,7 +1024,8 @@ def run_mnist_pseudo_labeling_app():
                                         'iteration': iteration,
                                         'samples': samples,
                                         'num_added': len(pseudo_indices),
-                                        'total_labeled': len(X_labeled) + len(pseudo_indices)
+                                        'total_labeled': len(X_labeled) + len(pseudo_indices),
+                                        'correct_pseudo_labels': np.sum(pseudo_labels[high_confidence_mask] == y_train[pseudo_indices])
                                     })
 
                                 # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
@@ -1043,11 +1041,19 @@ def run_mnist_pseudo_labeling_app():
                                 progress_bar.progress(min(progress, 1.0))
 
                             # Huấn luyện lần cuối trên toàn bộ dữ liệu đã gắn nhãn
-                            model = build_model(params)
+                            model = models.Sequential()
+                            model.add(layers.InputLayer(input_shape=(784,)))
+                            for units in params["hidden_layer_sizes"]:
+                                model.add(layers.Dense(units, activation=params["activation"]))
+                            model.add(layers.Dense(10, activation='softmax'))
+                            optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                            model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
                             history = model.fit(
                                 X_labeled, y_labeled,
                                 epochs=params["epochs"],
                                 batch_size=params["batch_size"],
+                                validation_data=(X_val, y_val),
                                 verbose=0,
                                 callbacks=[CustomCallback(iteration, max_iterations)]
                             )
@@ -1070,7 +1076,7 @@ def run_mnist_pseudo_labeling_app():
                                 'cm_test': cm_test,
                                 'loss_history': loss_history,
                                 'accuracy_history': accuracy_history,
-                                'test_acc_history': test_acc_history,
+                                'val_acc_history': val_acc_history,
                                 'pseudo_samples': pseudo_samples,
                                 'iterations': iteration,
                                 'training_time': time.time() - start_time,
@@ -1093,8 +1099,8 @@ def run_mnist_pseudo_labeling_app():
                 col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
 
                 # Hiển thị độ chính xác sau lần huấn luyện đầu tiên với 1% dữ liệu
-                if 'test_acc_history' in results and len(results['test_acc_history']) > 0:
-                    st.write(f"**Độ chính xác sau lần huấn luyện đầu tiên (với {labeled_pct}% dữ liệu)**: {results['test_acc_history'][0]*100:.2f}%")
+                if 'val_acc_history' in results and len(results['val_acc_history']) > 0:
+                    st.write(f"**Độ chính xác trên Validation sau lần huấn luyện đầu tiên (với {labeled_pct}% dữ liệu)**: {results['val_acc_history'][0]*100:.2f}%")
 
                 st.subheader("Ma trận Nhầm lẫn")
                 fig, ax = plt.subplots()
@@ -1120,18 +1126,29 @@ def run_mnist_pseudo_labeling_app():
                 st.markdown("*Giải thích: Biểu đồ Loss thể hiện sự giảm dần của hàm mất mát qua các vòng lặp, cho thấy mô hình học tốt hơn theo thời gian. Biểu đồ Accuracy cho thấy độ chính xác trên tập huấn luyện tăng dần qua các vòng, phản ánh khả năng học của mô hình.*")
                 plt.close(fig)
 
-                # Biểu đồ độ chính xác trên Test qua các vòng
-                if 'test_acc_history' in results:
-                    st.subheader("Biểu đồ Độ chính xác trên Test qua các Vòng")
+                # Biểu đồ độ chính xác trên Validation qua các vòng
+                if 'val_acc_history' in results:
+                    st.subheader("Biểu đồ Độ chính xác trên Validation qua các Vòng")
                     fig, ax = plt.subplots(figsize=(6, 4))
-                    ax.plot(range(1, len(results['test_acc_history']) + 1), results['test_acc_history'], color='purple', linewidth=2)
-                    ax.set_title("Độ chính xác trên Test qua các Vòng")
+                    ax.plot(range(1, len(results['val_acc_history']) + 1), results['val_acc_history'], color='purple', linewidth=2)
+                    ax.set_title("Độ chính xác trên Validation qua các Vòng")
                     ax.set_xlabel("Vòng")
                     ax.set_ylabel("Độ chính xác")
                     ax.grid(True)
                     st.pyplot(fig)
-                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập kiểm tra qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
+                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập validation qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
                     plt.close(fig)
+
+                # Thông tin Pseudo Labels
+                if 'pseudo_samples' in results:
+                    with st.expander("🔍 Thông tin Pseudo Labels", expanded=False):
+                        pseudo_df = pd.DataFrame([{
+                            'Vòng': sample['iteration'],
+                            'Số mẫu thêm': sample['num_added'],
+                            'Số mẫu đúng': sample['correct_pseudo_labels'],
+                            'Tỷ lệ đúng': f"{(sample['correct_pseudo_labels'] / sample['num_added'])*100:.2f}%" if sample['num_added'] > 0 else "N/A"
+                        } for sample in results['pseudo_samples']])
+                        st.table(pseudo_df)
 
                 # Tóm tắt Kết quả Huấn luyện trong expander
                 with st.expander("📋 Tóm tắt Kết quả Huấn luyện", expanded=False):
@@ -1378,7 +1395,7 @@ def run_mnist_pseudo_labeling_app():
 
         except Exception as e:
             st.error(f"Lỗi khi tải thông tin huấn luyện: {e}. Vui lòng kiểm tra kết nối MLflow hoặc thông tin Experiment ID.")
-        mlflow_ui_link = f"{mlflow_tracking_uri}/#/experiments/{EXPERIMENT_ID}"
+        mlflow_ui_link = f"https://dagshub.com/huykibo/streamlit_mlflow.mlflow/#/experiments/{EXPERIMENT_ID}"
         st.markdown("---")
         st.markdown(f"📊 **Xem chi tiết trên MLflow UI**: [Nhấn vào đây]({mlflow_ui_link})", unsafe_allow_html=True)
 
