@@ -811,7 +811,7 @@ def run_mnist_pseudo_labeling_app():
                         del X, y, X_train, X_val, X_test, y_train, y_val, y_test
                         gc.collect()
 
-    ### Tab 5: Huấn luyện/Đánh giá
+    ### Tab 5: Huấn luyện/Đánh giá (Đã cập nhật - loại bỏ build_model)
     with tab_train_eval:
         st.markdown('<div class="section-title">Huấn luyện và Đánh giá</div>', unsafe_allow_html=True)
         if 'split_data' not in st.session_state:
@@ -987,6 +987,11 @@ def run_mnist_pseudo_labeling_app():
                                 accuracy_history.append(history.history['accuracy'][-1])
                                 val_acc_history.append(history.history['val_accuracy'][-1])
 
+                                # Đánh giá trên tập validation sau mỗi vòng để kiểm chứng hiệu quả
+                                val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
+                                val_acc = accuracy_score(y_val, val_pred)
+                                val_acc_history.append(val_acc)
+
                                 # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                 predictions = model.predict(X_unlabeled, verbose=0)
                                 max_probs = np.max(predictions, axis=1)
@@ -1121,38 +1126,29 @@ def run_mnist_pseudo_labeling_app():
                 st.markdown("*Giải thích: Biểu đồ Loss thể hiện sự giảm dần của hàm mất mát qua các vòng lặp, cho thấy mô hình học tốt hơn theo thời gian. Biểu đồ Accuracy cho thấy độ chính xác trên tập huấn luyện tăng dần qua các vòng, phản ánh khả năng học của mô hình.*")
                 plt.close(fig)
 
-                # Biểu đồ độ chính xác trên Validation qua các vòng với số nguyên
+                # Biểu đồ độ chính xác trên Validation qua các vòng
                 if 'val_acc_history' in results:
                     st.subheader("Biểu đồ Độ chính xác trên Validation qua các Vòng")
                     fig, ax = plt.subplots(figsize=(6, 4))
-                    val_acc_int = [int(round(acc * 100)) for acc in results['val_acc_history']]
-                    ax.plot(range(1, len(val_acc_int) + 1), val_acc_int, color='purple', linewidth=2)
+                    ax.plot(range(1, len(results['val_acc_history']) + 1), results['val_acc_history'], color='purple', linewidth=2)
                     ax.set_title("Độ chính xác trên Validation qua các Vòng")
                     ax.set_xlabel("Vòng")
-                    ax.set_ylabel("Độ chính xác (%)")
+                    ax.set_ylabel("Độ chính xác")
                     ax.grid(True)
                     st.pyplot(fig)
-                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập validation qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình. Độ chính xác được làm tròn thành số nguyên để dễ theo dõi.*")
+                    st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập validation qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
                     plt.close(fig)
 
-                # Thông tin Pseudo Labels với hình ảnh
+                # Thông tin Pseudo Labels
                 if 'pseudo_samples' in results:
                     with st.expander("🔍 Thông tin Pseudo Labels", expanded=False):
-                        for sample_data in results['pseudo_samples']:
-                            st.subheader(f"Vòng {sample_data['iteration']}")
-                            st.write(f"Số mẫu được thêm vào: {sample_data['num_added']}")
-                            st.write(f"Tổng số mẫu có nhãn sau vòng này: {sample_data['total_labeled']}")
-                            st.write(f"Số mẫu đúng: {sample_data['correct_pseudo_labels']}")
-                            st.write(f"Tỷ lệ đúng: {sample_data['correct_pseudo_labels'] / sample_data['num_added'] * 100:.2f}%")
-                            if 'samples' in sample_data:
-                                st.write("**Một số mẫu minh họa:**")
-                                fig, axes = plt.subplots(1, len(sample_data['samples']), figsize=(15, 3))
-                                for ax, sample in zip(axes, sample_data['samples']):
-                                    ax.imshow(sample['image'].reshape(28, 28), cmap='gray')
-                                    ax.set_title(f"Pseudo: {sample['pseudo_label']}\nTrue: {sample['true_label']}\nConf: {sample['confidence']:.2f}")
-                                    ax.axis('off')
-                                st.pyplot(fig)
-                                plt.close(fig)
+                        pseudo_df = pd.DataFrame([{
+                            'Vòng': sample['iteration'],
+                            'Số mẫu thêm': sample['num_added'],
+                            'Số mẫu đúng': sample['correct_pseudo_labels'],
+                            'Tỷ lệ đúng': f"{(sample['correct_pseudo_labels'] / sample['num_added'])*100:.2f}%" if sample['num_added'] > 0 else "N/A"
+                        } for sample in results['pseudo_samples']])
+                        st.table(pseudo_df)
 
                 # Tóm tắt Kết quả Huấn luyện trong expander
                 with st.expander("📋 Tóm tắt Kết quả Huấn luyện", expanded=False):
