@@ -972,19 +972,19 @@ def run_mnist_pseudo_labeling_app():
                                             epoch_loss_history.append(logs['loss'])
                                             epoch_acc_history.append(logs['accuracy'])
 
+                                # Xây dựng mô hình một lần duy nhất bên ngoài vòng lặp
+                                model = models.Sequential()
+                                model.add(layers.InputLayer(input_shape=(784,)))
+                                for units in params["hidden_layer_sizes"]:
+                                    model.add(layers.Dense(units, activation=params["activation"]))
+                                model.add(layers.Dense(10, activation='softmax'))
+                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
                                 # Quá trình huấn luyện với Pseudo-Labeling
                                 while iteration < max_iterations and len(unlabeled_indices) > 0:
                                     iteration += 1
                                     status_text.write(f"Vòng {iteration}/{max_iterations}")
-
-                                    # Xây dựng mô hình trực tiếp trong vòng lặp
-                                    model = models.Sequential()
-                                    model.add(layers.InputLayer(input_shape=(784,)))
-                                    for units in params["hidden_layer_sizes"]:
-                                        model.add(layers.Dense(units, activation=params["activation"]))
-                                    model.add(layers.Dense(10, activation='softmax'))
-                                    optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-                                    model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
                                     # Huấn luyện mô hình trên tập dữ liệu có nhãn hiện tại
                                     history = model.fit(
@@ -998,11 +998,6 @@ def run_mnist_pseudo_labeling_app():
                                     loss_history.append(history.history['loss'][-1])
                                     accuracy_history.append(history.history['accuracy'][-1])
                                     val_acc_history.append(history.history['val_accuracy'][-1])
-
-                                    # Đánh giá trên tập validation sau mỗi vòng để kiểm chứng hiệu quả
-                                    val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
-                                    val_acc = accuracy_score(y_val, val_pred)
-                                    val_acc_history.append(val_acc)
 
                                     # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                     predictions = model.predict(X_unlabeled, verbose=0)
@@ -1040,7 +1035,7 @@ def run_mnist_pseudo_labeling_app():
                                             'correct_pseudo_labels': np.sum(pseudo_labels[high_confidence_mask] == y_train[pseudo_indices])
                                         })
 
-                                    # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
+                                    # Gán nhãn giả và cập nhật tập dữ liệu có nhãn
                                     X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
                                     y_labeled = np.hstack((y_labeled, pseudo_labels[high_confidence_mask]))
 
@@ -1051,26 +1046,6 @@ def run_mnist_pseudo_labeling_app():
                                     # Cập nhật progress bar
                                     progress = iteration / max_iterations
                                     progress_bar.progress(min(progress, 1.0))
-
-                                # Huấn luyện lần cuối trên toàn bộ dữ liệu đã gắn nhãn
-                                model = models.Sequential()
-                                model.add(layers.InputLayer(input_shape=(784,)))
-                                for units in params["hidden_layer_sizes"]:
-                                    model.add(layers.Dense(units, activation=params["activation"]))
-                                model.add(layers.Dense(10, activation='softmax'))
-                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
-                                history = model.fit(
-                                    X_labeled, y_labeled,
-                                    epochs=params["epochs"],
-                                    batch_size=params["batch_size"],
-                                    validation_data=(X_val, y_val),
-                                    verbose=0,
-                                    callbacks=[CustomCallback(iteration, max_iterations)]
-                                )
-                                loss_history.append(history.history['loss'][-1])
-                                accuracy_history.append(history.history['accuracy'][-1])
 
                                 # Đánh giá trên tập test
                                 y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
@@ -1299,7 +1274,7 @@ def run_mnist_pseudo_labeling_app():
 
                             # Nút làm mới canvas
                             if st.button("Xóa Canvas"):
-                                st.session_state['canvas_key'] += 1
+                                st.sessionúrg_state['canvas_key'] += 1
                                 st.session_state['predictions'] = []  # Xóa lịch sử dự đoán
 
                             canvas_result = st_canvas(
