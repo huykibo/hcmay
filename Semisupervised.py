@@ -532,7 +532,7 @@ def run_mnist_pseudo_labeling_app():
                         - **Ví dụ**:  
                           - Với gradient $g_t = 0.5$, Adam tự động điều chỉnh tốc độ học dựa trên $m_t$ và $v_t$, giúp cập nhật ổn định hơn SGD.  
                         - **Ưu điểm**: Nhanh, ổn định, hiệu quả với hầu hết bài toán, đặc biệt là mạng sâu.  
-                        - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém служби hiệu quả trên hàm mất mát không lồi.  
+                        - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém hiệu quả trên hàm mất mát không lồi.  
                     - **Lưu ý**:  
                       - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
                       - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
@@ -962,8 +962,6 @@ def run_mnist_pseudo_labeling_app():
                                 val_acc_history = []  # Lưu độ chính xác trên tập validation sau mỗi vòng
                                 pseudo_stats = []     # Lưu thống kê số lượng và tỷ lệ nhãn giả đúng
                                 pseudo_samples_list = []  # Lưu trữ dữ liệu ảnh mẫu
-                                epoch_loss_history = []  # Lưu lịch sử loss theo epoch
-                                epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch
                                 iteration = 0
 
                                 # Callback để cập nhật thông tin trong quá trình huấn luyện
@@ -977,10 +975,6 @@ def run_mnist_pseudo_labeling_app():
                                         epoch_text.write(f"Epoch {epoch + 1}/{params['epochs']}")
                                         loss_text.write(f"Loss: {logs['loss']:.4f}")
                                         acc_text.write(f"Accuracy: {logs['accuracy']:.4f}")
-                                        # Lưu lịch sử loss và accuracy theo epoch
-                                        if self.iteration == 1:  # Chỉ lưu cho lần lặp đầu tiên để kiểm tra 1% dữ liệu
-                                            epoch_loss_history.append(logs['loss'])
-                                            epoch_acc_history.append(logs['accuracy'])
 
                                 # Quá trình huấn luyện với Pseudo-Labeling
                                 while iteration < max_iterations and len(unlabeled_indices) > 0:
@@ -998,7 +992,11 @@ def run_mnist_pseudo_labeling_app():
                                     )
                                     loss_history.append(history.history['loss'][-1])
                                     accuracy_history.append(history.history['accuracy'][-1])
-                                    val_acc_history.append(history.history['val_accuracy'][-1])
+
+                                    # Đánh giá trên tập validation sau mỗi vòng
+                                    y_val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
+                                    val_acc = accuracy_score(y_val, y_val_pred)
+                                    val_acc_history.append(val_acc)
 
                                     # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                     predictions = model.predict(X_unlabeled, verbose=0)
@@ -1029,11 +1027,14 @@ def run_mnist_pseudo_labeling_app():
                                     num_samples_to_save = min(5, num_added)
                                     sample_indices = np.random.choice(num_added, num_samples_to_save, replace=False)
                                     for idx in sample_indices:
+                                        pseudo_label = pseudo_labels[high_confidence_mask][idx]
+                                        true_label = y_train[pseudo_indices][idx]
                                         sample = {
                                             'iteration': iteration,
-                                            'image': X_unlabeled[high_confidence_mask][idx].copy(),  # Lưu trữ mảng numpy của ảnh
-                                            'pseudo_label': pseudo_labels[high_confidence_mask][idx],
-                                            'true_label': y_train[pseudo_indices][idx]
+                                            'image': X_unlabeled[high_confidence_mask][idx].copy(),
+                                            'pseudo_label': pseudo_label,
+                                            'true_label': true_label,
+                                            'accuracy': 100 if pseudo_label == true_label else 0  # Thêm trường accuracy (100% hoặc 0%)
                                         }
                                         pseudo_samples_list.append(sample)
 
@@ -1061,6 +1062,10 @@ def run_mnist_pseudo_labeling_app():
                                 loss_history.append(history.history['loss'][-1])
                                 accuracy_history.append(history.history['accuracy'][-1])
 
+                                # Đánh giá trên tập validation sau lần huấn luyện cuối
+                                y_val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
+                                val_acc_final = accuracy_score(y_val, y_val_pred)
+
                                 # Đánh giá trên tập test
                                 y_test_pred = np.argmax(model.predict(X_test, verbose=0), axis=1)
                                 acc_test = accuracy_score(y_test, y_test_pred)
@@ -1068,26 +1073,26 @@ def run_mnist_pseudo_labeling_app():
 
                                 # Lưu kết quả vào MLflow
                                 mlflow.log_metric("accuracy_test", acc_test)
+                                mlflow.log_metric("accuracy_validation", val_acc_final)  # Lưu độ chính xác validation
                                 mlflow.log_metric("training_time", time.time() - start_time)
                                 mlflow.keras.log_model(model, "model")
 
                                 # Lưu kết quả vào session_state
                                 results = {
                                     'accuracy_test': acc_test,
+                                    'accuracy_validation': val_acc_final,  # Độ chính xác chung trên validation
                                     'cm_test': cm_test,
                                     'loss_history': loss_history,
                                     'accuracy_history': accuracy_history,
-                                    'val_acc_history': val_acc_history,
+                                    'val_acc_history': val_acc_history,  # Lịch sử độ chính xác validation
                                     'pseudo_stats': pseudo_stats,
-                                    'pseudo_samples_list': pseudo_samples_list,  # Thêm dữ liệu ảnh mẫu
+                                    'pseudo_samples_list': pseudo_samples_list,
                                     'iterations': iteration,
                                     'training_time': time.time() - start_time,
                                     'run_id': run.info.run_id,
                                     'run_name': model_name.strip(),
                                     'params': params,
-                                    'n_iter_actual': iteration,
-                                    'epoch_loss_history': epoch_loss_history,
-                                    'epoch_acc_history': epoch_acc_history
+                                    'n_iter_actual': iteration
                                 }
                                 st.session_state['training_results'] = results
                                 st.success(f"Đã huấn luyện xong sau {iteration} vòng! Thời gian: {results['training_time']:.2f} giây")
@@ -1096,15 +1101,12 @@ def run_mnist_pseudo_labeling_app():
                 if 'training_results' in st.session_state:
                     results = st.session_state['training_results']
                     st.subheader("📊 Kết quả Huấn luyện")
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3 = st.columns(3)
                     col1.metric("Thời gian huấn luyện", f"{results['training_time']:.2f} giây")
                     col2.metric("Độ chính xác Test", f"{results['accuracy_test']*100:.2f}%")
+                    col3.metric("Độ chính xác Validation", f"{results['accuracy_validation']*100:.2f}%")
 
-                    # Hiển thị độ chính xác sau lần huấn luyện đầu tiên với 1% dữ liệu
-                    if 'val_acc_history' in results and len(results['val_acc_history']) > 0:
-                        st.write(f"**Độ chính xác trên Validation sau lần huấn luyện đầu tiên (với {labeled_pct}% dữ liệu)**: {results['val_acc_history'][0]*100:.2f}%")
-
-                    st.subheader("Ma trận Nhầm lẫn")
+                    st.subheader("Ma trận Nhầm lẫn (Test)")
                     fig, ax = plt.subplots()
                     sns.heatmap(results['cm_test'], annot=True, fmt="d", cmap="Blues", ax=ax)
                     ax.set_title("Test")
@@ -1128,7 +1130,7 @@ def run_mnist_pseudo_labeling_app():
                     st.markdown("*Giải thích: Biểu đồ Loss thể hiện sự giảm dần của hàm mất mát qua các vòng lặp, cho thấy mô hình học tốt hơn theo thời gian. Biểu đồ Accuracy cho thấy độ chính xác trên tập huấn luyện tăng dần qua các vòng, phản ánh khả năng học của mô hình.*")
                     plt.close(fig)
 
-                    # Biểu đồ độ chính xác trên Validation qua các vòng (cập nhật để hiển thị số nguyên)
+                    # Biểu đồ độ chính xác trên Validation qua các vòng
                     if 'val_acc_history' in results:
                         st.subheader("Biểu đồ Độ chính xác trên Validation qua các Vòng")
                         fig, ax = plt.subplots(figsize=(6, 4))
@@ -1160,7 +1162,7 @@ def run_mnist_pseudo_labeling_app():
                                     for i, sample in enumerate(samples[:5]):  # Lấy tối đa 5 mẫu
                                         with cols[i]:
                                             st.image(sample['image'].reshape(28, 28), 
-                                                     caption=f"Pseudo: {sample['pseudo_label']}, True: {sample['true_label']}", 
+                                                     caption=f"Pseudo: {sample['pseudo_label']}, True: {sample['true_label']}, Accuracy: {sample['accuracy']}%", 
                                                      width=100)
 
                     # Tóm tắt Kết quả Huấn luyện trong expander
@@ -1173,27 +1175,6 @@ def run_mnist_pseudo_labeling_app():
                         df_full = pd.DataFrame(full_data)
                         st.table(df_full)
 
-                    # Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)
-                    if 'epoch_loss_history' in results and 'epoch_acc_history' in results:
-                        with st.expander("Chi tiết Epoch lần lặp đầu tiên (với 1% dữ liệu)", expanded=False):
-                            epoch_data = {
-                                "Epoch": list(range(1, len(results['epoch_loss_history']) + 1)),
-                                "Loss": results['epoch_loss_history'],
-                                "Accuracy": results['epoch_acc_history']
-                            }
-                            df_epochs = pd.DataFrame(epoch_data)
-                            if 'display_epochs' not in st.session_state:
-                                st.session_state['display_epochs'] = 10
-                            st.table(df_epochs.head(st.session_state['display_epochs']))
-                            if len(df_epochs) > st.session_state['display_epochs']:
-                                if st.button("Hiển thị thêm 10 epoch", key="show_more_epochs"):
-                                    st.session_state['display_epochs'] += 10
-                                    st.rerun()
-                            if st.session_state['display_epochs'] > 10:
-                                if st.button("Thu gọn", key="collapse_epochs"):
-                                    st.session_state['display_epochs'] = 10
-                                    st.rerun()
-
                     # Thêm phần chi tiết kết quả huấn luyện
                     with st.expander("Xem chi tiết", expanded=False):
                         st.markdown("**Thông tin lần chạy:**")
@@ -1202,6 +1183,7 @@ def run_mnist_pseudo_labeling_app():
                         st.write(f"- Thời gian huấn luyện: {results['training_time']:.2f} giây")
                         st.write(f"- Số lần lặp thực tế: {results['n_iter_actual']}")
                         st.write(f"- Độ chính xác Test: {results['accuracy_test']*100:.2f}%")
+                        st.write(f"- Độ chính xác Validation: {results['accuracy_validation']*100:.2f}%")
                         st.markdown("**Tham số đã chọn:**")
                         st.json({
                             "Số lớp ẩn": len(results['params']['hidden_layer_sizes']),
@@ -1384,6 +1366,7 @@ def run_mnist_pseudo_labeling_app():
                                 run_data = {
                                     "Tên": run.data.tags.get('mlflow.runName', run_id),
                                     "Accuracy Test": run.data.metrics.get('accuracy_test', 'N/A'),
+                                    "Accuracy Validation": run.data.metrics.get('accuracy_validation', 'N/A'),  # Thêm độ chính xác validation
                                     "Thời gian": run.data.metrics.get('training_time', 'N/A'),
                                     "Số lớp ẩn": run.data.params.get('hidden_layer_sizes', 'N/A'),
                                     "Learning Rate": run.data.params.get('learning_rate', 'N/A'),
