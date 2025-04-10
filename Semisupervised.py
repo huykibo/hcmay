@@ -532,7 +532,7 @@ def run_mnist_pseudo_labeling_app():
                         - **Ví dụ**:  
                           - Với gradient $g_t = 0.5$, Adam tự động điều chỉnh tốc độ học dựa trên $m_t$ và $v_t$, giúp cập nhật ổn định hơn SGD.  
                         - **Ưu điểm**: Nhanh, ổn định, hiệu quả với hầu hết bài toán, đặc biệt là mạng sâu.  
-                        - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém hiệu quả trên hàm mất mát không lồi.  
+                        - **Nhược điểm**: Phức tạp hơn SGD, đôi khi kém служби hiệu quả trên hàm mất mát không lồi.  
                     - **Lưu ý**:  
                       - **Adam** là lựa chọn mặc định trong ứng dụng này vì khả năng hội tụ nhanh và ổn định.  
                       - **SGD** phù hợp khi bạn muốn kiểm soát chi tiết quá trình huấn luyện hoặc khi làm việc với dữ liệu rất lớn.  
@@ -913,6 +913,15 @@ def run_mnist_pseudo_labeling_app():
                 model_name = st.text_input("Nhập tên mô hình:", value=st.session_state['model_name'])
                 st.session_state['model_name'] = model_name
 
+                # Xây dựng mô hình một lần duy nhất trước khi huấn luyện
+                model = models.Sequential()
+                model.add(layers.InputLayer(input_shape=(784,)))
+                for units in params["hidden_layer_sizes"]:
+                    model.add(layers.Dense(units, activation=params["activation"]))
+                model.add(layers.Dense(10, activation='softmax'))
+                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
+                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
                 if st.button("Bắt đầu Huấn luyện", type="primary"):
                     # Kiểm tra tên mô hình không trống
                     if not model_name.strip():
@@ -952,6 +961,7 @@ def run_mnist_pseudo_labeling_app():
                                 accuracy_history = []
                                 val_acc_history = []  # Lưu độ chính xác trên tập validation sau mỗi vòng
                                 pseudo_stats = []     # Lưu thống kê số lượng và tỷ lệ nhãn giả đúng
+                                pseudo_samples_list = []  # Lưu trữ dữ liệu ảnh mẫu
                                 epoch_loss_history = []  # Lưu lịch sử loss theo epoch
                                 epoch_acc_history = []   # Lưu lịch sử accuracy theo epoch
                                 iteration = 0
@@ -972,15 +982,6 @@ def run_mnist_pseudo_labeling_app():
                                             epoch_loss_history.append(logs['loss'])
                                             epoch_acc_history.append(logs['accuracy'])
 
-                                # Xây dựng mô hình một lần duy nhất
-                                model = models.Sequential()
-                                model.add(layers.InputLayer(input_shape=(784,)))
-                                for units in params["hidden_layer_sizes"]:
-                                    model.add(layers.Dense(units, activation=params["activation"]))
-                                model.add(layers.Dense(10, activation='softmax'))
-                                optimizer = tf.keras.optimizers.Adam(learning_rate=params["learning_rate"]) if params["solver"] == "adam" else tf.keras.optimizers.SGD(learning_rate=params["learning_rate"])
-                                model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
-
                                 # Quá trình huấn luyện với Pseudo-Labeling
                                 while iteration < max_iterations and len(unlabeled_indices) > 0:
                                     iteration += 1
@@ -999,11 +1000,6 @@ def run_mnist_pseudo_labeling_app():
                                     accuracy_history.append(history.history['accuracy'][-1])
                                     val_acc_history.append(history.history['val_accuracy'][-1])
 
-                                    # Đánh giá trên tập validation sau mỗi vòng để kiểm chứng hiệu quả
-                                    val_pred = np.argmax(model.predict(X_val, verbose=0), axis=1)
-                                    val_acc = accuracy_score(y_val, val_pred)
-                                    val_acc_history.append(val_acc)
-
                                     # Dự đoán nhãn cho tập dữ liệu không có nhãn
                                     predictions = model.predict(X_unlabeled, verbose=0)
                                     max_probs = np.max(predictions, axis=1)
@@ -1021,13 +1017,25 @@ def run_mnist_pseudo_labeling_app():
                                     num_added = len(pseudo_indices)
                                     accuracy_pseudo = num_correct / num_added if num_added > 0 else 0.0
 
-                                    # Lưu thống kê
+                                    # Lưu thông tin thống kê
                                     pseudo_stats.append({
                                         'iteration': iteration,
                                         'num_added': num_added,
                                         'num_correct': num_correct,
                                         'accuracy_pseudo': accuracy_pseudo
                                     })
+
+                                    # Lưu trữ dữ liệu ảnh mẫu (tối đa 5 mẫu)
+                                    num_samples_to_save = min(5, num_added)
+                                    sample_indices = np.random.choice(num_added, num_samples_to_save, replace=False)
+                                    for idx in sample_indices:
+                                        sample = {
+                                            'iteration': iteration,
+                                            'image': X_unlabeled[high_confidence_mask][idx].copy(),  # Lưu trữ mảng numpy của ảnh
+                                            'pseudo_label': pseudo_labels[high_confidence_mask][idx],
+                                            'true_label': y_train[pseudo_indices][idx]
+                                        }
+                                        pseudo_samples_list.append(sample)
 
                                     # Gán nhãn giả và thêm vào tập dữ liệu có nhãn
                                     X_labeled = np.vstack((X_labeled, X_unlabeled[high_confidence_mask]))
@@ -1071,6 +1079,7 @@ def run_mnist_pseudo_labeling_app():
                                     'accuracy_history': accuracy_history,
                                     'val_acc_history': val_acc_history,
                                     'pseudo_stats': pseudo_stats,
+                                    'pseudo_samples_list': pseudo_samples_list,  # Thêm dữ liệu ảnh mẫu
                                     'iterations': iteration,
                                     'training_time': time.time() - start_time,
                                     'run_id': run.info.run_id,
@@ -1133,15 +1142,26 @@ def run_mnist_pseudo_labeling_app():
                         st.markdown("*Giải thích: Biểu đồ này thể hiện độ chính xác trên tập validation qua các vòng, giúp đánh giá hiệu quả thực tế của mô hình.*")
                         plt.close(fig)
 
-                    # Thông tin Pseudo Stats (thay thế phần hiển thị hình ảnh bằng thống kê)
-                    if 'pseudo_stats' in results:
+                    # Hiển thị thông tin Pseudo-Labeling và ảnh mẫu
+                    if 'pseudo_stats' in results and 'pseudo_samples_list' in results:
                         with st.expander("🔍 Thông tin Pseudo-Labeling", expanded=False):
-                            st.markdown("*Phần này hiển thị thống kê về số lượng và tỷ lệ nhãn giả đúng qua từng vòng lặp.*")
+                            st.markdown("*Phần này hiển thị thống kê và ảnh mẫu được gán nhãn giả trong từng vòng lặp.*")
                             for stat in results['pseudo_stats']:
                                 st.subheader(f"Vòng {stat['iteration']}")
                                 st.write(f"Số mẫu được gán nhãn giả: {stat['num_added']}")
                                 st.write(f"Số mẫu gán đúng: {stat['num_correct']}")
                                 st.write(f"Tỷ lệ nhãn giả đúng: {stat['accuracy_pseudo']*100:.2f}%")
+
+                                # Hiển thị ảnh mẫu
+                                samples = [s for s in results['pseudo_samples_list'] if s['iteration'] == stat['iteration']]
+                                if samples:
+                                    st.write("**Ảnh mẫu:**")
+                                    cols = st.columns(5)
+                                    for i, sample in enumerate(samples[:5]):  # Lấy tối đa 5 mẫu
+                                        with cols[i]:
+                                            st.image(sample['image'].reshape(28, 28), 
+                                                     caption=f"Pseudo: {sample['pseudo_label']}, True: {sample['true_label']}", 
+                                                     width=100)
 
                     # Tóm tắt Kết quả Huấn luyện trong expander
                     with st.expander("📋 Tóm tắt Kết quả Huấn luyện", expanded=False):
