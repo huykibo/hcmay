@@ -1,0 +1,2 @@
+Email,Câu 1,Câu 2,Câu 3,Câu 4,Câu 5,Câu 6,Câu 7,Câu 8,Câu 9,Câu 10,Câu 11,Câu 12,Câu 13,Câu 14,Câu 15,Câu 16,Điểm
+s,Agglomerative then K-means,Poor linkage criterion,Defines merge distance,K-means,Single forms chain-like clusters,K-means with fixed K,K-means,Build a cluster hierarchy,Marks outliers as noise,Centroid linkage,Hierarchical cluster links,Non-spherical clusters,Density-based clusters,Increase cluster count,It builds a cluster hierarchy,Switch to density clustering,5
